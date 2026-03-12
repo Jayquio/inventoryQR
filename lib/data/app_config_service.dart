@@ -43,19 +43,21 @@ class AppConfigService extends ChangeNotifier {
     return false;
   }
 
-  Future<String?> _detectBaseUrl() async {
-    // Skip on web; rely on defaults
-    if (kIsWeb) return 'http://localhost/inventory_api';
+  // Fix: extracted into separate method to reduce cognitive complexity
+  bool _isPrivateIp(String ip) {
+    return ip.startsWith('192.168.') ||
+        ip.startsWith('10.') ||
+        ip.startsWith('172.16.') ||
+        ip.startsWith('172.17.') ||
+        ip.startsWith('172.18.') ||
+        ip.startsWith('172.19.') ||
+        ip.startsWith('172.2') ||
+        ip.startsWith('172.3');
+  }
 
-    // Candidate list in order of likelihood
-    final List<String> candidates = [
-      // Windows/macOS desktop running XAMPP locally
-      'http://localhost/inventory_api',
-      // Android emulator talking to host
-      'http://10.0.2.2/inventory_api',
-    ];
-
-    // Add LAN IPs of the current device (useful if server is same machine and phones need LAN URL)
+  // Fix: extracted into separate method to reduce cognitive complexity
+  Future<List<String>> _getLanCandidates() async {
+    final candidates = <String>[];
     try {
       final interfaces = await io.NetworkInterface.list(
         type: io.InternetAddressType.any,
@@ -63,34 +65,31 @@ class AppConfigService extends ChangeNotifier {
       );
       for (final iface in interfaces) {
         for (final addr in iface.addresses) {
-          if (addr.type == io.InternetAddressType.IPv4) {
-            final ip = addr.address;
-            // Add common private ranges only
-            if (ip.startsWith('192.168.') ||
-                ip.startsWith('10.') ||
-                ip.startsWith('172.16.') ||
-                ip.startsWith('172.17.') ||
-                ip.startsWith('172.18.') ||
-                ip.startsWith('172.19.') ||
-                ip.startsWith('172.2') // covers 172.20-29
-                ||
-                ip.startsWith('172.3') // covers 172.30-31
-                ) {
-              candidates.add('http://$ip/inventory_api');
-            }
+          if (addr.type == io.InternetAddressType.IPv4 && _isPrivateIp(addr.address)) {
+            candidates.add('http://${addr.address}/inventory_api');
           }
         }
       }
     } catch (_) {
       // ignore interface errors
     }
+    return candidates;
+  }
 
-    // Try each candidate using ping.php (fast) with a short timeout
+  Future<String?> _detectBaseUrl() async {
+    if (kIsWeb) return 'http://localhost/inventory_api';
+
+    final List<String> candidates = [
+      'http://localhost/inventory_api',
+      'http://10.0.2.2/inventory_api',
+      ...await _getLanCandidates(),
+    ];
+
     for (final base in candidates.toSet()) {
       final ok = await _probe('$base/ping.php');
       if (ok) return base;
     }
-    // As a last resort, provide a common LAN placeholder to guide users
+
     return 'http://192.168.1.88/inventory_api';
   }
 
@@ -98,11 +97,10 @@ class AppConfigService extends ChangeNotifier {
     try {
       final res = await http
           .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 2));
-      if (res.statusCode == 200) return true;
+          .timeout(const Duration(seconds: 3));
+      return res.statusCode == 200;
     } catch (_) {
-      // ignore
+      return false;
     }
-    return false;
   }
 }
