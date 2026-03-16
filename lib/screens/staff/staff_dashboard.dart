@@ -1,32 +1,84 @@
 // lib/screens/staff/staff_dashboard.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_inventorymanagement/data/api_client.dart';
+import 'package:flutter_application_inventorymanagement/models/instrument.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/module_search_bar.dart';
 import '../../widgets/hover_scale_card.dart';
-import '../../data/dummy_data.dart';
 import '../../models/request.dart';
 import '../../core/constants.dart';
 import '../../widgets/notification_icon.dart';
+import '../../core/theme.dart';
+import '../../data/auth_service.dart';
 
-class StaffDashboard extends StatelessWidget {
+class StaffDashboard extends StatefulWidget {
   const StaffDashboard({super.key});
+
+  @override
+  State<StaffDashboard> createState() => _StaffDashboardState();
+}
+
+class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
+  List<Request> _requests = [];
+  List<Instrument> _instruments = [];
+  bool _loading = true;
+  Timer? _poller;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _poller = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (mounted) _load();
+    });
+  }
+
+  Future<void> _load() async {
+    try {
+      final rows = await ApiClient.instance.fetchRequests();
+      final reqs = rows.map((e) => Request.fromJson(e)).toList();
+      final insts = await ApiClient.instance.fetchInstruments();
+      if (!mounted) return;
+      setState(() {
+        _requests = reqs;
+        _instruments = insts;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _poller?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    final pendingRequests = requests.where((req) => req.status == RequestStatus.pending).length;
-    final approvedRequests = requests.where((req) => req.status == RequestStatus.approved).length;
-    final returnedRequests = requests.where((req) => req.status == RequestStatus.returned).length;
-    final lowStockInstruments = instruments.where((inst) => inst.available <= 1).length;
-    final transactionNotifications = requests.reversed.take(3).toList();
+    final myName = AuthService.instance.currentUsername;
+    final pendingRequests = _requests.where((req) => req.status == RequestStatus.pending).length;
+    final approvedRequests = _requests.where((req) => req.status == RequestStatus.approved).length;
+    final returnedRequests = _requests.where((req) => req.status == RequestStatus.returned).length;
+    final lowStockInstruments = _instruments.where((inst) => inst.available <= 1).length;
+    final myRequests = _requests.where((req) => req.studentName == myName).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Staff Dashboard"),
-        backgroundColor: Colors.green.shade800,
+        title: const Text("Teacher Dashboard"),
+        backgroundColor: AppTheme.primaryColor,
         actions: [
-          const NotificationIcon(recipients: ['Staff'], types: ['request']),
+          const NotificationIcon(recipients: ['Teacher'], types: ['success', 'error']),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: _load,
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -37,13 +89,13 @@ class StaffDashboard extends StatelessWidget {
           ),
         ],
       ),
-      drawer: AppDrawer(userRole: 'Staff'),
+      drawer: AppDrawer(userRole: 'Teacher'),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.green.shade50, Colors.white],
+            colors: [AppTheme.backgroundLight, Colors.white],
           ),
         ),
         child: SingleChildScrollView(
@@ -53,6 +105,11 @@ class StaffDashboard extends StatelessWidget {
             children: [
               const ModuleSearchBar(),
               const SizedBox(height: 12),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: LinearProgressIndicator(),
+                ),
               // Welcome Section
               Card(
                 elevation: 8,
@@ -62,25 +119,23 @@ class StaffDashboard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.green.shade600, Colors.green.shade800],
-                    ),
+                  gradient: AppTheme.primaryGradient,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome, Lab Staff!',
-                        style: TextStyle(
+                        'Welcome, ${AuthService.instance.currentUsername}!',
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Manage requests and maintain laboratory equipment',
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Request instruments and track your borrowing status',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
@@ -122,13 +177,41 @@ class StaffDashboard extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem(context, 'Pending', pendingRequests.toString(), Icons.pending_actions, Colors.orange),
+                      _buildStatItem(
+                        context,
+                        'Pending',
+                        pendingRequests.toString(),
+                        Icons.pending_actions,
+                        AppTheme.primaryColor,
+                        onTap: () => Navigator.pushNamed(context, '/track_status'),
+                      ),
                       _buildStatDivider(),
-                      _buildStatItem(context, 'Active', approvedRequests.toString(), Icons.inventory_2, Colors.blue),
+                      _buildStatItem(
+                        context,
+                        'Active',
+                        approvedRequests.toString(),
+                        Icons.inventory_2,
+                        AppTheme.secondaryColor,
+                        onTap: () => Navigator.pushNamed(context, '/track_status'),
+                      ),
                       _buildStatDivider(),
-                      _buildStatItem(context, 'Returns', returnedRequests.toString(), Icons.assignment_return, Colors.green),
+                      _buildStatItem(
+                        context,
+                        'Returns',
+                        returnedRequests.toString(),
+                        Icons.assignment_return,
+                        AppTheme.primaryColor,
+                        onTap: () => Navigator.pushNamed(context, '/track_status'),
+                      ),
                       _buildStatDivider(),
-                      _buildStatItem(context, 'Low Stock', lowStockInstruments.toString(), Icons.warning, Colors.red),
+                      _buildStatItem(
+                        context,
+                        'Low Stock',
+                        lowStockInstruments.toString(),
+                        Icons.warning,
+                        Colors.red,
+                        onTap: () => Navigator.pushNamed(context, '/view_instruments', arguments: 'Teacher'),
+                      ),
                     ],
                   ),
                 ),
@@ -143,9 +226,7 @@ class StaffDashboard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   )),
-
               const SizedBox(height: 16),
-
               LayoutBuilder(
                 builder: (context, constraints) {
                   final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
@@ -159,199 +240,63 @@ class StaffDashboard extends StatelessWidget {
                     children: [
                       _buildActionCard(
                         context,
-                        title: 'Review Requests',
-                        icon: Icons.assignment,
-                        color: Colors.orange,
-                        onTap: () => Navigator.pushNamed(context, '/manage_requests'),
+                        title: 'Request',
+                        icon: Icons.add_circle,
+                        color: AppTheme.secondaryColor,
+                        onTap: () => Navigator.pushNamed(context, '/submit_request'),
+                      ),
+                      _buildActionCard(
+                        context,
+                        title: 'Track Status',
+                        icon: Icons.timeline,
+                        color: AppTheme.primaryColor,
+                        onTap: () => Navigator.pushNamed(context, '/track_status'),
                       ),
                       _buildActionCard(
                         context,
                         title: 'Scan QR',
                         icon: Icons.qr_code_scanner,
-                        color: Colors.teal,
-                        onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Staff'),
+                        color: AppTheme.secondaryColor,
+                        onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Teacher'),
                       ),
                       _buildActionCard(
                         context,
                         title: 'My QR',
                         icon: Icons.qr_code_2,
-                        color: Colors.indigo,
+                        color: AppTheme.primaryColor,
                         onTap: () => Navigator.pushNamed(context, '/user_qr'),
                       ),
                       _buildActionCard(
                         context,
                         title: 'Monitor',
                         icon: Icons.inventory,
-                        color: Colors.blue,
-                        onTap: () => Navigator.pushNamed(context, '/view_instruments', arguments: 'Staff'),
+                        color: AppTheme.primaryColor,
+                        onTap: () => Navigator.pushNamed(context, '/view_instruments', arguments: 'Teacher'),
                       ),
                       _buildActionCard(
                         context,
-                        title: 'Returns',
-                        icon: Icons.assignment_return,
-                        color: Colors.green,
-                        onTap: () => Navigator.pushNamed(context, '/handle_returns'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Maintenance',
-                        icon: Icons.build,
-                        color: Colors.purple,
-                        onTap: () => Navigator.pushNamed(context, '/log_maintenance'),
+                        title: 'Overview',
+                        icon: Icons.dashboard,
+                        color: AppTheme.primaryColor,
+                        onTap: () => _showOverviewDialog(context, myRequests),
                       ),
                     ],
                   );
                 },
               ),
 
-              const SizedBox(height: 24),
-
-              // Transaction Notifications
-              const Text(
-                'Transaction Notifications',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: transactionNotifications.isEmpty
-                      ? const Text('No recent transactions.')
-                      : Column(
-                          children: transactionNotifications.map((request) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _getStatusIcon(request.status),
-                                    color: _getStatusColor(request.status),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      '${request.studentName} - ${request.instrumentName}',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                  Text(
-                                    _getStatusText(request.status),
-                                    style: TextStyle(
-                                      color: _getStatusColor(request.status),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                ),
-              ),
 
               const SizedBox(height: 24),
 
-              // Urgent Tasks
-              if (pendingRequests > 0 || lowStockInstruments > 0) ...[
-                const Text(
-                  'Urgent Attention Required',
+              // My Borrow History
+              Text('My Borrow History',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: R.text(20, w),
                     fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
+                    color: Colors.black87,
+                  )),
 
-                const SizedBox(height: 16),
-
-                if (pendingRequests > 0)
-                  Card(
-                    elevation: 4,
-                    color: Colors.orange.shade50,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.warning, color: Colors.orange),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              '$pendingRequests request(s) waiting for approval',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pushNamed(context, '/manage_requests'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Review'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                if (lowStockInstruments > 0)
-                  Card(
-                    elevation: 4,
-                    color: Colors.red.shade50,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error, color: Colors.red),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              '$lowStockInstruments instrument(s) running low on stock',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pushNamed(context, '/view_instruments', arguments: 'Staff'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Check'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-
-              const SizedBox(height: 24),
-
-              // Recent Activity
-              const Text(
-                'Recent Activity',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
+              const SizedBox(height: 12),
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
@@ -359,45 +304,72 @@ class StaffDashboard extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
+                  child: myRequests.isEmpty
+                      ? const Text('No borrow history yet.')
+                      : Column(
+                          children: [
+                            ...myRequests.take(5).map((req) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _getStatusIcon(req.status),
+                                      color: _getStatusColor(req.status),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        req.instrumentName,
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    Text(
+                                      _getStatusText(req.status),
+                                      style: TextStyle(
+                                        color: _getStatusColor(req.status),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: () => Navigator.pushNamed(context, '/track_status'),
+                                icon: const Icon(Icons.open_in_new),
+                                label: const Text('View All'),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Teacher dashboard simplified (no transaction notifications or urgent admin sections)
+              const SizedBox(height: 8),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
                     children: [
-                      if (requests.isNotEmpty) ...[
-                        Row(
-                          children: [
-                            Icon(Icons.history, color: Colors.blue),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Latest: ${requests.last.studentName} requested ${requests.last.instrumentName}',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                          ],
+                      Icon(Icons.info, color: AppTheme.primaryColor),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'As a Teacher, you can submit requests, scan equipment labels, and track your status.',
+                          style: TextStyle(fontSize: 13),
                         ),
-                        const SizedBox(height: 8),
-                      ],
-                      if (maintenanceRecords.isNotEmpty) ...[
-                        Row(
-                          children: [
-                            Icon(Icons.build, color: Colors.green),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Maintenance: ${maintenanceRecords.last.instrumentName} (${maintenanceRecords.last.status})',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (requests.isEmpty && maintenanceRecords.isEmpty) ...[
-                        const Center(
-                          child: Text(
-                            'No recent activity',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -409,36 +381,105 @@ class StaffDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color) {
+  void _showOverviewDialog(BuildContext context, List<Request> myRequests) {
+    final myPending = myRequests.where((r) => r.status == RequestStatus.pending).length;
+    final myActive = myRequests.where((r) => r.status == RequestStatus.approved).length;
+    final myReturned = myRequests.where((r) => r.status == RequestStatus.returned).length;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Teacher Overview'),
+        content: SingleChildScrollView(
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _overviewStatTile(color: AppTheme.primaryColor, icon: Icons.pending_actions, value: '$myPending', label: 'My Pending'),
+              _overviewStatTile(color: AppTheme.secondaryColor, icon: Icons.inventory_2, value: '$myActive', label: 'My Active'),
+              _overviewStatTile(color: Colors.blue, icon: Icons.assignment_return, value: '$myReturned', label: 'My Returns'),
+              _overviewStatTile(color: Colors.red, icon: Icons.warning, value: '${_instruments.where((i) => i.available <= 1).length}', label: 'Low Stock'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  Widget _overviewStatTile({
+    required Color color,
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
     return Container(
-      width: 90,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
+      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(minWidth: 160),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
             ),
+            child: Icon(icon, color: color),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(label, style: const TextStyle(color: Colors.black87)),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 90,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -511,13 +552,13 @@ class StaffDashboard extends StatelessWidget {
   Color _getStatusColor(RequestStatus status) {
     switch (status) {
       case RequestStatus.pending:
-        return Colors.orange;
+        return AppTheme.primaryColor;
       case RequestStatus.approved:
-        return Colors.green;
+        return AppTheme.secondaryColor;
       case RequestStatus.rejected:
         return Colors.red;
       case RequestStatus.returned:
-        return Colors.blue;
+        return AppTheme.primaryColor;
     }
   }
 

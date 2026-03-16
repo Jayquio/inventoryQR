@@ -1,0 +1,294 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Mar 11, 2026 at 01:44 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `medlab_inventory`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `instruments`
+--
+
+CREATE TABLE `instruments` (
+  `type` enum('instrument','reagent') NOT NULL DEFAULT 'instrument',
+  `id` int(11) NOT NULL,
+  `name` varchar(128) NOT NULL,
+  `category` varchar(64) DEFAULT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 0,
+  `available` int(11) NOT NULL DEFAULT 0,
+  `status` varchar(32) DEFAULT NULL,
+  `condition` varchar(32) DEFAULT NULL,
+  `location` varchar(64) DEFAULT NULL,
+  `last_maintenance` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `instruments`
+--
+
+INSERT INTO `instruments` (`type`, `id`, `name`, `category`, `quantity`, `available`, `status`, `condition`, `location`, `last_maintenance`) VALUES
+('instrument', 1, 'Microscope Olympus CX23', 'Microscopy', 5, 1, 'Available', 'Good', 'Lab Room A', '2024-10-15'),
+('instrument', 2, 'Centrifuge Machine', 'Sample Processing', 3, 2, 'Available', 'Good', 'Lab Room B', '2024-09-20'),
+('instrument', 3, 'Hematology Analyzer', 'Hematology', 2, 2, 'Available', 'Excellent', 'Lab Room C', '2024-08-05'),
+('instrument', 4, 'Clinical Chemistry Analyzer', 'Chemistry', 2, 1, 'In Use', 'Good', 'Lab Room C', '2024-07-18'),
+('instrument', 5, 'Autoclave Sterilizer', 'Sterilization', 1, 0, 'Available', 'Good', 'Sterilization Room', '2024-06-10'),
+('instrument', 6, 'microscope', 'yes', 10, 10, 'good', 'good', 'secret', '0000-00-00');
+
+--
+-- Triggers `instruments`
+--
+DELIMITER $$
+CREATE TRIGGER `instruments_available_check` BEFORE UPDATE ON `instruments` FOR EACH ROW BEGIN
+  IF NEW.available < 0 THEN SET NEW.available = 0; END IF;
+  IF NEW.available > NEW.quantity THEN SET NEW.available = NEW.quantity; END IF;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_instruments_ad` AFTER DELETE ON `instruments` FOR EACH ROW BEGIN
+  DELETE FROM instrument_qr WHERE instrument_name = OLD.name;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_instruments_ai` AFTER INSERT ON `instruments` FOR EACH ROW BEGIN
+  INSERT INTO instrument_qr (instrument_name, type, payload)
+  VALUES
+    (NEW.name, 'borrow',  CONCAT('QR|type=borrow;name=',  NEW.name)),
+    (NEW.name, 'receive', CONCAT('QR|type=receive;name=', NEW.name)),
+    (NEW.name, 'return',  CONCAT('QR|type=return;name=',  NEW.name))
+  ON DUPLICATE KEY UPDATE payload = VALUES(payload);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_instruments_au` AFTER UPDATE ON `instruments` FOR EACH ROW BEGIN
+  IF NEW.name <> OLD.name THEN
+    UPDATE instrument_qr
+    SET instrument_name = NEW.name,
+        payload = REPLACE(payload, CONCAT('name=', OLD.name), CONCAT('name=', NEW.name))
+    WHERE instrument_name = OLD.name;
+  END IF;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `instrument_qr`
+--
+
+CREATE TABLE `instrument_qr` (
+  `id` int(11) NOT NULL,
+  `instrument_name` varchar(255) NOT NULL,
+  `type` enum('borrow','receive','return') NOT NULL,
+  `payload` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `instrument_qr`
+--
+
+INSERT INTO `instrument_qr` (`id`, `instrument_name`, `type`, `payload`, `created_at`) VALUES
+(1, 'Autoclave Sterilizer', 'borrow', 'QR|type=borrow;name=Autoclave Sterilizer', '2026-03-06 05:53:35'),
+(2, 'Centrifuge Machine', 'borrow', 'QR|type=borrow;name=Centrifuge Machine', '2026-03-06 05:53:35'),
+(3, 'Clinical Chemistry Analyzer', 'borrow', 'QR|type=borrow;name=Clinical Chemistry Analyzer', '2026-03-06 05:53:35'),
+(4, 'Hematology Analyzer', 'borrow', 'QR|type=borrow;name=Hematology Analyzer', '2026-03-06 05:53:35'),
+(5, 'Microscope Olympus CX23', 'borrow', 'QR|type=borrow;name=Microscope Olympus CX23', '2026-03-06 05:53:35'),
+(8, 'Autoclave Sterilizer', 'receive', 'QR|type=receive;name=Autoclave Sterilizer', '2026-03-06 05:53:35'),
+(9, 'Centrifuge Machine', 'receive', 'QR|type=receive;name=Centrifuge Machine', '2026-03-06 05:53:35'),
+(10, 'Clinical Chemistry Analyzer', 'receive', 'QR|type=receive;name=Clinical Chemistry Analyzer', '2026-03-06 05:53:35'),
+(11, 'Hematology Analyzer', 'receive', 'QR|type=receive;name=Hematology Analyzer', '2026-03-06 05:53:35'),
+(12, 'Microscope Olympus CX23', 'receive', 'QR|type=receive;name=Microscope Olympus CX23', '2026-03-06 05:53:35'),
+(15, 'Autoclave Sterilizer', 'return', 'QR|type=return;name=Autoclave Sterilizer', '2026-03-06 05:53:35'),
+(16, 'Centrifuge Machine', 'return', 'QR|type=return;name=Centrifuge Machine', '2026-03-06 05:53:35'),
+(17, 'Clinical Chemistry Analyzer', 'return', 'QR|type=return;name=Clinical Chemistry Analyzer', '2026-03-06 05:53:35'),
+(18, 'Hematology Analyzer', 'return', 'QR|type=return;name=Hematology Analyzer', '2026-03-06 05:53:35'),
+(19, 'Microscope Olympus CX23', 'return', 'QR|type=return;name=Microscope Olympus CX23', '2026-03-06 05:53:35'),
+(28, 'microscope', 'borrow', 'QR|type=borrow;name=microscope', '2026-03-06 18:12:51'),
+(29, 'microscope', 'receive', 'QR|type=receive;name=microscope', '2026-03-06 18:12:51'),
+(30, 'microscope', 'return', 'QR|type=return;name=microscope', '2026-03-06 18:12:51');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `requests`
+--
+
+CREATE TABLE `requests` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(128) NOT NULL,
+  `instrument_name` varchar(128) NOT NULL,
+  `purpose` text DEFAULT NULL,
+  `course` varchar(128) DEFAULT NULL,
+  `needed_at` datetime DEFAULT NULL,
+  `status` enum('pending','approved','rejected','returned') NOT NULL DEFAULT 'pending',
+  `approved_by` varchar(64) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `rejected_by` varchar(64) DEFAULT NULL,
+  `rejected_at` datetime DEFAULT NULL,
+  `returned_by` varchar(64) DEFAULT NULL,
+  `returned_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `requests`
+--
+
+INSERT INTO `requests` (`id`, `student_name`, `instrument_name`, `purpose`, `course`, `needed_at`, `status`, `approved_by`, `approved_at`, `rejected_by`, `rejected_at`, `returned_by`, `returned_at`, `created_at`) VALUES
+(9, 'dmcb', 'Centrifuge Machine', 'Activity', NULL, NULL, 'approved', 'ryota-kun', '2026-03-06 13:24:59', NULL, NULL, NULL, NULL, '2026-03-06 05:23:53'),
+(10, 'dmcb', 'microscope', 'for lab', NULL, NULL, 'approved', 'staff', '2026-03-07 14:55:11', NULL, NULL, NULL, NULL, '2026-03-07 06:54:26'),
+(11, 'alexa', 'Centrifuge Machine', 'for lab', NULL, NULL, 'approved', 'admin', '2026-03-11 02:01:36', NULL, NULL, NULL, NULL, '2026-03-07 08:24:01'),
+(12, 'teacher', 'microscope', 'for project', 'blah blah', '2026-03-13 02:13:00', 'approved', 'admin', '2026-03-11 02:01:42', NULL, NULL, NULL, NULL, '2026-03-10 17:13:39'),
+(13, 'teacher', 'Hematology Analyzer', 'yes', 'yeah', '2026-03-18 17:21:00', 'approved', 'admin', '2026-03-11 02:21:36', NULL, NULL, NULL, NULL, '2026-03-10 18:21:11'),
+(14, 'ryota-kun', 'microscope', 'wowo', 'wow', '2026-03-12 04:19:00', 'approved', 'admin', '2026-03-11 04:20:24', NULL, NULL, NULL, NULL, '2026-03-10 20:19:58');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `transactions`
+--
+
+CREATE TABLE `transactions` (
+  `id` int(11) NOT NULL,
+  `instrument_name` varchar(128) NOT NULL,
+  `type` enum('receive','return') NOT NULL,
+  `processed_by` varchar(64) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `transactions`
+--
+
+INSERT INTO `transactions` (`id`, `instrument_name`, `type`, `processed_by`, `created_at`) VALUES
+(1, 'Microscope Olympus CX23', 'receive', 'admin', '2026-02-24 10:03:04'),
+(2, 'Microscope Olympus CX23', 'receive', 'admin', '2026-02-24 10:04:45'),
+(3, 'Autoclave Sterilizer', 'receive', 'staff', '2026-03-06 15:50:38');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `username` varchar(64) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('admin','teacher','student') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `username`, `password`, `role`) VALUES
+(1, 'admin', 'admin', 'admin'),
+(2, 'teacher', 'teacher', 'teacher'),
+(3, 'student', 'student', 'student'),
+(4, 'dmcb', 'dmcb', 'student'),
+(5, 'ryota-kun', 'arigato', 'teacher'),
+(6, 'alexa', 'alexa123', 'student');
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `instruments`
+--
+ALTER TABLE `instruments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `name` (`name`);
+
+--
+-- Indexes for table `instrument_qr`
+--
+ALTER TABLE `instrument_qr`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_instrument_type` (`instrument_name`,`type`);
+
+--
+-- Indexes for table `requests`
+--
+ALTER TABLE `requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_requests_status` (`status`),
+  ADD KEY `idx_requests_student` (`student_name`),
+  ADD KEY `idx_requests_instrument` (`instrument_name`);
+
+--
+-- Indexes for table `transactions`
+--
+ALTER TABLE `transactions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_tx_instrument` (`instrument_name`),
+  ADD KEY `idx_tx_type_created` (`type`,`created_at`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `username` (`username`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `instruments`
+--
+ALTER TABLE `instruments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `instrument_qr`
+--
+ALTER TABLE `instrument_qr`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+
+--
+-- AUTO_INCREMENT for table `requests`
+--
+ALTER TABLE `requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `transactions`
+--
+ALTER TABLE `transactions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

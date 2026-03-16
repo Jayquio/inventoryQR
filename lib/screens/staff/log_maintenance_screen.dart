@@ -1,6 +1,9 @@
 // lib/screens/staff/log_maintenance_screen.dart
 
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
+import '../../widgets/role_guard.dart';
+import '../../data/auth_service.dart';
 import '../../data/dummy_data.dart';
 import '../../models/maintenance.dart';
 
@@ -57,21 +60,24 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Log Maintenance'),
-        backgroundColor: Colors.green.shade800,
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: RoleGuard(
+        allowed: const {UserRole.admin},
+        unauthorizedMessage: 'Only Admin can access maintenance',
+        child: SingleChildScrollView(
         child: Column(
           children: [
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.green.shade800,
+                color: AppTheme.primaryColor,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(32),
                   bottomRight: Radius.circular(32),
@@ -176,7 +182,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
                       child: ElevatedButton(
                         onPressed: _logMaintenance,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade800,
+                          backgroundColor: AppTheme.secondaryColor,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -202,7 +208,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
               ),
             ),
           ],
-        ),
+        ),),
       ),
     );
   }
@@ -231,7 +237,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
       style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: Colors.green.shade900,
+        color: AppTheme.primaryColor,
       ),
     );
   }
@@ -239,7 +245,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: Colors.green.shade800),
+      prefixIcon: Icon(icon, color: AppTheme.primaryColor),
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       border: OutlineInputBorder(
@@ -252,10 +258,10 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.green.shade800, width: 2),
+        borderSide: const BorderSide(color: AppTheme.secondaryColor, width: 2),
       ),
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: Colors.white,
     );
   }
 }

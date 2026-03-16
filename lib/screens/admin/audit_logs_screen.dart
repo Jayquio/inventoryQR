@@ -33,7 +33,7 @@ class _TransactionLogsScreenState extends State<TransactionLogsScreen> {
     {
       'id': '3',
       'timestamp': '2024-01-20 10:40:18',
-      'user': 'John Staff',
+      'user': 'John Teacher',
       'action': 'APPROVE',
       'resource': 'Request',
       'details': 'Approved request #REQ-001 for Jane Student',
@@ -69,7 +69,7 @@ class _TransactionLogsScreenState extends State<TransactionLogsScreen> {
     {
       'id': '7',
       'timestamp': '2024-01-20 11:30:28',
-      'user': 'John Staff',
+      'user': 'John Teacher',
       'action': 'RETURN',
       'resource': 'Instrument',
       'details': 'Processed return of Centrifuge Machine',

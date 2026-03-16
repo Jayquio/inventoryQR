@@ -47,7 +47,7 @@ class AppConfigService extends ChangeNotifier {
     // Skip on web; rely on defaults
     if (kIsWeb) return 'http://localhost/inventory_api';
 
-    // Candidate list in order of likelihood
+    // Candidate list in order of likelihood  
     final List<String> candidates = [
       // Windows/macOS desktop running XAMPP locally
       'http://localhost/inventory_api',

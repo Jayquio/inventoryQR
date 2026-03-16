@@ -22,6 +22,6 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isAllowedBorrow() => _currentRole == UserRole.student;
+  bool isAllowedBorrow() => _currentRole == UserRole.student || _currentRole == UserRole.staff;
   bool isAllowedReceiveReturn() => _currentRole == UserRole.admin || _currentRole == UserRole.staff;
 }

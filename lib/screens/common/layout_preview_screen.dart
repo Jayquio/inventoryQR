@@ -11,14 +11,14 @@ class LayoutPreviewScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Layout Preview'),
-        backgroundColor: Colors.blue.shade800,
+        backgroundColor: const Color(0xFF4B0082),
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade50, Colors.white],
+            colors: [const Color(0xFFF5F2FA), Colors.white],
           ),
         ),
         child: LayoutBuilder(

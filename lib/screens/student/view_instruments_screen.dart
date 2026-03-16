@@ -1,10 +1,12 @@
 // lib/screens/student/view_instruments_screen.dart
 
 import 'package:flutter/material.dart';
-import '../../data/dummy_data.dart';
+import 'package:flutter_application_inventorymanagement/data/api_client.dart';
+import 'package:flutter_application_inventorymanagement/models/instrument.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/instrument_card.dart';
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 
 class ViewInstrumentsScreen extends StatefulWidget {
   final String userRole;
@@ -19,6 +21,32 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _page = 0;
   final int _perPage = 6;
+  List<Instrument> _instruments = [];
+  bool _loading = true;
+  String _typeFilter = 'All';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final items = await ApiClient.instance.fetchInstruments();
+      if (!mounted) return;
+      setState(() {
+        _instruments = items;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
 
   void _showInstrumentDetails(BuildContext context, instrument) {
     showModalBottomSheet(
@@ -57,7 +85,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: widget.userRole == 'Student'
+                    onPressed: (widget.userRole == 'Student' || widget.userRole == 'Teacher' || widget.userRole == 'Staff')
                         ? (instrument.available > 0
                             ? () {
                                 Navigator.pop(context);
@@ -68,7 +96,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
                                 );
                               }
                             : null)
-                        : (widget.userRole == 'Staff'
+                        : (widget.userRole == 'Admin'
                             ? () {
                                 Navigator.pop(context);
                                 Navigator.pushNamed(
@@ -80,9 +108,9 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
                             : null),
                     icon: const Icon(Icons.assignment),
                     label: Text(
-                      widget.userRole == 'Student'
+                      (widget.userRole == 'Student' || widget.userRole == 'Teacher' || widget.userRole == 'Staff')
                           ? 'Request This'
-                          : (widget.userRole == 'Staff' ? 'Log Maintenance' : 'Update'),
+                          : (widget.userRole == 'Admin' ? 'Log Maintenance' : 'Update'),
                     ),
                   ),
                 ),
@@ -139,12 +167,12 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     final w = MediaQuery.of(context).size.width;
     final searchTerm = _searchController.text.toLowerCase();
     
-    // Calculate stats for the overview
-    final totalInstruments = instruments.length;
-    final availableInstruments = instruments.where((i) => i.available > 0).length;
-    final categories = instruments.map((i) => i.category).toSet().length;
+    final totalInstruments = _instruments.length;
+    final availableInstruments = _instruments.where((i) => i.available > 0).length;
+    final categories = _instruments.map((i) => i.category).toSet().length;
 
-    final filteredInstruments = instruments.where((instrument) {
+    final filteredInstruments = _instruments.where((instrument) {
+      if (_typeFilter != 'All' && instrument.type.toLowerCase() != _typeFilter.toLowerCase()) return false;
       if (searchTerm.isEmpty) return true;
       return instrument.name.toLowerCase().contains(searchTerm) ||
           instrument.category.toLowerCase().contains(searchTerm) ||
@@ -158,20 +186,21 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
       body: Column(
         children: [
           const SizedBox(height: 12),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: LinearProgressIndicator(),
+            ),
           // Quick Overview Container
           Container(
             margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.teal.shade700, Colors.teal.shade500],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: AppTheme.primaryGradient,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.teal.withValues(alpha: 0.3),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -190,12 +219,31 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: DebouncedSearchBar(
-              controller: _searchController,
-              hintText: 'Search instruments...',
-              onChanged: (value) => setState(() {
-                _page = 0;
-              }),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DebouncedSearchBar(
+                    controller: _searchController,
+                    hintText: 'Search instruments...',
+                    onChanged: (value) => setState(() {
+                      _page = 0;
+                    }),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                DropdownButton<String>(
+                  value: _typeFilter,
+                  items: const [
+                    DropdownMenuItem(value: 'All', child: Text('All Types')),
+                    DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
+                    DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
+                  ],
+                  onChanged: (v) => setState(() {
+                    _typeFilter = v ?? 'All';
+                    _page = 0;
+                  }),
+                ),
+              ],
             ),
           ),
           Expanded(

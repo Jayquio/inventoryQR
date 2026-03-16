@@ -9,9 +9,10 @@ class NotificationItem {
     required this.id,
     required this.title,
     required this.message,
-    required this.type, // error | warning | success | info
+    required this.type,
     required this.timestamp,
     required this.recipient,
+    this.course,
     this.read = false,
     this.priority = 'medium',
   });
@@ -22,6 +23,7 @@ class NotificationItem {
   final String type;
   final String timestamp;
   final String recipient;
+  final String? course;
   bool read;
   final String priority;
 }
@@ -88,6 +90,7 @@ class NotificationService extends ChangeNotifier {
               type: e['type'],
               timestamp: e['timestamp'],
               recipient: e['recipient'],
+              course: e['course'],
               read: e['read'] ?? false,
               priority: e['priority'] ?? 'medium',
             )));
@@ -105,6 +108,7 @@ class NotificationService extends ChangeNotifier {
               'type': n.type,
               'timestamp': n.timestamp,
               'recipient': n.recipient,
+              'course': n.course,
               'read': n.read,
               'priority': n.priority,
             })
@@ -143,6 +147,11 @@ class NotificationService extends ChangeNotifier {
       } catch (_) {}
       notifyListeners();
     });
+  }
+
+  void stopAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
   }
 
   List<NotificationItem> getPaginatedNotifications(int page, {int pageSize = 10}) {

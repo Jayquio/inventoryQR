@@ -10,6 +10,8 @@ import '../../models/request.dart';
 import '../../data/notification_service.dart';
 import '../../core/constants.dart';
 import '../../widgets/notification_icon.dart';
+import '../../core/theme.dart';
+import '../../data/auth_service.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -19,9 +21,9 @@ class AdminDashboard extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Admin Dashboard"),
-        backgroundColor: Colors.blue.shade800,
+        backgroundColor: AppTheme.primaryColor,
         actions: [
-          const NotificationIcon(recipients: ['Admin'], types: ['login']),
+          const NotificationIcon(recipients: ['Admin'], types: ['login', 'request']),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -104,7 +106,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.blue.shade50, Colors.white],
+          colors: [AppTheme.backgroundLight, Colors.white],
         ),
       ),
       child: SingleChildScrollView(
@@ -122,24 +124,22 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade600, Colors.blue.shade800],
-                  ),
+                  gradient: AppTheme.primaryGradient,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome, Administrator!',
-                      style: TextStyle(
+                      'Welcome, ${AuthService.instance.currentUsername}!',
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
+                    const SizedBox(height: 8),
+                    const Text(
                       'Manage your laboratory inventory efficiently',
                       style: TextStyle(
                         fontSize: 16,
@@ -179,13 +179,13 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory, Colors.blue, '/view_instruments'),
+                    _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory, AppTheme.primaryColor, '/view_instruments'),
                     _buildStatDivider(),
-                    _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle, Colors.green, '/view_instruments'),
+                    _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle, AppTheme.secondaryColor, '/view_instruments'),
                     _buildStatDivider(),
-                    _buildStatItem(context, 'Pending', pendingRequests.toString(), Icons.pending, Colors.orange, '/manage_requests'),
+                    _buildStatItem(context, 'Pending', pendingRequests.toString(), Icons.pending, AppTheme.primaryColor, '/manage_requests'),
                     _buildStatDivider(),
-                    _buildStatItem(context, 'Approved', approvedRequests.toString(), Icons.check_circle, Colors.purple, '/manage_requests'),
+                    _buildStatItem(context, 'Approved', approvedRequests.toString(), Icons.check_circle, AppTheme.secondaryColor, '/manage_requests'),
                     _buildStatDivider(),
                     _buildStatItem(context, 'Out of Stock', outOfStockInstruments.toString(), Icons.error_outline, Colors.red, '/view_instruments'),
                   ],
@@ -217,42 +217,49 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                       context,
                       title: 'Manage Instruments',
                       icon: Icons.inventory,
-                      color: Colors.blue,
+                      color: AppTheme.primaryColor,
                       onTap: () => Navigator.pushNamed(context, '/manage_instruments'),
+                    ),
+                    _buildActionCard(
+                      context,
+                      title: 'Generate QR',
+                      icon: Icons.qr_code_2,
+                      color: AppTheme.primaryColor,
+                      onTap: () => Navigator.pushNamed(context, '/qr_generator', arguments: 'Admin'),
                     ),
                     _buildActionCard(
                       context,
                       title: 'Scan QR Code',
                       icon: Icons.qr_code_scanner,
-                      color: Colors.teal,
+                      color: AppTheme.secondaryColor,
                       onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Admin'),
                     ),
                     _buildActionCard(
                       context,
                       title: 'My QR',
                       icon: Icons.qr_code_2,
-                      color: Colors.indigo,
+                      color: AppTheme.primaryColor,
                       onTap: () => Navigator.pushNamed(context, '/user_qr'),
                     ),
                     _buildActionCard(
                       context,
                       title: 'Requests',
                       icon: Icons.assignment,
-                      color: Colors.green,
+                      color: AppTheme.secondaryColor,
                       onTap: () => Navigator.pushNamed(context, '/manage_requests'),
                     ),
                     _buildActionCard(
                       context,
                       title: 'Reports',
                       icon: Icons.report,
-                      color: Colors.purple,
+                      color: AppTheme.secondaryColor,
                       onTap: () => Navigator.pushNamed(context, '/generate_reports'),
                     ),
                     _buildActionCard(
                       context,
                       title: 'Overview',
                       icon: Icons.dashboard,
-                      color: Colors.orange,
+                      color: AppTheme.primaryColor,
                       onTap: () => _showAllDataDialog(context),
                     ),
                   ],
@@ -324,7 +331,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.red.shade600,
+                                        color: Colors.red,
                                                   borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: Text(
@@ -365,7 +372,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: Colors.red.shade600,
+                                        color: Colors.red,
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: Text(
@@ -433,12 +440,12 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: Colors.blue.shade50,
+                                        color: AppTheme.wisteria.withValues(alpha: 0.2),
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: Text(
                                             time,
-                                            style: const TextStyle(color: Colors.blueGrey, fontSize: 11),
+                                        style: const TextStyle(color: Colors.black54, fontSize: 11),
                                           ),
                                         ),
                                       ],
@@ -570,6 +577,51 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     );
   }
  
+  
+
+  Widget _buildActionCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return HoverScaleCard(
+      baseElevation: 4,
+      hoverElevation: 10,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28, color: color),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+ 
   Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color, String route) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, route),
@@ -615,111 +667,142 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       color: Colors.grey.withValues(alpha: 0.2),
     );
   }
-
-  Widget _buildActionCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return HoverScaleCard(
-      baseElevation: 4,
-      hoverElevation: 10,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 28, color: color),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _reportTile(BuildContext context,
-      {required String title, required IconData icon, required Color color, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
  
   void _showAllDataDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('System Overview'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Total Instruments: ${instruments.length}'),
-              Text('Total Requests: ${requests.length}'),
-              Text('Maintenance Records: ${maintenanceRecords.length}'),
-              const SizedBox(height: 16),
-              const Text(
-                'System Status: Operational',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
+        content: Builder(builder: (context) {
+          final ts = TimeOfDay.now();
+          final tsText = '${ts.format(context)}';
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _overviewStatTile(
+                      color: Colors.blue,
+                      icon: Icons.inventory,
+                      value: instruments.length.toString(),
+                      label: 'Total Instruments',
+                    ),
+                    _overviewStatTile(
+                      color: Colors.green,
+                      icon: Icons.assignment,
+                      value: requests.length.toString(),
+                      label: 'Total Requests',
+                    ),
+                    _overviewStatTile(
+                      color: Colors.purple,
+                      icon: Icons.build,
+                      value: maintenanceRecords.length.toString(),
+                      label: 'Maintenance Records',
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.check_circle, color: Colors.green, size: 18),
+                          SizedBox(width: 6),
+                          Text(
+                            'Operational',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Updated $tsText',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }),
         actions: [
+          TextButton(
+            onPressed: () => Navigator.pushNamed(context, '/generate_reports'),
+            child: const Text('Reports'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+ 
+  Widget _overviewStatTile({
+    required Color color,
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(minWidth: 180),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -731,11 +814,11 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       case 'error':
         return Colors.red;
       case 'warning':
-        return Colors.orange;
+        return Colors.red;
       case 'success':
-        return Colors.green;
+        return AppTheme.secondaryColor;
       case 'info':
-        return Colors.blue;
+        return AppTheme.primaryColor;
       default:
         return Colors.grey;
     }

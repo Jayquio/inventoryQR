@@ -18,6 +18,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   String _selectedFilter = 'All';
   bool _showUnreadOnly = false;
   String _recipientFilter = 'All';
+  String _courseFilter = 'All';
 
   @override
   void initState() {
@@ -28,7 +29,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         _recipientFilter = 'Admin';
         break;
       case UserRole.staff:
-        _recipientFilter = 'Staff';
+        _recipientFilter = 'Teacher';
         break;
       case UserRole.student:
         _recipientFilter = 'Student';
@@ -41,7 +42,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
     final role = AuthService.instance.currentRole;
     if (role == UserRole.staff) {
-      filtered = filtered.where((notification) => notification.recipient == 'Staff').toList();
+      filtered = filtered.where((notification) => notification.recipient == 'Teacher' || notification.recipient == 'Staff').toList();
     } else if (role == UserRole.student) {
       filtered = filtered.where((notification) => notification.recipient == 'Student').toList();
     }
@@ -53,7 +54,19 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
     // Filter by recipient
     if (_recipientFilter != 'All') {
-      filtered = filtered.where((notification) => notification.recipient == _recipientFilter).toList();
+      if (_recipientFilter == 'Teacher') {
+        filtered = filtered.where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff').toList();
+      } else {
+        filtered = filtered.where((notification) => notification.recipient == _recipientFilter).toList();
+      }
+    }
+
+    // Filter by course
+    if (_courseFilter != 'All') {
+      filtered = filtered.where((n) {
+        final c = n.course?.trim().isNotEmpty == true ? n.course! : _parseCourse(n.message);
+        return c.toLowerCase() == _courseFilter.toLowerCase();
+      }).toList();
     }
 
     // Filter by read status
@@ -74,8 +87,29 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     return filtered;
   }
 
+  String _parseCourse(String message) {
+    final idx = message.toLowerCase().indexOf('course:');
+    if (idx == -1) return '';
+    final substr = message.substring(idx + 7).trim();
+    final stopIdx = substr.indexOf('•');
+    final raw = (stopIdx >= 0 ? substr.substring(0, stopIdx) : substr).trim();
+    return raw;
+  }
+
+  List<String> _courseOptions() {
+    final courses = <String>{};
+    for (final n in NotificationService.instance.notifications) {
+      final c = n.course?.trim().isNotEmpty == true ? n.course! : _parseCourse(n.message);
+      if (c.isNotEmpty) courses.add(c);
+    }
+    final list = ['All', ...courses.toList()..sort()];
+    return list;
+  }
+
   Color _getTypeColor(String type) {
     switch (type) {
+      case 'request':
+        return Colors.purple;
       case 'error':
         return Colors.red;
       case 'warning':
@@ -122,6 +156,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   IconData _getTypeIcon(String type) {
     switch (type) {
+      case 'request':
+        return Icons.assignment;
       case 'error':
         return Icons.error;
       case 'warning':
@@ -158,13 +194,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     setState(() {});
   }
 
-  void _createNewNotification() {
-    // TODO: Implement create notification dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Create notification feature coming soon!')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final role = AuthService.instance.currentRole;
@@ -193,19 +222,16 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
               // Filters
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final double fieldWidth = ((constraints.maxWidth - 12) / (showRecipientFilter ? 2 : 1))
-                        .clamp(160.0, 360.0);
-                    return Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        SizedBox(
-                          width: fieldWidth,
+                        Expanded(
                           child: DropdownButtonFormField<String>(
                             initialValue: _selectedFilter,
+                            isExpanded: true,
                             decoration: InputDecoration(
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -215,18 +241,19 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                               contentPadding:
                                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
-                            items: ['All', 'error', 'warning', 'success', 'info'].map((filter) {
+                            items: ['All', 'request', 'error', 'warning', 'success', 'info'].map((filter) {
                               return DropdownMenuItem(
                                   value: filter, child: Text(filter.toUpperCase()));
                             }).toList(),
                             onChanged: (value) => setState(() => _selectedFilter = value!),
                           ),
                         ),
-                        if (showRecipientFilter)
-                          SizedBox(
-                            width: fieldWidth,
+                        if (showRecipientFilter) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
                             child: DropdownButtonFormField<String>(
                               initialValue: _recipientFilter,
+                              isExpanded: true,
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -239,12 +266,43 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                               items: const [
                                 DropdownMenuItem(value: 'All', child: Text('ALL')),
                                 DropdownMenuItem(value: 'Admin', child: Text('ADMIN')),
-                                DropdownMenuItem(value: 'Staff', child: Text('STAFF')),
+                                DropdownMenuItem(value: 'Teacher', child: Text('TEACHER')),
                                 DropdownMenuItem(value: 'Student', child: Text('STUDENT')),
                               ],
                               onChanged: (value) => setState(() => _recipientFilter = value!),
                             ),
                           ),
+                          const SizedBox(width: 12),
+                        ] else
+                          const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            key: ValueKey('course_${_courseOptions().length}'),
+                            initialValue: _courseFilter,
+                            isExpanded: true,
+                            items: _courseOptions()
+                                .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase())))
+                                .toList(),
+                            onChanged: (v) => setState(() => _courseFilter = v ?? 'All'),
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
                         FilterChip(
                           label: const Text('Unread Only'),
                           selected: _showUnreadOnly,
@@ -257,8 +315,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                             label: const Text('Mark All Read'),
                           ),
                       ],
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
@@ -269,10 +327,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                   itemCount: _filteredNotifications.length,
                   itemBuilder: (context, index) {
                     final notification = _filteredNotifications[index];
-                    final currentDate = _formatDate(notification.timestamp);
-                    final previousDate = index > 0 ? _formatDate(_filteredNotifications[index - 1].timestamp) : null;
-                    final showDateHeader = index == 0 || currentDate != previousDate;
-
                     final bgColor = notification.read ? Colors.white : Colors.blue.shade50;
                     return InkWell(
                       onTap: () => _markAsRead(notification.id),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/notification_service.dart';
 import '../core/constants.dart';
+import '../core/theme.dart';
 
 class NotificationBanner extends StatelessWidget {
   const NotificationBanner({
@@ -46,7 +47,7 @@ class NotificationBanner extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const Icon(Icons.notifications, color: Colors.blueGrey, size: 24),
+                  const Icon(Icons.notifications, color: AppTheme.primaryColor, size: 24),
                   if (unread > 0)
                     Positioned(
                       right: -6,

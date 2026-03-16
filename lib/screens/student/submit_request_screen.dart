@@ -1,9 +1,12 @@
 // lib/screens/student/submit_request_screen.dart
 
 import 'package:flutter/material.dart';
-import '../../data/dummy_data.dart';
-import '../../models/request.dart';
+import 'package:flutter_application_inventorymanagement/data/api_client.dart';
+import 'package:flutter_application_inventorymanagement/models/instrument.dart';
 import '../../data/notification_service.dart';
+import '../../widgets/notification_icon.dart';
+import '../../data/auth_service.dart';
+import '../../core/theme.dart';
 
 class SubmitRequestScreen extends StatefulWidget {
   final String? preSelectedInstrument;
@@ -17,101 +20,113 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   final _formKey = GlobalKey<FormState>();
   late String _selectedInstrument;
   String _studentName = '';
+  String _course = '';
+  DateTime? _neededAt;
   String _purpose = '';
+  List<Instrument> _instruments = [];
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _selectedInstrument = widget.preSelectedInstrument ?? '';
+    _studentName = AuthService.instance.currentUsername;
+    _load();
   }
 
-  void _submitRequest() {
+  Future<void> _load() async {
+    try {
+      final items = await ApiClient.instance.fetchInstruments();
+      if (!mounted) return;
+      setState(() {
+        _instruments = items;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  void _submitRequest() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      final newRequest = Request(
-        studentName: _studentName,
-        instrumentName: _selectedInstrument,
-        purpose: _purpose,
-        status: RequestStatus.pending,
-      );
-      setState(() {
-        requests.add(newRequest);
-      });
-      NotificationService.instance.add(
-        NotificationItem(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          title: 'New Request Submitted',
-          message: '$_studentName requested $_selectedInstrument',
-          type: 'request',
-          timestamp: DateTime.now().toIso8601String(),
-          recipient: 'Staff',
-          priority: 'medium',
-        ),
-      );
-      NotificationService.instance.add(
-        NotificationItem(
-          id: 'admin_${DateTime.now().microsecondsSinceEpoch}',
-          title: 'New Request',
-          message: '$_studentName requested $_selectedInstrument',
-          type: 'request',
-          timestamp: DateTime.now().toIso8601String(),
-          recipient: 'Admin',
-          priority: 'low',
-        ),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request submitted successfully!')),
-      );
-      Navigator.pop(context);
+      if (_neededAt == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please set when you need the instrument')),
+        );
+        return;
+      }
+      try {
+        await ApiClient.instance.submitRequest(
+          studentName: _studentName,
+          instrumentName: _selectedInstrument,
+          purpose: _purpose,
+          course: _course,
+          neededAtIso: _neededAt!.toIso8601String(),
+        );
+        final neededStr = _neededAt!.toLocal().toString().split('.').first;
+        final extra = ' • Course: $_course • Needed: $neededStr';
+        NotificationService.instance.add(
+          NotificationItem(
+            id: 'student_${DateTime.now().microsecondsSinceEpoch}',
+            title: 'Request Submitted',
+            message: 'You requested $_selectedInstrument$extra',
+            type: 'success',
+            timestamp: DateTime.now().toIso8601String(),
+            recipient: 'Student',
+              course: _course,
+            priority: 'low',
+          ),
+        );
+        NotificationService.instance.add(
+          NotificationItem(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            title: 'New Request Submitted',
+            message: '$_studentName requested $_selectedInstrument$extra',
+            type: 'request',
+            timestamp: DateTime.now().toIso8601String(),
+            recipient: 'Teacher',
+              course: _course,
+            priority: 'medium',
+          ),
+        );
+        NotificationService.instance.add(
+          NotificationItem(
+            id: 'admin_${DateTime.now().microsecondsSinceEpoch}',
+            title: 'New Request',
+            message: '$_studentName requested $_selectedInstrument$extra',
+            type: 'request',
+            timestamp: DateTime.now().toIso8601String(),
+            recipient: 'Admin',
+              course: _course,
+            priority: 'low',
+          ),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Request submitted successfully!')),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isTeacher = AuthService.instance.currentRole == UserRole.staff;
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Submit Request'),
-        backgroundColor: Colors.teal.shade800,
+        title: Text(isTeacher ? 'Teacher Request' : 'Submit Request'),
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          AnimatedBuilder(
-            animation: NotificationService.instance,
-            builder: (context, _) {
-              final count = NotificationService.instance.unreadCount;
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications),
-                    tooltip: 'Notifications',
-                    onPressed: () => Navigator.pushNamed(context, '/notification_center'),
-                  ),
-                  if (count > 0)
-                    Positioned(
-                      right: 10,
-                      top: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '$count',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
+          const NotificationIcon(recipients: ['Student']),
         ],
       ),
       body: SingleChildScrollView(
@@ -121,25 +136,25 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.teal.shade800,
+                color: AppTheme.primaryColor,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(32),
                   bottomRight: Radius.circular(32),
                 ),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Create a New Request',
-                    style: TextStyle(
+                    isTeacher ? 'Teacher Request' : 'Create a New Request',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     'Provide details and select an instrument',
                     style: TextStyle(
                       color: Colors.white70,
@@ -159,12 +174,13 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionTitle('Student Details'),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            decoration: _inputDecoration('Your Name', Icons.person),
-                            validator: (value) => value!.isEmpty ? 'Required' : null,
-                            onSaved: (value) => _studentName = value!,
+                          _buildSectionTitle(isTeacher ? 'Teacher' : 'Student'),
+                          const SizedBox(height: 12),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.person, color: AppTheme.primaryColor),
+                            title: Text(_studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(isTeacher ? 'From your faculty account' : 'From your account'),
                           ),
                         ],
                       ),
@@ -176,17 +192,60 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                         children: [
                           _buildSectionTitle('Request Details'),
                           const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
+                          if (_loading)
+                            const LinearProgressIndicator(),
+                          if (!_loading)
+                            DropdownButtonFormField<String>(
                             decoration: _inputDecoration('Select Instrument', Icons.inventory),
                             isExpanded: true,
-                            items: instruments.map((instrument) {
+                            value: _selectedInstrument.isNotEmpty &&
+                                    _instruments.any((i) => i.name == _selectedInstrument)
+                                ? _selectedInstrument
+                                : null,
+                            items: _instruments.map((instrument) {
                               return DropdownMenuItem<String>(
                                 value: instrument.name,
                                 child: Text(instrument.name),
                               );
                             }).toList(),
-                            validator: (value) => value == null ? 'Required' : null,
-                            onChanged: (value) => _selectedInstrument = value!,
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                            onChanged: (value) => setState(() => _selectedInstrument = value ?? ''),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            decoration: _inputDecoration('Course', Icons.school),
+                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                            onSaved: (v) => _course = v!.trim(),
+                          ),
+                          const SizedBox(height: 16),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.event, color: AppTheme.primaryColor),
+                            title: const Text('Needed Date & Time'),
+                            subtitle: Text(
+                              _neededAt != null
+                                  ? '${_neededAt!.toLocal()}'.split('.').first
+                                  : 'Tap to set when you need the instrument',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            onTap: () async {
+                              final now = DateTime.now();
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: now,
+                                firstDate: now,
+                                lastDate: DateTime(now.year + 1),
+                              );
+                              if (date != null) {
+                                final time = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.now(),
+                                );
+                                if (time != null) {
+                                  setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+                                }
+                              }
+                            },
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
@@ -205,7 +264,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                       child: ElevatedButton(
                         onPressed: _submitRequest,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal.shade800,
+                          backgroundColor: AppTheme.secondaryColor,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -260,7 +319,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: Colors.teal.shade900,
+        color: AppTheme.primaryColor,
       ),
     );
   }
@@ -268,7 +327,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: Colors.teal.shade800),
+      prefixIcon: Icon(icon, color: AppTheme.primaryColor),
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       border: OutlineInputBorder(
@@ -281,10 +340,10 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.teal.shade800, width: 2),
+        borderSide: const BorderSide(color: AppTheme.secondaryColor, width: 2),
       ),
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: Colors.white,
     );
   }
 }

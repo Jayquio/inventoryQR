@@ -9,6 +9,7 @@ import '../../data/auth_service.dart';
 import '../../widgets/module_search_bar.dart';
 import '../../data/notification_service.dart';
 import '../../data/api_client.dart';
+import '../../data/app_config_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +22,36 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
+
+  Future<void> _openApiDialog() async {
+    final controller = TextEditingController(
+      text: AppConfigService.instance.baseUrl.isEmpty
+          ? 'http://192.168.1.88/inventory_api'
+          : AppConfigService.instance.baseUrl,
+    );
+    final newUrl = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Set API Base URL'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'http://192.168.1.88/inventory_api'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, controller.text), child: const Text('Save')),
+        ],
+      ),
+    );
+    if (newUrl != null && newUrl.trim().isNotEmpty) {
+      await AppConfigService.instance.setBaseUrl(newUrl);
+      ApiClient.setBaseUrl(AppConfigService.instance.baseUrl);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('API set to ${AppConfigService.instance.baseUrl}')),
+      );
+    }
+  }
 
   Future<void> _login() async {
     final username = _usernameController.text.trim();
@@ -45,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
           NotificationItem(
             id: DateTime.now().microsecondsSinceEpoch.toString(),
             title: 'User Login',
-            message: 'Admin logged in',
+            message: '${result['username']} logged in',
             type: 'login',
             timestamp: DateTime.now().toIso8601String(),
             recipient: 'Admin',
@@ -58,13 +89,13 @@ class _LoginScreenState extends State<LoginScreen> {
             MaterialPageRoute(builder: (_) => AdminDashboard()),
           );
         }
-      } else if (roleStr == 'staff') {
+      } else if (roleStr == 'teacher' || roleStr == 'staff') {
         AuthService.instance.setRole(UserRole.staff);
         NotificationService.instance.add(
           NotificationItem(
             id: DateTime.now().microsecondsSinceEpoch.toString(),
             title: 'User Login',
-            message: 'Staff logged in',
+            message: '${result['username']} logged in',
             type: 'login',
             timestamp: DateTime.now().toIso8601String(),
             recipient: 'Admin',
@@ -83,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
           NotificationItem(
             id: DateTime.now().microsecondsSinceEpoch.toString(),
             title: 'User Login',
-            message: 'Student logged in',
+            message: '${result['username']} logged in',
             type: 'login',
             timestamp: DateTime.now().toIso8601String(),
             recipient: 'Admin',
@@ -101,9 +132,11 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     } catch (e) {
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
     }
   }
 
@@ -144,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withValues(alpha: 0.3),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -158,14 +191,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Title
-                  ShaderMask(
-                    shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
-                    child: const Text(
-                      "MedLab Inventory",
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white, // Will be overridden by shader
+                  GestureDetector(
+                    onLongPress: _openApiDialog,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
+                      child: const Text(
+                        "MedLab Inventory",
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -206,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2),
+                            borderSide: const BorderSide(color: AppTheme.secondaryColor, width: 2),
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
@@ -242,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2),
+                            borderSide: const BorderSide(color: AppTheme.secondaryColor, width: 2),
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),

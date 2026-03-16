@@ -58,7 +58,7 @@ class LoginScreen extends StatelessWidget {
                   ),
                   ElevatedButton(
                     onPressed: () => _login(context, 'staff'),
-                    child: const Text("Login as Staff"),
+                    child: const Text("Login as Teacher"),
                   ),
                   ElevatedButton(
                     onPressed: () => _login(context, 'student'),

@@ -1,4 +1,5 @@
 class Instrument {
+  final String type;
   final String name;
   final String category;
   final int quantity;
@@ -10,6 +11,7 @@ class Instrument {
   final String? imageAsset;
 
   Instrument({
+    this.type = 'instrument',
     required this.name,
     required this.category,
     required this.quantity,
@@ -20,4 +22,34 @@ class Instrument {
     required this.lastMaintenance,
     this.imageAsset,
   });
+
+  factory Instrument.fromJson(Map<String, dynamic> json) {
+    return Instrument(
+      type: (json['type'] ?? 'instrument') as String,
+      name: json['name'] as String,
+      category: (json['category'] ?? '') as String,
+      quantity: int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
+      available: int.tryParse(json['available']?.toString() ?? '0') ?? 0,
+      status: (json['status'] ?? '') as String,
+      condition: (json['condition'] ?? '') as String,
+      location: (json['location'] ?? '') as String,
+      lastMaintenance: (json['lastMaintenance'] ?? '') as String,
+      imageAsset: json['imageAsset'] as String?,
+    );
+    }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'name': name,
+      'category': category,
+      'quantity': quantity,
+      'available': available,
+      'status': status,
+      'condition': condition,
+      'location': location,
+      'lastMaintenance': lastMaintenance,
+      if (imageAsset != null) 'imageAsset': imageAsset,
+    };
+  }
 }

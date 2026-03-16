@@ -13,40 +13,37 @@ class UserManagementScreen extends StatefulWidget {
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<Map<String, dynamic>> _users = [
-    {
-      'id': '1',
-      'name': 'Admin User',
-      'email': 'admin@jmcfi.edu.ph',
-      'role': 'Admin',
-      'status': 'Active',
-      'lastLogin': '2024-01-20 10:30 AM'
-    },
-    {
-      'id': '2',
-      'name': 'John Staff',
-      'email': 'john.staff@jmcfi.edu.ph',
-      'role': 'Staff',
-      'status': 'Active',
-      'lastLogin': '2024-01-20 09:15 AM'
-    },
-    {
-      'id': '3',
-      'name': 'Jane Student',
-      'email': 'jane.student@jmcfi.edu.ph',
-      'role': 'Student',
-      'status': 'Active',
-      'lastLogin': '2024-01-19 02:45 PM'
-    },
-    {
-      'id': '4',
-      'name': 'Bob Technician',
-      'email': 'bob.tech@jmcfi.edu.ph',
-      'role': 'Staff',
-      'status': 'Inactive',
-      'lastLogin': '2024-01-15 11:20 AM'
-    },
-  ];
+  List<Map<String, dynamic>> _users = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    try {
+      final data = await ApiClient.instance.fetchUsers();
+      if (!mounted) return;
+      setState(() {
+        _users = data
+            .map((e) => {
+                  'id': e['id']?.toString() ?? '',
+                  'username': e['username']?.toString() ?? '',
+                  'role': (e['role']?.toString() ?? '').toLowerCase(),
+                })
+            .toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
 
   void _addUser() {
     showDialog(
@@ -80,7 +77,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     decoration: const InputDecoration(labelText: 'Role'),
                     items: const [
                       DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                      DropdownMenuItem(value: 'Staff', child: Text('Staff')),
+                      DropdownMenuItem(value: 'Teacher', child: Text('Teacher')),
                       DropdownMenuItem(value: 'Student', child: Text('Student')),
                     ],
                     onChanged: (v) => setStateDialog(() => selectedRole = v ?? 'Student'),
@@ -108,15 +105,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         setStateDialog(() => submitting = true);
                         try {
                           final role = selectedRole.toLowerCase();
-                          await ApiClient.instance.createUser(username: u, password: p, role: role);
+                          final res = await ApiClient.instance.createUser(username: u, password: p, role: role);
                           setState(() {
                             _users.add({
-                              'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                              'name': u,
-                              'email': '$u@local',
-                              'role': selectedRole,
-                              'status': 'Active',
-                              'lastLogin': 'Never'
+                              'id': res['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                              'username': res['username']?.toString() ?? u,
+                              'role': (res['role']?.toString() ?? role).toLowerCase(),
                             });
                           });
                           if (context.mounted) Navigator.pop(context);
@@ -144,14 +138,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        String selectedRole = user['role'];
-        String selectedStatus = user['status'];
+        String selectedRole = _formatRole(user['role']);
         final passwordController = TextEditingController();
         bool submitting = false;
 
         return StatefulBuilder(
           builder: (context, setStateDialog) => AlertDialog(
-            title: Text('Edit ${user['name']}'),
+            title: Text('Edit ${user['username']}'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -161,7 +154,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     decoration: const InputDecoration(labelText: 'Role'),
                     items: const [
                       DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                      DropdownMenuItem(value: 'Staff', child: Text('Staff')),
+                      DropdownMenuItem(value: 'Teacher', child: Text('Teacher')),
                       DropdownMenuItem(value: 'Student', child: Text('Student')),
                     ],
                     onChanged: (v) => setStateDialog(() => selectedRole = v ?? selectedRole),
@@ -171,16 +164,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     controller: passwordController,
                     obscureText: true,
                     decoration: const InputDecoration(labelText: 'New Password (optional)'),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: selectedStatus,
-                    decoration: const InputDecoration(labelText: 'Status (UI only)'),
-                    items: const [
-                      DropdownMenuItem(value: 'Active', child: Text('Active')),
-                      DropdownMenuItem(value: 'Inactive', child: Text('Inactive')),
-                    ],
-                    onChanged: (v) => setStateDialog(() => selectedStatus = v ?? selectedStatus),
                   ),
                 ],
               ),
@@ -196,7 +179,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     : () async {
                         setStateDialog(() => submitting = true);
                         try {
-                          final username = user['name'];
+                          final username = user['username'];
                           final pw = passwordController.text.trim();
                           await ApiClient.instance.updateUser(
                             username: username,
@@ -206,8 +189,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           setState(() {
                             _users[index] = {
                               ...user,
-                              'role': selectedRole,
-                              'status': selectedStatus,
+                              'role': selectedRole.toLowerCase(),
                             };
                           });
                           if (context.mounted) Navigator.pop(context);
@@ -244,7 +226,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           TextButton(
             onPressed: () async {
               try {
-                final username = _users[index]['name'];
+                final username = _users[index]['username'];
                 await ApiClient.instance.deleteUser(username: username);
                 setState(() {
                   _users.removeAt(index);
@@ -268,10 +250,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Color _getRoleColor(String role) {
-    switch (role) {
+    switch (_formatRole(role)) {
       case 'Admin':
         return Colors.red;
-      case 'Staff':
+      case 'Teacher':
         return Colors.blue;
       case 'Student':
         return Colors.green;
@@ -280,8 +262,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     }
   }
 
-  Color _getStatusColor(String status) {
-    return status == 'Active' ? Colors.green : Colors.red;
+  String _formatRole(String role) {
+    final r = role.toLowerCase();
+    if (r == 'admin') return 'Admin';
+    if (r == 'teacher' || r == 'staff') return 'Teacher';
+    if (r == 'student') return 'Student';
+    return role;
   }
 
   @override
@@ -289,20 +275,28 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final searchTerm = _searchController.text.toLowerCase();
     final filteredUsers = _users.where((user) {
       if (searchTerm.isEmpty) return true;
-      return user['name'].toLowerCase().contains(searchTerm) ||
-          user['email'].toLowerCase().contains(searchTerm) ||
-          user['role'].toLowerCase().contains(searchTerm) ||
-          user['status'].toLowerCase().contains(searchTerm);
+      return (user['username'] as String).toLowerCase().contains(searchTerm) ||
+          (user['role'] as String).toLowerCase().contains(searchTerm);
     }).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Management'),
         actions: [
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))),
+            ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _addUser,
             tooltip: 'Add User',
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadUsers,
+            tooltip: 'Refresh',
           ),
         ],
       ),
@@ -347,10 +341,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       child: Column(
                         children: [
                           Text(
-                            _users.where((u) => u['status'] == 'Active').length.toString(),
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green),
+                            _users
+                                .where((u) {
+                                  final r = (u['role'] as String).toLowerCase();
+                                  return r == 'teacher' || r == 'staff';
+                                })
+                                .length
+                                .toString(),
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue),
                           ),
-                          const Text('Active Users'),
+                          const Text('Teacher Users'),
                         ],
                       ),
                     ),
@@ -383,10 +383,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    user['name'],
+                                    user['username'],
                                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                   ),
-                                  Text(user['email']),
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
@@ -397,24 +396,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                           borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Text(
-                                          user['role'],
+                                          _formatRole(user['role']),
                                           style: TextStyle(
                                             color: _getRoleColor(user['role']),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: _getStatusColor(user['status']).withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          user['status'],
-                                          style: TextStyle(
-                                            color: _getStatusColor(user['status']),
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -439,11 +423,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               ],
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Last Login: ${user['lastLogin']}',
-                          style: const TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ],
                     ),
