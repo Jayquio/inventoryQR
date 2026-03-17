@@ -9,6 +9,10 @@ class AppConfigService extends ChangeNotifier {
   AppConfigService._();
   static final AppConfigService instance = AppConfigService._();
 
+  // Shared API base URL constants (avoid duplicated literals)
+  static const String _localApiBase = 'http://localhost/inventory_api';
+  static const String _androidEmulatorApiBase = 'http://10.0.2.2/inventory_api';
+
   String _baseUrl = '';
   String get baseUrl => _baseUrl;
 
@@ -54,22 +58,10 @@ class AppConfigService extends ChangeNotifier {
         ip.startsWith('172.2') ||
         ip.startsWith('172.3');
   }
-
-<<<<<<< HEAD
-    // Candidate list in order of likelihood  
-    final List<String> candidates = [
-      // Windows/macOS desktop running XAMPP locally
-      'http://localhost/inventory_api',
-      // Android emulator talking to host
-      'http://10.0.2.2/inventory_api',
-    ];
-
-    // Add LAN IPs of the current device (useful if server is same machine and phones need LAN URL)
-=======
-  // Fix: extracted into separate method to reduce cognitive complexity
+  
+  // Collect LAN IP-based API candidates (server on same machine/LAN)
   Future<List<String>> _getLanCandidates() async {
     final candidates = <String>[];
->>>>>>> d636c45dd1bba92b66c9ecf9f0f29d82aac0dfe8
     try {
       final interfaces = await io.NetworkInterface.list(
         type: io.InternetAddressType.any,
@@ -89,11 +81,11 @@ class AppConfigService extends ChangeNotifier {
   }
 
   Future<String?> _detectBaseUrl() async {
-    if (kIsWeb) return 'http://localhost/inventory_api';
+    if (kIsWeb) return _localApiBase;
 
     final List<String> candidates = [
-      'http://localhost/inventory_api',
-      'http://10.0.2.2/inventory_api',
+      _localApiBase,
+      _androidEmulatorApiBase,
       ...await _getLanCandidates(),
     ];
 
