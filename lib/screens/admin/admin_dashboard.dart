@@ -179,15 +179,15 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory, AppTheme.primaryColor, '/view_instruments'),
+                    _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory, AppTheme.primaryColor, AppRoutes.viewInstruments),
                     _buildStatDivider(),
-                    _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle, AppTheme.secondaryColor, '/view_instruments'),
+                    _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.viewInstruments),
                     _buildStatDivider(),
                     _buildStatItem(context, 'Pending', pendingRequests.toString(), Icons.pending, AppTheme.primaryColor, '/manage_requests'),
                     _buildStatDivider(),
                     _buildStatItem(context, 'Approved', approvedRequests.toString(), Icons.check_circle, AppTheme.secondaryColor, '/manage_requests'),
                     _buildStatDivider(),
-                    _buildStatItem(context, 'Out of Stock', outOfStockInstruments.toString(), Icons.error_outline, Colors.red, '/view_instruments'),
+                    _buildStatItem(context, 'Out of Stock', outOfStockInstruments.toString(), Icons.error_outline, Colors.red, AppRoutes.viewInstruments),
                   ],
                 ),
               ),

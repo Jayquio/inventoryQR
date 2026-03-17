@@ -23,6 +23,7 @@ import 'screens/student/track_status_screen.dart';
 import 'screens/common/layout_preview_screen.dart';
 import 'data/theme_service.dart';
 import 'core/theme.dart';
+import 'core/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
@@ -123,7 +124,7 @@ class MyApp extends StatelessWidget {
               final args = ModalRoute.of(context)!.settings.arguments as String?;
               return SubmitRequestScreen(preSelectedInstrument: args);
             },
-            '/view_instruments': (context) {
+            AppRoutes.viewInstruments: (context) {
               final args = ModalRoute.of(context)!.settings.arguments as String?;
               return ViewInstrumentsScreen(userRole: args ?? 'Student');
             },

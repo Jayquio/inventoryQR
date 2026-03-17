@@ -209,7 +209,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         availableInstruments.toString(),
                         Icons.inventory,
                         AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/view_instruments', arguments: 'Student'),
+                        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Student'),
                       ),
                     ],
                   ),
@@ -265,7 +265,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         title: 'Instruments',
                         icon: Icons.inventory,
                       color: AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/view_instruments'),
+                        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments),
                       ),
                       _buildActionCard(
                         context,

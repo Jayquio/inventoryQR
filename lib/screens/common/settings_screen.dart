@@ -7,6 +7,7 @@ import '../../data/theme_service.dart';
 import '../../data/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/notification_service.dart';
+import '../../core/constants.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String userRole;
@@ -441,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           title: const Text('View Instruments'),
                           onTap: () {
                             Navigator.pop(ctx);
-                            Navigator.pushNamed(context, '/view_instruments', arguments: 'Student');
+                            Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Student');
                           },
                         ),
                         ListTile(

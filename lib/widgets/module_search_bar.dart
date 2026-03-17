@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import '../widgets/search_bar.dart';
+import '../core/constants.dart';
  
 class ModuleSearchItem {
   ModuleSearchItem({required this.title, required this.description, required this.route, required this.icon});
@@ -51,7 +52,7 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
       ModuleSearchItem(title: 'Transaction Logs', description: 'View system activity logs', route: '/transaction_logs', icon: Icons.history),
       ModuleSearchItem(title: 'Notification Center', description: 'View all notifications', route: '/notification_center', icon: Icons.notifications),
       ModuleSearchItem(title: 'Settings', description: 'Configure preferences', route: '/settings', icon: Icons.settings),
-      ModuleSearchItem(title: 'View Instruments', description: 'Browse available instruments', route: '/view_instruments', icon: Icons.inventory_2),
+      ModuleSearchItem(title: 'View Instruments', description: 'Browse available instruments', route: AppRoutes.viewInstruments, icon: Icons.inventory_2),
       ModuleSearchItem(title: 'Log Maintenance', description: 'Record maintenance activities', route: '/log_maintenance', icon: Icons.build),
       ModuleSearchItem(title: 'Handle Returns', description: 'Process item returns', route: '/handle_returns', icon: Icons.assignment_return),
       ModuleSearchItem(title: 'Submit Request', description: 'Request an instrument', route: '/submit_request', icon: Icons.add_circle),

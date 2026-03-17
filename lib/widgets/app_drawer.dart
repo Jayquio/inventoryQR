@@ -1,6 +1,7 @@
 // lib/widgets/app_drawer.dart
 
 import 'package:flutter/material.dart';
+import '../core/constants.dart';
 
 class AppDrawer extends StatelessWidget {
   final String userRole;
@@ -96,7 +97,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text("Monitor Inventory"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/view_instruments', arguments: 'Teacher');
+                Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher');
               },
             ),
             ListTile(
@@ -122,7 +123,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text("View Instruments"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/view_instruments', arguments: 'Student');
+                Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Student');
               },
             ),
             ListTile(

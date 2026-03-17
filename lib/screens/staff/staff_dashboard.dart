@@ -210,7 +210,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
                         lowStockInstruments.toString(),
                         Icons.warning,
                         Colors.red,
-                        onTap: () => Navigator.pushNamed(context, '/view_instruments', arguments: 'Teacher'),
+                        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
                       ),
                     ],
                   ),
@@ -271,7 +271,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
                         title: 'Monitor',
                         icon: Icons.inventory,
                         color: AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/view_instruments', arguments: 'Teacher'),
+                        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
                       ),
                       _buildActionCard(
                         context,

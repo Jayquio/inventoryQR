@@ -7,6 +7,10 @@ class UIConstants {
   static const Duration debounceDuration = Duration(milliseconds: 300);
 }
 
+class AppRoutes {
+  static const String viewInstruments = '/view_instruments';
+}
+
 class Breakpoints {
   static const double xs = 320;
   static const double sm = 768;
