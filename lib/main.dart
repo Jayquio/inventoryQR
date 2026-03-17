@@ -115,7 +115,7 @@ class MyApp extends StatelessWidget {
             '/admin_dashboard': (context) => const AdminDashboard(),
             '/staff_dashboard': (context) => const StaffDashboard(),
             '/student_dashboard': (context) => const StudentDashboard(),
-            '/manage_requests': (context) => const ManageRequestsScreen(),
+            AppRoutes.manageRequests: (context) => const ManageRequestsScreen(),
             '/manage_instruments': (context) => const ManageInstrumentsScreen(),
             '/user_management': (context) => const UserManagementScreen(),
             '/transaction_logs': (context) => const TransactionLogsScreen(),

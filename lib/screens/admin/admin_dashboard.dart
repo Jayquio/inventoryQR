@@ -183,9 +183,9 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                     _buildStatDivider(),
                     _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.viewInstruments),
                     _buildStatDivider(),
-                    _buildStatItem(context, 'Pending', pendingRequests.toString(), Icons.pending, AppTheme.primaryColor, '/manage_requests'),
+                    _buildStatItem(context, 'Pending', pendingRequests.toString(), Icons.pending, AppTheme.primaryColor, AppRoutes.manageRequests),
                     _buildStatDivider(),
-                    _buildStatItem(context, 'Approved', approvedRequests.toString(), Icons.check_circle, AppTheme.secondaryColor, '/manage_requests'),
+                    _buildStatItem(context, 'Approved', approvedRequests.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.manageRequests),
                     _buildStatDivider(),
                     _buildStatItem(context, 'Out of Stock', outOfStockInstruments.toString(), Icons.error_outline, Colors.red, AppRoutes.viewInstruments),
                   ],
@@ -246,7 +246,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                       title: 'Requests',
                       icon: Icons.assignment,
                       color: AppTheme.secondaryColor,
-                      onTap: () => Navigator.pushNamed(context, '/manage_requests'),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.manageRequests),
                     ),
                     _buildActionCard(
                       context,
@@ -495,95 +495,114 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    const Text(
-                      'Recent Activity',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(_recentExpanded ? Icons.expand_less : Icons.expand_more),
-                      onPressed: () => setState(() => _recentExpanded = !_recentExpanded),
-                    ),
-                  ],
-                ),
-                if (_recentExpanded) ...[
-                  const SizedBox(height: 8),
-                  if (pageItems.isEmpty)
-                    const Text('No activity', style: TextStyle(color: Colors.grey))
-                  else
-                    Column(
-                      children: pageItems.map((n) {
-                        final time = _formatTime(n.timestamp);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                _getTypeIcon(n.type),
-                                color: _getTypeColor(n.type),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      n.title,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      n.message,
-                                      style: const TextStyle(fontSize: 13),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                time,
-                                style: const TextStyle(color: Colors.grey, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: _notifPage > 0 ? () => setState(() => _notifPage -= 1) : null,
-                        child: const Text('Prev'),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('Page ${_notifPage + 1} of ${totalPages == 0 ? 1 : totalPages}'),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: (_notifPage + 1) < totalPages ? () => setState(() => _notifPage += 1) : null,
-                        child: const Text('Next'),
-                      ),
-                    ],
-                  ),
-                ],
+                _buildRecentActivityHeader(),
+                if (_recentExpanded) _buildRecentActivityExpandedBody(pageItems, totalPages),
               ],
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildRecentActivityHeader() {
+    return Row(
+      children: [
+        const Text(
+          'Recent Activity',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const Spacer(),
+        IconButton(
+          icon: Icon(_recentExpanded ? Icons.expand_less : Icons.expand_more),
+          onPressed: () => setState(() => _recentExpanded = !_recentExpanded),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentActivityExpandedBody(List<NotificationItem> pageItems, int totalPages) {
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        if (pageItems.isEmpty)
+          const Text('No activity', style: TextStyle(color: Colors.grey))
+        else
+          _buildRecentActivityList(pageItems),
+        const SizedBox(height: 8),
+        _buildRecentActivityPagination(totalPages),
+      ],
+    );
+  }
+
+  Widget _buildRecentActivityList(List<NotificationItem> pageItems) {
+    return Column(
+      children: pageItems.map((n) {
+        final time = _formatTime(n.timestamp);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                _getTypeIcon(n.type),
+                color: _getTypeColor(n.type),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      n.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      n.message,
+                      style: const TextStyle(fontSize: 13),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                time,
+                style: const TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildRecentActivityPagination(int totalPages) {
+    final safeTotalPages = totalPages == 0 ? 1 : totalPages;
+    return Row(
+      children: [
+        TextButton(
+          onPressed: _notifPage > 0 ? () => setState(() => _notifPage -= 1) : null,
+          child: const Text('Prev'),
+        ),
+        const SizedBox(width: 8),
+        Text('Page ${_notifPage + 1} of $safeTotalPages'),
+        const Spacer(),
+        TextButton(
+          onPressed: (_notifPage + 1) < totalPages ? () => setState(() => _notifPage += 1) : null,
+          child: const Text('Next'),
+        ),
+      ],
     );
   }
  

@@ -9,6 +9,7 @@ class UIConstants {
 
 class AppRoutes {
   static const String viewInstruments = '/view_instruments';
+  static const String manageRequests = '/manage_requests';
 }
 
 class Breakpoints {

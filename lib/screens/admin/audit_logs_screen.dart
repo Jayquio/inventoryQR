@@ -11,24 +11,27 @@ class TransactionLogsScreen extends StatefulWidget {
 }
 
 class _TransactionLogsScreenState extends State<TransactionLogsScreen> {
+  static const String _adminUser = 'Admin User';
+  static const String _adminIp = '192.168.1.100';
+
   final List<Map<String, dynamic>> _transactionLogs = [
     {
       'id': '1',
       'timestamp': '2024-01-20 10:30:15',
-      'user': 'Admin User',
+      'user': _adminUser,
       'action': 'LOGIN',
       'resource': 'System',
       'details': 'Successful login from Admin Computer',
-      'ip': '192.168.1.100'
+      'ip': _adminIp
     },
     {
       'id': '2',
       'timestamp': '2024-01-20 10:35:22',
-      'user': 'Admin User',
+      'user': _adminUser,
       'action': 'CREATE',
       'resource': 'Instrument',
       'details': 'Added new instrument: Microscope Olympus CX23',
-      'ip': '192.168.1.100'
+      'ip': _adminIp
     },
     {
       'id': '3',
@@ -60,11 +63,11 @@ class _TransactionLogsScreenState extends State<TransactionLogsScreen> {
     {
       'id': '6',
       'timestamp': '2024-01-20 11:15:12',
-      'user': 'Admin User',
+      'user': _adminUser,
       'action': 'DELETE',
       'resource': 'User',
       'details': 'Deleted inactive user account',
-      'ip': '192.168.1.100'
+      'ip': _adminIp
     },
     {
       'id': '7',
@@ -78,11 +81,11 @@ class _TransactionLogsScreenState extends State<TransactionLogsScreen> {
     {
       'id': '8',
       'timestamp': '2024-01-20 12:00:00',
-      'user': 'Admin User',
+      'user': _adminUser,
       'action': 'REPORT',
       'resource': 'System',
       'details': 'Generated monthly usage report',
-      'ip': '192.168.1.100'
+      'ip': _adminIp
     },
   ];
 

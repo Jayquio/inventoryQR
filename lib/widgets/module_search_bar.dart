@@ -44,7 +44,7 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
     super.initState();
     _modules = [
       ModuleSearchItem(title: 'Manage Instruments', description: 'Add, update, and view lab instruments', route: '/manage_instruments', icon: Icons.inventory),
-      ModuleSearchItem(title: 'Review Requests', description: 'Approve or reject instrument requests', route: '/manage_requests', icon: Icons.assignment),
+      ModuleSearchItem(title: 'Review Requests', description: 'Approve or reject instrument requests', route: AppRoutes.manageRequests, icon: Icons.assignment),
       ModuleSearchItem(title: 'Scan QR Code', description: 'Scan QR for quick actions', route: '/qr_scanner', icon: Icons.qr_code_scanner),
       ModuleSearchItem(title: 'Generate QR Code', description: 'Create borrow/receive/return QR (role-based)', route: '/qr_generator', icon: Icons.qr_code_2),
       ModuleSearchItem(title: 'My User QR', description: 'Show your user identity QR', route: '/user_qr', icon: Icons.badge),

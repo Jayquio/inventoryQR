@@ -55,7 +55,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text("Manage Requests"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/manage_requests');
+                Navigator.pushNamed(context, AppRoutes.manageRequests);
               },
             ),
             ListTile(
