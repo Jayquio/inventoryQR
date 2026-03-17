@@ -2,9 +2,12 @@ import 'package:flutter_application_inventorymanagement/models/instrument.dart';
 import 'package:flutter_application_inventorymanagement/models/maintenance.dart';
 import 'package:flutter_application_inventorymanagement/models/request.dart';
 
+const String _microscopeOlympusCx23 = 'Microscope Olympus CX23';
+const String _centrifugeMachine = 'Centrifuge Machine';
+
 List<Instrument> instruments = [
   Instrument(
-    name: 'Microscope Olympus CX23',
+    name: _microscopeOlympusCx23,
     category: 'Microscopy',
     quantity: 5,
     available: 3,
@@ -14,7 +17,7 @@ List<Instrument> instruments = [
     lastMaintenance: '2024-10-15',
   ),
   Instrument(
-    name: 'Centrifuge Machine',
+    name: _centrifugeMachine,
     category: 'Sample Processing',
     quantity: 3,
     available: 2,
@@ -79,13 +82,13 @@ List<Instrument> instruments = [
 List<Request> requests = [
   Request(
     studentName: 'John Dela Cruz',
-    instrumentName: 'Microscope Olympus CX23',
+    instrumentName: _microscopeOlympusCx23,
     purpose: 'Cell study experiment',
     status: RequestStatus.pending,
   ),
   Request(
     studentName: 'Maria Santos',
-    instrumentName: 'Centrifuge Machine',
+    instrumentName: _centrifugeMachine,
     purpose: 'Blood sample processing',
     status: RequestStatus.approved,
   ),
@@ -93,7 +96,7 @@ List<Request> requests = [
 
 List<Maintenance> maintenanceRecords = [
   Maintenance(
-    instrumentName: 'Microscope Olympus CX23',
+    instrumentName: _microscopeOlympusCx23,
     technician: 'John Doe',
     date: '2024-10-15',
     type: 'Routine Maintenance',
@@ -101,7 +104,7 @@ List<Maintenance> maintenanceRecords = [
     status: 'Completed',
   ),
   Maintenance(
-    instrumentName: 'Centrifuge Machine',
+    instrumentName: _centrifugeMachine,
     technician: 'Jane Smith',
     date: '2024-09-20',
     type: 'Calibration',
