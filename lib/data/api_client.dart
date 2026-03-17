@@ -6,11 +6,12 @@ import 'package:flutter_application_inventorymanagement/models/instrument.dart';
 class ApiClient {
   ApiClient._();
   static final ApiClient instance = ApiClient._();
-
   static String _overrideBaseUrl = '';
 
+  // Fix: constant to avoid duplicating 'Content-Type' header
+  static const Map<String, String> _jsonHeaders = {'Content-Type': 'application/json'};
+
   static void setBaseUrl(String url) {
-    // Trim and remove trailing slashes for consistent URL joining
     _overrideBaseUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
   }
 
@@ -18,7 +19,6 @@ class ApiClient {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     if (kIsWeb) return 'http://localhost/inventory_api';
     if (defaultTargetPlatform == TargetPlatform.android) {
-      // Android emulator -> host machine
       return 'http://10.0.2.2/inventory_api';
     }
     return 'http://localhost/inventory_api';
@@ -32,11 +32,10 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode({'username': username, 'password': password}),
         )
         .timeout(const Duration(seconds: 15));
-
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       return body.cast<String, dynamic>();
@@ -54,7 +53,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode({'username': username, 'password': password, 'role': role}),
         )
         .timeout(const Duration(seconds: 15));
@@ -80,7 +79,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 15));
@@ -97,7 +96,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode({'username': username}),
         )
         .timeout(const Duration(seconds: 15));
@@ -150,7 +149,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode(instrument.toJson()),
         )
         .timeout(const Duration(seconds: 15));
@@ -167,7 +166,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 15));
@@ -200,7 +199,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 15));
@@ -229,7 +228,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 15));
@@ -245,7 +244,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode({'type': type, 'instrument_name': instrumentName, 'processed_by': processedBy}),
         )
         .timeout(const Duration(seconds: 15));
@@ -264,7 +263,7 @@ class ApiClient {
     final res = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders,
           body: jsonEncode({'id': id}),
         )
         .timeout(const Duration(seconds: 15));
