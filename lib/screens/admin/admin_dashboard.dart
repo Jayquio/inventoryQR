@@ -23,7 +23,7 @@ class AdminDashboard extends StatelessWidget {
         title: const Text("Admin Dashboard"),
         backgroundColor: AppTheme.primaryColor,
         actions: [
-          const NotificationIcon(recipients: ['Admin'], types: ['login', 'request']),
+          const NotificationIcon(recipients: const ['Admin'], types: const ['login', 'request']),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -106,7 +106,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppTheme.backgroundLight, Colors.white],
+          colors: const [AppTheme.backgroundLight, Colors.white],
         ),
       ),
       child: SingleChildScrollView(
@@ -284,295 +284,305 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                   color: Colors.black87,
                 )),
             const SizedBox(height: 16),
-            AnimatedBuilder(
-              animation: NotificationService.instance,
-              builder: (context, _) {
-                final base = NotificationService.instance.notifications.take(20).toList();
-                final notifications = searchTerm.isEmpty
-                    ? base
-                    : base.where((n) =>
-                        '${n.title} ${n.message}'.toLowerCase().contains(searchTerm)).toList();
-                final unread = NotificationService.instance.unreadCount;
-                return Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: notifications.isEmpty
-                        ? const Text('No recent transactions.')
-                        : Column(
-                            children: [
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final narrow = constraints.maxWidth < 360;
-                                  if (narrow) {
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisSize: MainAxisSize.max,
-                                          children: [
-                                            const Icon(Icons.receipt_long),
-                                            const SizedBox(width: 8),
-                                            const Expanded(
-                                              child: Text(
-                                                'Transaction Logs',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            if (unread > 0)
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                decoration: BoxDecoration(
-                                        color: Colors.red,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  '$unread',
-                                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: TextButton.icon(
-                                              onPressed: () => Navigator.pushNamed(context, '/notification_center'),
-                                              icon: const Icon(Icons.open_in_new),
-                                              label: const Text('Open Center'),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }
-                                  return Row(
-                                    children: [
-                                      const Icon(Icons.receipt_long),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'Transaction Logs',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      if (unread > 0)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                        color: Colors.red,
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            '$unread',
-                                            style: const TextStyle(color: Colors.white, fontSize: 12),
-                                          ),
-                                        ),
-                                      const Spacer(),
-                                      TextButton.icon(
-                                        onPressed: () => Navigator.pushNamed(context, '/notification_center'),
-                                        icon: const Icon(Icons.open_in_new),
-                                        label: const Text('Open Center'),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              ...notifications.map((n) {
-                                final time = _formatTime(n.timestamp);
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.grey.shade200),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 14,
-                                          backgroundColor: _getTypeColor(n.type).withValues(alpha: 0.15),
-                                          child: Icon(
-                                            _getTypeIcon(n.type),
-                                            color: _getTypeColor(n.type),
-                                            size: 18,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                n.title,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                n.message,
-                                                style: const TextStyle(fontSize: 13, color: Colors.black87),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                          decoration: BoxDecoration(
-                                        color: AppTheme.wisteria.withValues(alpha: 0.2),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            time,
-                                        style: const TextStyle(color: Colors.black54, fontSize: 11),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
-                  ),
-                );
-              },
-            ),
+            _buildTransactionNotificationsCard(context, searchTerm),
  
             const SizedBox(height: 24),
  
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
+            _buildRecentActivityCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionNotificationsCard(BuildContext context, String searchTerm) {
+    return AnimatedBuilder(
+      animation: NotificationService.instance,
+      builder: (context, _) {
+        final base = NotificationService.instance.notifications.take(20).toList();
+        final notifications = searchTerm.isEmpty
+            ? base
+            : base
+                .where((n) => '${n.title} ${n.message}'.toLowerCase().contains(searchTerm))
+                .toList();
+        final unread = NotificationService.instance.unreadCount;
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: notifications.isEmpty
+                ? const Text('No recent transactions.')
+                : Column(
+                    children: [
+                      _buildTransactionHeader(unread),
+                      const SizedBox(height: 8),
+                      ...notifications.map(_buildTransactionNotificationRow),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTransactionHeader(int unread) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 360;
+        return narrow
+            ? _buildTransactionHeaderNarrow(context, unread)
+            : _buildTransactionHeaderWide(context, unread);
+      },
+    );
+  }
+
+  Widget _buildTransactionHeaderNarrow(BuildContext context, int unread) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            const Icon(Icons.receipt_long),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Transaction Logs',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (unread > 0) _buildUnreadPill(unread),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: TextButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/notification_center'),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Open Center'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTransactionHeaderWide(BuildContext context, int unread) {
+    return Row(
+      children: [
+        const Icon(Icons.receipt_long),
+        const SizedBox(width: 8),
+        const Text(
+          'Transaction Logs',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(width: 8),
+        if (unread > 0) _buildUnreadPill(unread),
+        const Spacer(),
+        TextButton.icon(
+          onPressed: () => Navigator.pushNamed(context, '/notification_center'),
+          icon: const Icon(Icons.open_in_new),
+          label: const Text('Open Center'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUnreadPill(int unread) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$unread',
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _buildTransactionNotificationRow(NotificationItem n) {
+    final time = _formatTime(n.timestamp);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: _getTypeColor(n.type).withValues(alpha: 0.15),
+              child: Icon(
+                _getTypeIcon(n.type),
+                color: _getTypeColor(n.type),
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    n.title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    n.message,
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.wisteria.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: AnimatedBuilder(
-                animation: NotificationService.instance,
-                builder: (context, _) {
-                  final pageItems = NotificationService.instance.getPaginatedNotifications(_notifPage);
-                  final total = NotificationService.instance.notifications.length;
-                  final totalPages = (total / 10).ceil();
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            const Text(
-                              'Recent Activity',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              icon: Icon(_recentExpanded ? Icons.expand_less : Icons.expand_more),
-                              onPressed: () => setState(() => _recentExpanded = !_recentExpanded),
-                            ),
-                          ],
-                        ),
-                        if (_recentExpanded) ...[
-                          const SizedBox(height: 8),
-                          if (pageItems.isEmpty)
-                            const Text('No activity', style: TextStyle(color: Colors.grey))
-                          else
-                            Column(
-                              children: pageItems.map((n) {
-                                final time = _formatTime(n.timestamp);
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Icon(
-                                        _getTypeIcon(n.type),
-                                        color: _getTypeColor(n.type),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              n.title,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              n.message,
-                                              style: const TextStyle(fontSize: 13),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        time,
-                                        style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              TextButton(
-                                onPressed: _notifPage > 0
-                                    ? () => setState(() => _notifPage -= 1)
-                                    : null,
-                                child: const Text('Prev'),
-                              ),
-                              const SizedBox(width: 8),
-                              Text('Page ${_notifPage + 1} of ${totalPages == 0 ? 1 : totalPages}'),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: (_notifPage + 1) < totalPages
-                                    ? () => setState(() => _notifPage += 1)
-                                    : null,
-                                child: const Text('Next'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
+              child: Text(
+                time,
+                style: const TextStyle(color: Colors.black54, fontSize: 11),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecentActivityCard() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: AnimatedBuilder(
+        animation: NotificationService.instance,
+        builder: (context, _) {
+          final pageItems = NotificationService.instance.getPaginatedNotifications(_notifPage);
+          final total = NotificationService.instance.notifications.length;
+          final totalPages = (total / 10).ceil();
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Recent Activity',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(_recentExpanded ? Icons.expand_less : Icons.expand_more),
+                      onPressed: () => setState(() => _recentExpanded = !_recentExpanded),
+                    ),
+                  ],
+                ),
+                if (_recentExpanded) ...[
+                  const SizedBox(height: 8),
+                  if (pageItems.isEmpty)
+                    const Text('No activity', style: TextStyle(color: Colors.grey))
+                  else
+                    Column(
+                      children: pageItems.map((n) {
+                        final time = _formatTime(n.timestamp);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                _getTypeIcon(n.type),
+                                color: _getTypeColor(n.type),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      n.title,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      n.message,
+                                      style: const TextStyle(fontSize: 13),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                time,
+                                style: const TextStyle(color: Colors.grey, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: _notifPage > 0 ? () => setState(() => _notifPage -= 1) : null,
+                        child: const Text('Prev'),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('Page ${_notifPage + 1} of ${totalPages == 0 ? 1 : totalPages}'),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: (_notifPage + 1) < totalPages ? () => setState(() => _notifPage += 1) : null,
+                        child: const Text('Next'),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
