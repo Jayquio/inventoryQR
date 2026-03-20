@@ -168,19 +168,17 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
             const Text('Instrument', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             if (_loading)
-              const LinearProgressIndicator()
+              const Center(child: CircularProgressIndicator())
             else
               DropdownButtonFormField<String>(
-                value: _selectedInstrument?.isNotEmpty == true && _instrumentNames.contains(_selectedInstrument)
-                    ? _selectedInstrument
-                    : null,
+                value: _selectedInstrument,
                 items: _instrumentNames
                     .map((name) => DropdownMenuItem<String>(value: name, child: Text(name)))
                     .toList(),
                 onChanged: (v) => setState(() => _selectedInstrument = v),
                 decoration: const InputDecoration(
+                  labelText: 'Select Instrument',
                   border: OutlineInputBorder(),
-                  hintText: 'Select instrument',
                 ),
               ),
             const SizedBox(height: 16),

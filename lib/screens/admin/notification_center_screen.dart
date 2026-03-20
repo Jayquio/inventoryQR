@@ -40,51 +40,61 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   List<NotificationItem> get _filteredNotifications {
     List<NotificationItem> filtered = NotificationService.instance.notifications;
 
-    final role = AuthService.instance.currentRole;
-    if (role == UserRole.staff) {
-      filtered = filtered.where((notification) => notification.recipient == 'Teacher' || notification.recipient == 'Staff').toList();
-    } else if (role == UserRole.student) {
-      filtered = filtered.where((notification) => notification.recipient == 'Student').toList();
-    }
-
-    // Filter by type
-    if (_selectedFilter != 'All') {
-      filtered = filtered.where((notification) => notification.type == _selectedFilter).toList();
-    }
-
-    // Filter by recipient
-    if (_recipientFilter != 'All') {
-      if (_recipientFilter == 'Teacher') {
-        filtered = filtered.where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff').toList();
-      } else {
-        filtered = filtered.where((notification) => notification.recipient == _recipientFilter).toList();
-      }
-    }
-
-    // Filter by course
-    if (_courseFilter != 'All') {
-      filtered = filtered.where((n) {
-        final c = n.course?.trim().isNotEmpty == true ? n.course! : _parseCourse(n.message);
-        return c.toLowerCase() == _courseFilter.toLowerCase();
-      }).toList();
-    }
-
-    // Filter by read status
-    if (_showUnreadOnly) {
-      filtered = filtered.where((notification) => !notification.read).toList();
-    }
-
-    if (_searchController.text.isNotEmpty) {
-      final searchTerm = _searchController.text.toLowerCase();
-      filtered = filtered.where((notification) {
-        return notification.title.toLowerCase().contains(searchTerm) ||
-            notification.message.toLowerCase().contains(searchTerm) ||
-            notification.recipient.toLowerCase().contains(searchTerm) ||
-            notification.priority.toLowerCase().contains(searchTerm);
-      }).toList();
-    }
+    filtered = _filterByRole(filtered);
+    filtered = _filterByType(filtered);
+    filtered = _filterByRecipient(filtered);
+    filtered = _filterByCourse(filtered);
+    filtered = _filterByReadStatus(filtered);
+    filtered = _filterBySearch(filtered);
 
     return filtered;
+  }
+
+  List<NotificationItem> _filterByRole(List<NotificationItem> items) {
+    final role = AuthService.instance.currentRole;
+    if (role == UserRole.staff) {
+      return items.where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff').toList();
+    } else if (role == UserRole.student) {
+      return items.where((n) => n.recipient == 'Student').toList();
+    }
+    return items;
+  }
+
+  List<NotificationItem> _filterByType(List<NotificationItem> items) {
+    if (_selectedFilter == 'All') return items;
+    return items.where((n) => n.type == _selectedFilter).toList();
+  }
+
+  List<NotificationItem> _filterByRecipient(List<NotificationItem> items) {
+    if (_recipientFilter == 'All') return items;
+    if (_recipientFilter == 'Teacher') {
+      return items.where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff').toList();
+    }
+    return items.where((n) => n.recipient == _recipientFilter).toList();
+  }
+
+  List<NotificationItem> _filterByCourse(List<NotificationItem> items) {
+    if (_courseFilter == 'All') return items;
+    return items.where((n) {
+      final c = n.course?.trim().isNotEmpty == true ? n.course! : _parseCourse(n.message);
+      return c.toLowerCase() == _courseFilter.toLowerCase();
+    }).toList();
+  }
+
+  List<NotificationItem> _filterByReadStatus(List<NotificationItem> items) {
+    if (!_showUnreadOnly) return items;
+    return items.where((n) => !n.read).toList();
+  }
+
+  List<NotificationItem> _filterBySearch(List<NotificationItem> items) {
+    if (_searchController.text.isEmpty) return items;
+    final searchTerm = _searchController.text.toLowerCase();
+    return items.where((n) {
+      return n.title.toLowerCase().contains(searchTerm) ||
+          n.message.toLowerCase().contains(searchTerm) ||
+          n.recipient.toLowerCase().contains(searchTerm) ||
+          n.priority.toLowerCase().contains(searchTerm);
+    }).toList();
   }
 
   String _parseCourse(String message) {
@@ -196,9 +206,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final role = AuthService.instance.currentRole;
-    final bool showRecipientFilter = role == UserRole.admin;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notification Center'),
@@ -206,229 +213,239 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       body: AnimatedBuilder(
         animation: NotificationService.instance,
         builder: (context, _) {
-          final unreadCount = NotificationService.instance.unreadCount;
           return Column(
             children: [
-              // Search
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DebouncedSearchBar(
-                  controller: _searchController,
-                  hintText: 'Search notifications...',
-                  onChanged: (value) => setState(() {}),
-                ),
-              ),
+              _buildSearchSection(),
               const SizedBox(height: 12),
-              // Filters
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _selectedFilter,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                            items: ['All', 'request', 'error', 'warning', 'success', 'info'].map((filter) {
-                              return DropdownMenuItem(
-                                  value: filter, child: Text(filter.toUpperCase()));
-                            }).toList(),
-                            onChanged: (value) => setState(() => _selectedFilter = value!),
-                          ),
-                        ),
-                        if (showRecipientFilter) ...[
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _recipientFilter,
-                              isExpanded: true,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: 'All', child: Text('ALL')),
-                                DropdownMenuItem(value: 'Admin', child: Text('ADMIN')),
-                                DropdownMenuItem(value: 'Teacher', child: Text('TEACHER')),
-                                DropdownMenuItem(value: 'Student', child: Text('STUDENT')),
-                              ],
-                              onChanged: (value) => setState(() => _recipientFilter = value!),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                        ] else
-                          const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            key: ValueKey('course_${_courseOptions().length}'),
-                            initialValue: _courseFilter,
-                            isExpanded: true,
-                            items: _courseOptions()
-                                .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase())))
-                                .toList(),
-                            onChanged: (v) => setState(() => _courseFilter = v ?? 'All'),
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        FilterChip(
-                          label: const Text('Unread Only'),
-                          selected: _showUnreadOnly,
-                          onSelected: (selected) => setState(() => _showUnreadOnly = selected),
-                        ),
-                        if (unreadCount > 0)
-                          TextButton.icon(
-                            onPressed: _markAllAsRead,
-                            icon: const Icon(Icons.done_all),
-                            label: const Text('Mark All Read'),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              _buildFilterSection(),
               const SizedBox(height: 16),
-              // Notifications List
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _filteredNotifications.length,
-                  itemBuilder: (context, index) {
-                    final notification = _filteredNotifications[index];
-                    final bgColor = notification.read ? Colors.white : Colors.blue.shade50;
-                    return InkWell(
-                      onTap: () => _markAsRead(notification.id),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundColor: _getTypeColor(notification.type).withValues(alpha: 0.1),
-                              child: Icon(
-                                _getTypeIcon(notification.type),
-                                color: _getTypeColor(notification.type),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          notification.title,
-                                          style: TextStyle(
-                                            fontWeight: notification.read ? FontWeight.w500 : FontWeight.bold,
-                                            fontSize: 14,
-                                            color: notification.read ? Colors.black87 : Colors.black,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _formatDate(notification.timestamp),
-                                        style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    notification.message,
-                                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        _formatTime(notification.timestamp),
-                                        style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: _getPriorityColor(notification.priority).withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          notification.priority.toUpperCase(),
-                                          style: TextStyle(
-                                            color: _getPriorityColor(notification.priority),
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            if (!notification.read)
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(
-                                  color: Colors.blue,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                child: _buildNotificationList(),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildSearchSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: DebouncedSearchBar(
+        controller: _searchController,
+        hintText: 'Search notifications...',
+        onChanged: (value) => setState(() {}),
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    final role = AuthService.instance.currentRole;
+    final bool showRecipientFilter = role == UserRole.admin;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildDropdown(
+                  value: _selectedFilter,
+                  items: ['All', 'request', 'error', 'warning', 'success', 'info'],
+                  onChanged: (value) => setState(() => _selectedFilter = value!),
+                ),
+              ),
+              if (showRecipientFilter) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildDropdown(
+                    value: _recipientFilter,
+                    items: ['All', 'Admin', 'Teacher', 'Student'],
+                    onChanged: (value) => setState(() => _recipientFilter = value!),
+                  ),
+                ),
+              ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildDropdown(
+                  value: _courseFilter,
+                  items: _courseOptions(),
+                  onChanged: (v) => setState(() => _courseFilter = v ?? 'All'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildChipRow(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      isExpanded: true,
+      decoration: InputDecoration(
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      items: items.map((filter) {
+        return DropdownMenuItem(value: filter, child: Text(filter.toUpperCase()));
+      }).toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _buildChipRow() {
+    final unreadCount = NotificationService.instance.unreadCount;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        FilterChip(
+          label: const Text('Unread Only'),
+          selected: _showUnreadOnly,
+          onSelected: (selected) => setState(() => _showUnreadOnly = selected),
+        ),
+        if (unreadCount > 0)
+          TextButton.icon(
+            onPressed: _markAllAsRead,
+            icon: const Icon(Icons.done_all),
+            label: const Text('Mark All Read'),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationList() {
+    final notifications = _filteredNotifications;
+    if (notifications.isEmpty) {
+      return const Center(child: Text('No notifications found.'));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: notifications.length,
+      itemBuilder: (context, index) {
+        return _buildNotificationItem(notifications[index]);
+      },
+    );
+  }
+
+  Widget _buildNotificationItem(NotificationItem notification) {
+    final bgColor = notification.read ? Colors.white : Colors.blue.shade50;
+    return InkWell(
+      onTap: () => _markAsRead(notification.id),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLeadingIcon(notification),
+            const SizedBox(width: 10),
+            Expanded(child: _buildNotificationBody(notification)),
+            if (!notification.read) _buildUnreadIndicator(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLeadingIcon(NotificationItem n) {
+    final color = _getTypeColor(n.type);
+    return CircleAvatar(
+      radius: 18,
+      backgroundColor: color.withValues(alpha: 0.1),
+      child: Icon(_getTypeIcon(n.type), color: color),
+    );
+  }
+
+  Widget _buildNotificationBody(NotificationItem n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                n.title,
+                style: TextStyle(
+                  fontWeight: n.read ? FontWeight.w500 : FontWeight.bold,
+                  fontSize: 14,
+                  color: n.read ? Colors.black87 : Colors.black,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _formatDate(n.timestamp),
+              style: const TextStyle(color: Colors.grey, fontSize: 11),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          n.message,
+          style: const TextStyle(fontSize: 13, color: Colors.black87),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        _buildBottomInfo(n),
+      ],
+    );
+  }
+
+  Widget _buildBottomInfo(NotificationItem n) {
+    return Row(
+      children: [
+        Text(
+          _formatTime(n.timestamp),
+          style: const TextStyle(color: Colors.grey, fontSize: 11),
+        ),
+        const SizedBox(width: 8),
+        _buildPriorityBadge(n.priority),
+      ],
+    );
+  }
+
+  Widget _buildPriorityBadge(String priority) {
+    final color = _getPriorityColor(priority);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        priority.toUpperCase(),
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildUnreadIndicator() {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
     );
   }
 

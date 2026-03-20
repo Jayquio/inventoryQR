@@ -17,6 +17,9 @@ class ManageRequestsScreen extends StatefulWidget {
 }
 
 class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
+  static const String _instrumentPrefix = 'Instrument: ';
+  static const String _exceptionPrefix = 'Exception: ';
+
   final TextEditingController _searchController = TextEditingController();
   int _page = 0;
   final int _perPage = 10;
@@ -25,23 +28,27 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   Future<void> _markReturned(int index) async {
     final req = requests[index];
     if (req.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot sync return: request id is missing.')),
-      );
-    } else {
-      try {
-        await ApiClient.instance.updateRequestStatus(
-          id: req.id,
-          status: 'returned',
-          user: AuthService.instance.currentUsername,
-        );
-      } catch (e) {
-        if (!mounted) return;
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+          const SnackBar(content: Text('Cannot sync return: request id is missing.')),
         );
-        return;
       }
+      return;
+    }
+    
+    try {
+      await ApiClient.instance.updateRequestStatus(
+        id: req.id,
+        status: 'returned',
+        user: AuthService.instance.currentUsername,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        );
+      }
+      return;
     }
 
     if (!mounted) return;
@@ -77,9 +84,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         priority: 'low',
       ),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Marked as returned.')),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Marked as returned.')),
+      );
+    }
   }
 
   void _approveRequest(int index) {
@@ -177,9 +186,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   priority: 'low',
                 ),
               );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Request deleted.')),
-              );
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Request deleted.')),
+                );
+              }
             },
             child: const Text('Delete'),
           ),
@@ -227,7 +238,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _statusFilter,
+                  initialValue: _statusFilter,
+                  isExpanded: true,
                   items: const [
                     DropdownMenuItem(value: 'All', child: Text('All')),
                     DropdownMenuItem(value: 'Pending', child: Text('Pending')),
@@ -477,22 +489,32 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     _searchController.dispose();
     super.dispose();
   }
-}
+
   List<TextSpan> _highlightSpans(String text, String term) {
-    if (term.isEmpty) return [const TextSpan(text: 'Instrument: '), TextSpan(text: text)];
+    final List<TextSpan> spans = [const TextSpan(text: _instrumentPrefix)];
+    if (term.isEmpty) {
+      spans.add(TextSpan(text: text));
+      return spans;
+    }
     final lowerText = text.toLowerCase();
-    final idx = lowerText.indexOf(term);
-    if (idx < 0) return [const TextSpan(text: 'Instrument: '), TextSpan(text: text)];
-    return [
-      const TextSpan(text: 'Instrument: '),
-      TextSpan(text: text.substring(0, idx)),
-      TextSpan(
+    int start = 0;
+    int idx;
+    while ((idx = lowerText.indexOf(term, start)) != -1) {
+      if (idx > start) {
+        spans.add(TextSpan(text: text.substring(start, idx)));
+      }
+      spans.add(TextSpan(
         text: text.substring(idx, idx + term.length),
         style: const TextStyle(backgroundColor: Color(0xFFFFF59D)),
-      ),
-      TextSpan(text: text.substring(idx + term.length)),
-    ];
+      ));
+      start = idx + term.length;
+    }
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+    return spans;
   }
+}
 
 class _HoverListCard extends StatefulWidget {
   const _HoverListCard({

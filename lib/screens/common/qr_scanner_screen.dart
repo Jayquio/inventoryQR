@@ -16,6 +16,7 @@ class QrScannerScreen extends StatefulWidget {
 }
 
 class _QrScannerScreenState extends State<QrScannerScreen> {
+  static const String _exceptionPrefix = 'Exception: ';
   MobileScannerController cameraController = MobileScannerController();
   bool _isScanning = true;
 
@@ -96,19 +97,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           }
 
           final dbRoleStr = (userRec['role']?.toString() ?? '').toLowerCase();
-          UserRole? parsedRole;
-          switch (dbRoleStr) {
-            case 'admin':
-              parsedRole = UserRole.admin;
-              break;
-            case 'staff':
-            case 'teacher':
-              parsedRole = UserRole.staff;
-              break;
-            case 'student':
-              parsedRole = UserRole.student;
-              break;
-          }
+          UserRole? parsedRole = _parseUserRole(dbRoleStr);
 
           if (parsedRole == null) {
             if (!mounted) return;
@@ -134,18 +123,18 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             ),
           );
           
-          final route = parsedRole == UserRole.admin
-              ? '/admin_dashboard'
-              : (parsedRole == UserRole.staff ? '/staff_dashboard' : '/student_dashboard');
-          if (!mounted) return;
-          Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
+          final route = _getDashboardRoute(parsedRole);
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
+          }
           return;
         } catch (e) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login error: ${e.toString().replaceFirst('Exception: ', '')}')),
-          );
-          setState(() => _isScanning = true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Login error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+            );
+            setState(() => _isScanning = true);
+          }
           return;
         }
       } else {
@@ -164,8 +153,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
-                  setState(() => _isScanning = true);
+                  if (context.mounted) Navigator.pop(context);
+                  if (mounted) setState(() => _isScanning = true);
                 },
                 child: const Text('OK'),
               ),
@@ -213,10 +202,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     );
 
     if (instrument.name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Instrument not found!')),
-      );
-      setState(() => _isScanning = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Instrument not found!')),
+        );
+        setState(() => _isScanning = true);
+      }
       return;
     }
 
@@ -224,198 +215,157 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     if (type == null) {
       if (role == UserRole.student || role == UserRole.staff) {
         if (instrument.available <= 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Instrument not available')),
-          );
-          setState(() => _isScanning = true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Instrument not available')),
+            );
+            setState(() => _isScanning = true);
+          }
           return;
         }
-        Navigator.pushNamed(context, '/submit_request', arguments: instrument.name)
-            .then((_) => setState(() => _isScanning = true));
+        if (mounted) {
+          Navigator.pushNamed(context, '/submit_request', arguments: instrument.name)
+              .then((_) {
+            if (mounted) setState(() => _isScanning = true);
+          });
+        }
         return;
       } else {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(instrument.name),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Category: ${instrument.category}"),
-                Text("Quantity: ${instrument.quantity}"),
-                Text("Available: ${instrument.available}"),
-                Text("Borrowed: ${instrument.quantity - instrument.available}"),
-                Text("Status: ${instrument.status}"),
-                Text("Condition: ${instrument.condition}"),
-                Text("Location: ${instrument.location}"),
-                Text("Last Maintenance: ${instrument.lastMaintenance}"),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-              if (instrument.available > 0)
-                ElevatedButton(
-                  onPressed: () async {
-                    try {
-                      final updatedAvail = await ApiClient.instance.processTransaction(
-                        type: 'receive',
-                        instrumentName: instrument.name,
-                        processedBy: AuthService.instance.currentUsername,
-                      );
-                      if (updatedAvail != null) {
-                        instrument.available = updatedAvail;
-                      }
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Received (borrow processed) via QR')),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-                      );
-                    }
-                    setState(() => _isScanning = true);
-                  },
-                  child: const Text('Receive (Borrow)'),
-                ),
-              if (instrument.available < instrument.quantity)
-                OutlinedButton(
-                  onPressed: () async {
-                    try {
-                      final updatedAvail = await ApiClient.instance.processTransaction(
-                        type: 'return',
-                        instrumentName: instrument.name,
-                        processedBy: AuthService.instance.currentUsername,
-                      );
-                      if (updatedAvail != null) {
-                        instrument.available = updatedAvail;
-                      }
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Returned via QR')),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-                      );
-                    }
-                    setState(() => _isScanning = true);
-                  },
-                  child: const Text('Return'),
-                ),
-            ],
-          ),
-        ).then((_) => setState(() => _isScanning = true));
+        _showInstrumentDetailsDialog(context, instrument, type);
         return;
       }
     }
     if (type == 'borrow' && !(role == UserRole.student || role == UserRole.staff)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unauthorized: Only Students/Teachers can use BORROW QR codes')),
-      );
-      setState(() => _isScanning = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unauthorized: Only Students/Teachers can use BORROW QR codes')),
+        );
+        setState(() => _isScanning = true);
+      }
       return;
     }
     if ((type == 'receive' || type == 'return') &&
         role != UserRole.admin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unauthorized: Only Admin can use RECEIVE/RETURN QR codes')),
-      );
-      setState(() => _isScanning = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unauthorized: Only Admin can use RECEIVE/RETURN QR codes')),
+        );
+        setState(() => _isScanning = true);
+      }
       return;
     }
 
     if ((role == UserRole.student || role == UserRole.staff) && type == 'borrow') {
       if (instrument.available <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Instrument not available')),
-        );
-        setState(() => _isScanning = true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Instrument not available')),
+          );
+          setState(() => _isScanning = true);
+        }
         return;
       }
-      Navigator.pushNamed(context, '/submit_request', arguments: instrument.name)
-          .then((_) => setState(() => _isScanning = true));
+      if (mounted) {
+        Navigator.pushNamed(context, '/submit_request', arguments: instrument.name)
+            .then((_) {
+          if (mounted) setState(() => _isScanning = true);
+        });
+      }
     } else {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(instrument.name),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Category: ${instrument.category}"),
-              Text("Quantity: ${instrument.quantity}"),
-              Text("Available: ${instrument.available}"),
-              Text("Borrowed: ${instrument.quantity - instrument.available}"),
-              Text("Status: ${instrument.status}"),
-              Text("Condition: ${instrument.condition}"),
-              Text("Location: ${instrument.location}"),
-              Text("Last Maintenance: ${instrument.lastMaintenance}"),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-            if (instrument.available > 0 && type == 'receive')
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    final updatedAvail = await ApiClient.instance.processTransaction(
-                      type: 'receive',
-                      instrumentName: instrument.name,
-                      processedBy: AuthService.instance.currentUsername,
-                    );
-                    if (updatedAvail != null) {
-                      instrument.available = updatedAvail;
-                    }
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Received (borrow processed) via QR')),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-                    );
-                  }
-                  setState(() => _isScanning = true);
-                },
-                child: const Text('Receive (Borrow)'),
-              ),
-            if (instrument.available < instrument.quantity && type == 'return')
-              OutlinedButton(
-                onPressed: () async {
-                  try {
-                    final updatedAvail = await ApiClient.instance.processTransaction(
-                      type: 'return',
-                      instrumentName: instrument.name,
-                      processedBy: AuthService.instance.currentUsername,
-                    );
-                    if (updatedAvail != null) {
-                      instrument.available = updatedAvail;
-                    }
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Returned via QR')),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-                    );
-                  }
-                  setState(() => _isScanning = true);
-                },
-                child: const Text('Return'),
-              ),
+      _showInstrumentDetailsDialog(context, instrument, type);
+    }
+  }
+
+  void _showInstrumentDetailsDialog(BuildContext context, Instrument instrument, String? type) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(instrument.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Category: ${instrument.category}"),
+            Text("Quantity: ${instrument.quantity}"),
+            Text("Available: ${instrument.available}"),
+            Text("Borrowed: ${instrument.quantity - instrument.available}"),
+            Text("Status: ${instrument.status}"),
+            Text("Condition: ${instrument.condition}"),
+            Text("Location: ${instrument.location}"),
+            Text("Last Maintenance: ${instrument.lastMaintenance}"),
           ],
         ),
-      ).then((_) => setState(() => _isScanning = true));
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Close'),
+          ),
+          if (instrument.available > 0 && (type == null || type == 'receive'))
+            ElevatedButton(
+              onPressed: () => _processTransaction(context, instrument, 'receive'),
+              child: const Text('Receive (Borrow)'),
+            ),
+          if (instrument.available < instrument.quantity && (type == null || type == 'return'))
+            OutlinedButton(
+              onPressed: () => _processTransaction(context, instrument, 'return'),
+              child: const Text('Return'),
+            ),
+        ],
+      ),
+    ).then((_) {
+      if (mounted) setState(() => _isScanning = true);
+    });
+  }
+
+  Future<void> _processTransaction(BuildContext context, Instrument instrument, String txType) async {
+    try {
+      final updatedAvail = await ApiClient.instance.processTransaction(
+        type: txType,
+        instrumentName: instrument.name,
+        processedBy: AuthService.instance.currentUsername,
+      );
+      if (updatedAvail != null) {
+        instrument.available = updatedAvail;
+      }
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(txType == 'receive' ? 'Received (borrow processed) via QR' : 'Returned via QR')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        );
+      }
+    }
+  }
+
+  UserRole? _parseUserRole(String roleStr) {
+    switch (roleStr) {
+      case 'admin':
+        return UserRole.admin;
+      case 'staff':
+      case 'teacher':
+        return UserRole.staff;
+      case 'student':
+        return UserRole.student;
+      default:
+        return null;
+    }
+  }
+
+  String _getDashboardRoute(UserRole role) {
+    switch (role) {
+      case UserRole.admin:
+        return '/admin_dashboard';
+      case UserRole.staff:
+        return '/staff_dashboard';
+      case UserRole.student:
+        return '/student_dashboard';
     }
   }
 

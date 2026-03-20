@@ -49,70 +49,83 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   }
 
   void _submitRequest() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      if (_neededAt == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please set when you need the instrument')),
-        );
-        return;
-      }
-      try {
-        await ApiClient.instance.submitRequest(
-          studentName: _studentName,
-          instrumentName: _selectedInstrument,
-          purpose: _purpose,
-          course: _course,
-          neededAtIso: _neededAt!.toIso8601String(),
-        );
-        final neededStr = _neededAt!.toLocal().toString().split('.').first;
-        final extra = ' • Course: $_course • Needed: $neededStr';
-        NotificationService.instance.add(
-          NotificationItem(
-            id: 'student_${DateTime.now().microsecondsSinceEpoch}',
-            title: 'Request Submitted',
-            message: 'You requested $_selectedInstrument$extra',
-            type: 'success',
-            timestamp: DateTime.now().toIso8601String(),
-            recipient: 'Student',
-              course: _course,
-            priority: 'low',
-          ),
-        );
-        NotificationService.instance.add(
-          NotificationItem(
-            id: DateTime.now().microsecondsSinceEpoch.toString(),
-            title: 'New Request Submitted',
-            message: '$_studentName requested $_selectedInstrument$extra',
-            type: 'request',
-            timestamp: DateTime.now().toIso8601String(),
-            recipient: 'Teacher',
-              course: _course,
-            priority: 'medium',
-          ),
-        );
-        NotificationService.instance.add(
-          NotificationItem(
-            id: 'admin_${DateTime.now().microsecondsSinceEpoch}',
-            title: 'New Request',
-            message: '$_studentName requested $_selectedInstrument$extra',
-            type: 'request',
-            timestamp: DateTime.now().toIso8601String(),
-            recipient: 'Admin',
-              course: _course,
-            priority: 'low',
-          ),
-        );
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+
+    if (_neededAt == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please set when you need the instrument')),
+      );
+      return;
+    }
+
+    try {
+      await ApiClient.instance.submitRequest(
+        studentName: _studentName,
+        instrumentName: _selectedInstrument,
+        purpose: _purpose,
+        course: _course,
+        neededAtIso: _neededAt!.toIso8601String(),
+      );
+      
+      _addRequestNotifications();
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Request submitted successfully!')),
         );
         Navigator.pop(context);
-      } catch (e) {
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }
     }
+  }
+
+  void _addRequestNotifications() {
+    final neededStr = _neededAt!.toLocal().toString().split('.').first;
+    final extra = ' • Course: $_course • Needed: $neededStr';
+    final nowIso = DateTime.now().toIso8601String();
+
+    NotificationService.instance.add(
+      NotificationItem(
+        id: 'student_${DateTime.now().microsecondsSinceEpoch}',
+        title: 'Request Submitted',
+        message: 'You requested $_selectedInstrument$extra',
+        type: 'success',
+        timestamp: nowIso,
+        recipient: 'Student',
+        course: _course,
+        priority: 'low',
+      ),
+    );
+    NotificationService.instance.add(
+      NotificationItem(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        title: 'New Request Submitted',
+        message: '$_studentName requested $_selectedInstrument$extra',
+        type: 'request',
+        timestamp: nowIso,
+        recipient: 'Teacher',
+        course: _course,
+        priority: 'medium',
+      ),
+    );
+    NotificationService.instance.add(
+      NotificationItem(
+        id: 'admin_${DateTime.now().microsecondsSinceEpoch}',
+        title: 'New Request',
+        message: '$_studentName requested $_selectedInstrument$extra',
+        type: 'request',
+        timestamp: nowIso,
+        recipient: 'Admin',
+        course: _course,
+        priority: 'low',
+      ),
+    );
   }
 
   @override

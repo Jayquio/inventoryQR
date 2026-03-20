@@ -120,7 +120,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
                           DropdownButtonFormField<String>(
                             decoration: _inputDecoration('Select Instrument', Icons.inventory),
                             isExpanded: true,
-                            value: widget.preSelectedInstrument != null && widget.preSelectedInstrument!.isNotEmpty
+                            initialValue: widget.preSelectedInstrument != null && widget.preSelectedInstrument!.isNotEmpty
                                 ? widget.preSelectedInstrument
                                 : null,
                             items: instruments.map((instrument) {

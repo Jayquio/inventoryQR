@@ -218,14 +218,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
   void _showInstrumentForm({Instrument? instrument, int? index}) {
     final bool isEdit = instrument != null && index != null;
-    final nameController = TextEditingController(text: instrument?.name ?? '');
-    final categoryController = TextEditingController(text: instrument?.category ?? '');
-    final quantityController = TextEditingController(text: instrument?.quantity.toString() ?? '');
-    final availableController = TextEditingController(text: instrument?.available.toString() ?? '');
-    final statusController = TextEditingController(text: instrument?.status ?? '');
-    final conditionController = TextEditingController(text: instrument?.condition ?? '');
-    final locationController = TextEditingController(text: instrument?.location ?? '');
-    final lastMaintenanceController = TextEditingController(text: instrument?.lastMaintenance ?? '');
+    final controllers = _InstrumentFormControllers(instrument: instrument);
     String typeValue = instrument?.type ?? 'instrument';
 
     showDialog(
@@ -235,29 +228,10 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) => AlertDialog(
             title: Text(isEdit ? 'Update Instrument' : 'Add Instrument'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: typeValue,
-                    items: const [
-                      DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
-                      DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
-                    ],
-                    onChanged: (v) => setStateDialog(() => typeValue = v ?? 'instrument'),
-                    decoration: const InputDecoration(labelText: 'Type'),
-                  ),
-                  TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-                  TextField(controller: categoryController, decoration: const InputDecoration(labelText: 'Category')),
-                  TextField(controller: quantityController, decoration: const InputDecoration(labelText: 'Quantity'), keyboardType: TextInputType.number),
-                  TextField(controller: availableController, decoration: const InputDecoration(labelText: 'Available'), keyboardType: TextInputType.number),
-                  TextField(controller: statusController, decoration: const InputDecoration(labelText: 'Status')),
-                  TextField(controller: conditionController, decoration: const InputDecoration(labelText: 'Condition')),
-                  TextField(controller: locationController, decoration: const InputDecoration(labelText: 'Location')),
-                  TextField(controller: lastMaintenanceController, decoration: const InputDecoration(labelText: _lastMaintenanceLabel)),
-                ],
-              ),
+            content: _InstrumentFormContent(
+              typeValue: typeValue,
+              controllers: controllers,
+              onTypeChanged: (v) => setStateDialog(() => typeValue = v),
             ),
             actions: [
               TextButton(
@@ -265,70 +239,94 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: submitting ? null : () async {
-                  final qty = int.tryParse(quantityController.text) ?? -1;
-                  final avail = int.tryParse(availableController.text) ?? -1;
-                  
-                  if (nameController.text.trim().isEmpty) {
-                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name is required')));
-                    return;
-                  }
-                  if (qty < 0 || avail < 0) {
-                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quantity and Available must be valid numbers')));
-                    return;
-                  }
-                  if (avail > qty) {
-                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Available cannot exceed Quantity')));
-                    return;
-                  }
-
-                  setStateDialog(() => submitting = true);
-                  try {
-                    final item = Instrument(
-                      type: typeValue,
-                      name: nameController.text.trim(),
-                      category: categoryController.text.trim(),
-                      quantity: qty,
-                      available: avail,
-                      status: statusController.text.trim(),
-                      condition: conditionController.text.trim(),
-                      location: locationController.text.trim(),
-                      lastMaintenance: lastMaintenanceController.text.trim(),
-                    );
-                    
-                    if (isEdit) {
-                      await ApiClient.instance.updateInstrument(originalName: instrument.name, instrument: item);
-                      if (mounted) setState(() => _instruments[index] = item);
-                    } else {
-                      await ApiClient.instance.createInstrument(instrument: item);
-                      if (mounted) setState(() => _instruments.add(item));
-                    }
-                    
-                    if (context.mounted) Navigator.pop(context);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
-                      );
-                    }
-                    
-                    if (!isEdit && context.mounted) {
-                      _showQrDialog(context, item.name);
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      setStateDialog(() => submitting = false);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
-                      );
-                    }
-                  }
-                },
+                onPressed: submitting ? null : () => _submitForm(
+                  context: context,
+                  isEdit: isEdit,
+                  index: index,
+                  originalName: instrument?.name,
+                  typeValue: typeValue,
+                  controllers: controllers,
+                  setSubmitting: (v) => setStateDialog(() => submitting = v),
+                ),
                 child: Text(isEdit ? 'Update' : 'Add'),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Future<void> _submitForm({
+    required BuildContext context,
+    required bool isEdit,
+    int? index,
+    String? originalName,
+    required String typeValue,
+    required _InstrumentFormControllers controllers,
+    required Function(bool) setSubmitting,
+  }) async {
+    final qty = int.tryParse(controllers.quantity.text) ?? -1;
+    final avail = int.tryParse(controllers.available.text) ?? -1;
+
+    if (!_validateForm(context, controllers.name.text, qty, avail)) return;
+
+    setSubmitting(true);
+    try {
+      final item = _createInstrumentFromControllers(typeValue, controllers, qty, avail);
+
+      if (isEdit) {
+        await ApiClient.instance.updateInstrument(originalName: originalName!, instrument: item);
+        if (mounted) setState(() => _instruments[index!] = item);
+      } else {
+        await ApiClient.instance.createInstrument(instrument: item);
+        if (mounted) setState(() => _instruments.add(item));
+      }
+
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
+        );
+        if (!isEdit) _showQrDialog(context, item.name);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        setSubmitting(false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        );
+      }
+    }
+  }
+
+  bool _validateForm(BuildContext context, String name, int qty, int avail) {
+    if (name.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name is required')));
+      return false;
+    }
+    if (qty < 0 || avail < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quantity and Available must be valid numbers')));
+      return false;
+    }
+    if (avail > qty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Available cannot exceed Quantity')));
+      return false;
+    }
+    return true;
+  }
+
+  Instrument _createInstrumentFromControllers(String type, _InstrumentFormControllers controllers, int qty, int avail) {
+    return Instrument(
+      type: type,
+      name: controllers.name.text.trim(),
+      category: controllers.category.text.trim(),
+      quantity: qty,
+      available: avail,
+      status: controllers.status.text.trim(),
+      condition: controllers.condition.text.trim(),
+      location: controllers.location.text.trim(),
+      lastMaintenance: controllers.lastMaintenance.text.trim(),
     );
   }
 
@@ -575,6 +573,78 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+}
+
+class _InstrumentFormControllers {
+  final TextEditingController name;
+  final TextEditingController category;
+  final TextEditingController quantity;
+  final TextEditingController available;
+  final TextEditingController status;
+  final TextEditingController condition;
+  final TextEditingController location;
+  final TextEditingController lastMaintenance;
+
+  _InstrumentFormControllers({Instrument? instrument})
+      : name = TextEditingController(text: instrument?.name ?? ''),
+        category = TextEditingController(text: instrument?.category ?? ''),
+        quantity = TextEditingController(text: instrument?.quantity.toString() ?? ''),
+        available = TextEditingController(text: instrument?.available.toString() ?? ''),
+        status = TextEditingController(text: instrument?.status ?? ''),
+        condition = TextEditingController(text: instrument?.condition ?? ''),
+        location = TextEditingController(text: instrument?.location ?? ''),
+        lastMaintenance = TextEditingController(text: instrument?.lastMaintenance ?? '');
+}
+
+class _InstrumentFormContent extends StatelessWidget {
+  final String typeValue;
+  final _InstrumentFormControllers controllers;
+  final Function(String) onTypeChanged;
+
+  const _InstrumentFormContent({
+    required this.typeValue,
+    required this.controllers,
+    required this.onTypeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButtonFormField<String>(
+            initialValue: typeValue,
+            items: const [
+              DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
+              DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
+            ],
+            onChanged: (v) => onTypeChanged(v ?? 'instrument'),
+            decoration: const InputDecoration(labelText: 'Type'),
+          ),
+          TextField(controller: controllers.name, decoration: const InputDecoration(labelText: 'Name')),
+          TextField(controller: controllers.category, decoration: const InputDecoration(labelText: 'Category')),
+          TextField(
+            controller: controllers.quantity,
+            decoration: const InputDecoration(labelText: 'Quantity'),
+            keyboardType: TextInputType.number,
+          ),
+          TextField(
+            controller: controllers.available,
+            decoration: const InputDecoration(labelText: 'Available'),
+            keyboardType: TextInputType.number,
+          ),
+          TextField(controller: controllers.status, decoration: const InputDecoration(labelText: 'Status')),
+          TextField(controller: controllers.condition, decoration: const InputDecoration(labelText: 'Condition')),
+          TextField(controller: controllers.location, decoration: const InputDecoration(labelText: 'Location')),
+          TextField(
+            controller: controllers.lastMaintenance,
+            decoration: const InputDecoration(labelText: _ManageInstrumentsScreenState._lastMaintenanceLabel),
+          ),
+        ],
+      ),
+    );
   }
 }
 

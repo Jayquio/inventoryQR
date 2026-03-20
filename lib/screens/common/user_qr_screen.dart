@@ -81,9 +81,9 @@ class _UserQrScreenState extends State<UserQrScreen> {
                 }),
                 decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Filter by role'),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               if (_loadingUsers)
-                const LinearProgressIndicator()
+                const Center(child: CircularProgressIndicator())
               else
                 DropdownButtonFormField<String>(
                   value: _selectedUsername,
