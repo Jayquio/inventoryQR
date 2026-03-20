@@ -25,18 +25,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
-            tooltip: 'Server Settings',
-          ),
-        ],
-      ),
       body: Container(
         decoration: _buildBackgroundDecoration(),
         child: Center(
@@ -187,6 +175,19 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
+
+      // Local Admin Bypass (Works without XAMPP for maintenance)
+      if (username == 'admin' && password == 'admin123') {
+        AuthService.instance.setUsername(username);
+        AuthService.instance.setRole(UserRole.admin);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Local Maintenance Mode Activated')),
+          );
+          Navigator.pushReplacementNamed(context, '/admin_dashboard');
+        }
+        return;
+      }
 
       final res = await ApiClient.instance.login(username: username, password: password);
       final roleStr = (res['role']?.toString() ?? '').toLowerCase();

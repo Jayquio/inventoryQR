@@ -29,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final role = widget.userRole;
+    
     return Scaffold(
       appBar: AppBar(
         title: GestureDetector(
