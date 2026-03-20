@@ -17,6 +17,8 @@ class ManageRequestsScreen extends StatefulWidget {
 }
 
 class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
+  static const String _exceptionPrefix = 'Exception: ';
+
   final TextEditingController _searchController = TextEditingController();
   List<Request> _requests = [];
   bool _loading = true;
@@ -49,7 +51,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
     }
   }
@@ -75,9 +77,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         );
       });
     }).catchError((e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        );
+      }
     });
     NotificationService.instance.add(
       NotificationItem(
@@ -142,7 +146,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                 setState(() => _loading = false);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                    SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                   );
                 }
               }
@@ -169,7 +173,6 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
     final searchTerm = _searchController.text.toLowerCase();
     final filteredRequests = _requests.where((req) {
       if (searchTerm.isEmpty) return true;
@@ -188,76 +191,92 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
               padding: EdgeInsets.all(16),
               child: LinearProgressIndicator(),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: DebouncedSearchBar(
-              controller: _searchController,
-              hintText: 'Search requests...',
-              onChanged: (value) => setState(() {}),
-            ),
-          ),
+          _buildSearchBar(),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: ListView.builder(
-                key: ValueKey(filteredRequests.length),
-                padding: const EdgeInsets.all(16),
-                itemCount: filteredRequests.length,
-                itemBuilder: (context, index) {
-                  final request = filteredRequests[index];
-                  final originalIndex = _requests.indexOf(request);
-                  return _HoverListCard(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    onTap: () => _showRequestDetails(request),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            request.studentName,
-                            style: TextStyle(fontSize: R.text(18, w), fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 6),
-                          Text("Instrument: ${request.instrumentName}"),
-                          const SizedBox(height: 6),
-                          Text(
-                            "Status: ${request.status.name}",
-                            style: TextStyle(color: _getStatusColor(request.status)),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              if (request.status == RequestStatus.pending) ...[
-                                ElevatedButton(
-                                  onPressed: () => _updateRequestStatus(originalIndex, RequestStatus.approved),
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                                  child: const Text("Approve"),
-                                ),
-                                const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed: () => _updateRequestStatus(originalIndex, RequestStatus.rejected),
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                  child: const Text("Reject"),
-                                ),
-                              ] else ...[
-                                OutlinedButton(
-                                  onPressed: () => _deleteRequest(originalIndex),
-                                  child: const Text("Delete"),
-                                ),
-                              ]
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+            child: _buildRequestList(filteredRequests),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: DebouncedSearchBar(
+        controller: _searchController,
+        hintText: 'Search requests...',
+        onChanged: (value) => setState(() {}),
+      ),
+    );
+  }
+
+  Widget _buildRequestList(List<Request> filteredRequests) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: ListView.builder(
+        key: ValueKey(filteredRequests.length),
+        padding: const EdgeInsets.all(16),
+        itemCount: filteredRequests.length,
+        itemBuilder: (context, index) {
+          final request = filteredRequests[index];
+          final originalIndex = _requests.indexOf(request);
+          return _buildRequestCard(request, originalIndex);
+        },
+      ),
+    );
+  }
+
+  Widget _buildRequestCard(Request request, int originalIndex) {
+    final w = MediaQuery.of(context).size.width;
+    return _HoverListCard(
+      margin: const EdgeInsets.only(bottom: 16),
+      onTap: () => _showRequestDetails(request),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              request.studentName,
+              style: TextStyle(fontSize: R.text(18, w), fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text("Instrument: ${request.instrumentName}"),
+            const SizedBox(height: 6),
+            Text(
+              "Status: ${request.status.name}",
+              style: TextStyle(color: _getStatusColor(request.status)),
+            ),
+            const SizedBox(height: 12),
+            _buildActionButtons(request, originalIndex),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(Request request, int originalIndex) {
+    if (request.status == RequestStatus.pending) {
+      return Row(
+        children: [
+          ElevatedButton(
+            onPressed: () => _updateRequestStatus(originalIndex, RequestStatus.approved),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text("Approve"),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () => _updateRequestStatus(originalIndex, RequestStatus.rejected),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text("Reject"),
+          ),
+        ],
+      );
+    }
+    return OutlinedButton(
+      onPressed: () => _deleteRequest(originalIndex),
+      child: const Text("Delete"),
     );
   }
 

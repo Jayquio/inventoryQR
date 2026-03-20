@@ -15,6 +15,9 @@ class ManageInstrumentsScreen extends StatefulWidget {
 }
 
 class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
+  static const String _exceptionPrefix = 'Exception: ';
+  static const String _lastMaintenanceLabel = 'Last Maintenance';
+
   late List<Instrument> _instruments;
   final TextEditingController _searchController = TextEditingController();
   int _page = 0;
@@ -41,7 +44,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
     }
   }
@@ -79,7 +82,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
             _buildDetailRow('Status', instrument.status),
             _buildDetailRow('Condition', instrument.condition),
             _buildDetailRow('Location', instrument.location),
-            _buildDetailRow('Last Maintenance', instrument.lastMaintenance),
+            _buildDetailRow(_lastMaintenanceLabel, instrument.lastMaintenance),
             const SizedBox(height: 16),
             LayoutBuilder(
               builder: (ctx, constraints) {
@@ -206,23 +209,32 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   }
  
   void _editInstrument(int index) {
-    final instrument = _instruments[index];
+    _showInstrumentForm(instrument: _instruments[index], index: index);
+  }
+
+  void _addInstrument() {
+    _showInstrumentForm();
+  }
+
+  void _showInstrumentForm({Instrument? instrument, int? index}) {
+    final bool isEdit = instrument != null && index != null;
+    final nameController = TextEditingController(text: instrument?.name ?? '');
+    final categoryController = TextEditingController(text: instrument?.category ?? '');
+    final quantityController = TextEditingController(text: instrument?.quantity.toString() ?? '');
+    final availableController = TextEditingController(text: instrument?.available.toString() ?? '');
+    final statusController = TextEditingController(text: instrument?.status ?? '');
+    final conditionController = TextEditingController(text: instrument?.condition ?? '');
+    final locationController = TextEditingController(text: instrument?.location ?? '');
+    final lastMaintenanceController = TextEditingController(text: instrument?.lastMaintenance ?? '');
+    String typeValue = instrument?.type ?? 'instrument';
+
     showDialog(
       context: context,
       builder: (context) {
-        String typeValue = instrument.type;
-        final nameController = TextEditingController(text: instrument.name);
-        final categoryController = TextEditingController(text: instrument.category);
-        final quantityController = TextEditingController(text: instrument.quantity.toString());
-        final availableController = TextEditingController(text: instrument.available.toString());
-        final statusController = TextEditingController(text: instrument.status);
-        final conditionController = TextEditingController(text: instrument.condition);
-        final locationController = TextEditingController(text: instrument.location);
-        final lastMaintenanceController = TextEditingController(text: instrument.lastMaintenance);
         bool submitting = false;
         return StatefulBuilder(
           builder: (context, setStateDialog) => AlertDialog(
-            title: const Text('Update Instrument'),
+            title: Text(isEdit ? 'Update Instrument' : 'Add Instrument'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -243,7 +255,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
                   TextField(controller: statusController, decoration: const InputDecoration(labelText: 'Status')),
                   TextField(controller: conditionController, decoration: const InputDecoration(labelText: 'Condition')),
                   TextField(controller: locationController, decoration: const InputDecoration(labelText: 'Location')),
-                  TextField(controller: lastMaintenanceController, decoration: const InputDecoration(labelText: 'Last Maintenance')),
+                  TextField(controller: lastMaintenanceController, decoration: const InputDecoration(labelText: _lastMaintenanceLabel)),
                 ],
               ),
             ),
@@ -253,53 +265,65 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: submitting
-                    ? null
-                    : () async {
-                        final qty = int.tryParse(quantityController.text) ?? -1;
-                        final avail = int.tryParse(availableController.text) ?? -1;
-                        if (nameController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name is required')));
-                          return;
-                        }
-                        if (qty < 0 || avail < 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quantity and Available must be valid numbers')));
-                          return;
-                        }
-                        if (avail > qty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Available cannot exceed Quantity')));
-                          return;
-                        }
-                        setStateDialog(() => submitting = true);
-                        try {
-                          final updated = Instrument(
-                            type: typeValue,
-                            name: nameController.text.trim(),
-                            category: categoryController.text.trim(),
-                            quantity: qty,
-                            available: avail,
-                            status: statusController.text.trim(),
-                            condition: conditionController.text.trim(),
-                            location: locationController.text.trim(),
-                            lastMaintenance: lastMaintenanceController.text.trim(),
-                          );
-                          await ApiClient.instance.updateInstrument(originalName: instrument.name, instrument: updated);
-                          if (!mounted) return;
-                          setState(() {
-                            _instruments[index] = updated;
-                          });
-                          if (context.mounted) Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Instrument updated in database')),
-                          );
-                        } catch (e) {
-                          setStateDialog(() => submitting = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-                          );
-                        }
-                      },
-                child: const Text('Update'),
+                onPressed: submitting ? null : () async {
+                  final qty = int.tryParse(quantityController.text) ?? -1;
+                  final avail = int.tryParse(availableController.text) ?? -1;
+                  
+                  if (nameController.text.trim().isEmpty) {
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name is required')));
+                    return;
+                  }
+                  if (qty < 0 || avail < 0) {
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quantity and Available must be valid numbers')));
+                    return;
+                  }
+                  if (avail > qty) {
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Available cannot exceed Quantity')));
+                    return;
+                  }
+
+                  setStateDialog(() => submitting = true);
+                  try {
+                    final item = Instrument(
+                      type: typeValue,
+                      name: nameController.text.trim(),
+                      category: categoryController.text.trim(),
+                      quantity: qty,
+                      available: avail,
+                      status: statusController.text.trim(),
+                      condition: conditionController.text.trim(),
+                      location: locationController.text.trim(),
+                      lastMaintenance: lastMaintenanceController.text.trim(),
+                    );
+                    
+                    if (isEdit) {
+                      await ApiClient.instance.updateInstrument(originalName: instrument.name, instrument: item);
+                      if (mounted) setState(() => _instruments[index] = item);
+                    } else {
+                      await ApiClient.instance.createInstrument(instrument: item);
+                      if (mounted) setState(() => _instruments.add(item));
+                    }
+                    
+                    if (context.mounted) Navigator.pop(context);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
+                      );
+                    }
+                    
+                    if (!isEdit && context.mounted) {
+                      _showQrDialog(context, item.name);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      setStateDialog(() => submitting = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+                      );
+                    }
+                  }
+                },
+                child: Text(isEdit ? 'Update' : 'Add'),
               ),
             ],
           ),
@@ -307,158 +331,34 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       },
     );
   }
-  void _addInstrument() {
+
+  void _showQrDialog(BuildContext context, String name) {
     showDialog(
       context: context,
-      builder: (context) {
-        String typeValue = 'instrument';
-        final nameController = TextEditingController();
-        final categoryController = TextEditingController();
-        final quantityController = TextEditingController();
-        final availableController = TextEditingController();
-        final statusController = TextEditingController();
-        final conditionController = TextEditingController();
-        final locationController = TextEditingController();
-        final lastMaintenanceController = TextEditingController();
-
-        bool submitting = false;
-        return StatefulBuilder(
-          builder: (context, setStateDialog) => AlertDialog(
-            title: const Text('Add Instrument'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: typeValue,
-                    items: const [
-                      DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
-                      DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
-                    ],
-                    onChanged: (v) => setStateDialog(() => typeValue = v ?? 'instrument'),
-                    decoration: const InputDecoration(labelText: 'Type'),
-                  ),
-                  TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-                  TextField(controller: categoryController, decoration: const InputDecoration(labelText: 'Category')),
-                  TextField(controller: quantityController, decoration: const InputDecoration(labelText: 'Quantity'), keyboardType: TextInputType.number),
-                  TextField(controller: availableController, decoration: const InputDecoration(labelText: 'Available'), keyboardType: TextInputType.number),
-                  TextField(controller: statusController, decoration: const InputDecoration(labelText: 'Status')),
-                  TextField(controller: conditionController, decoration: const InputDecoration(labelText: 'Condition')),
-                  TextField(controller: locationController, decoration: const InputDecoration(labelText: 'Location')),
-                  TextField(controller: lastMaintenanceController, decoration: const InputDecoration(labelText: 'Last Maintenance')),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: submitting ? null : () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: submitting
-                    ? null
-                    : () async {
-                        final qty = int.tryParse(quantityController.text) ?? -1;
-                        final avail = int.tryParse(availableController.text) ?? -1;
-                        if (nameController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name is required')));
-                          return;
-                        }
-                        if (qty < 0 || avail < 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quantity and Available must be valid numbers')));
-                          return;
-                        }
-                        if (avail > qty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Available cannot exceed Quantity')));
-                          return;
-                        }
-                        setStateDialog(() => submitting = true);
-                        try {
-                          final newInstrument = Instrument(
-                            type: typeValue,
-                            name: nameController.text.trim(),
-                            category: categoryController.text.trim(),
-                            quantity: qty,
-                            available: avail,
-                            status: statusController.text.trim(),
-                            condition: conditionController.text.trim(),
-                            location: locationController.text.trim(),
-                            lastMaintenance: lastMaintenanceController.text.trim(),
-                          );
-                          await ApiClient.instance.createInstrument(instrument: newInstrument);
-                          if (!mounted) return;
-                          setState(() {
-                            _instruments.add(newInstrument);
-                          });
-                          if (context.mounted) Navigator.pop(context);
-                          // Prompt to generate QR after successful add
-                          Future.microtask(() {
-                            if (!mounted) return;
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Generate QR for new item?'),
-                                content: Text('Create QR labels for "${newInstrument.name}" now?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(ctx);
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/qr_generator',
-                                        arguments: {
-                                          'userRole': 'Teacher',
-                                          'preSelectedInstrument': newInstrument.name
-                                        },
-                                      );
-                                    },
-                                    child: const Text('Generate'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          });
-                        } catch (e) {
-                          setStateDialog(() => submitting = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-                          );
-                        }
-                      },
-                child: const Text('Add'),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Generate QR?'),
+        content: Text('Create QR labels for "$name" now?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushNamed(context, '/qr_generator', arguments: {
+                'userRole': 'Teacher',
+                'preSelectedInstrument': name
+              });
+            },
+            child: const Text('Generate'),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
     final searchTerm = _searchController.text.toLowerCase();
-
-    final totalInstruments = _instruments.length;
-    final availableInstruments = _instruments.where((i) => i.available > 0).length;
-    final categories = _instruments.map((i) => i.category).toSet().length;
-
-    final filteredInstruments = _instruments.where((instrument) {
-      if (_typeFilter != 'All' && instrument.type.toLowerCase() != _typeFilter.toLowerCase()) {
-        return false;
-      }
-      if (searchTerm.isEmpty) return true;
-      return instrument.name.toLowerCase().contains(searchTerm) ||
-          instrument.category.toLowerCase().contains(searchTerm) ||
-          instrument.status.toLowerCase().contains(searchTerm) ||
-          instrument.condition.toLowerCase().contains(searchTerm) ||
-          instrument.location.toLowerCase().contains(searchTerm);
-    }).toList();
+    final filteredInstruments = _getFilteredInstruments(searchTerm);
 
     return Scaffold(
       appBar: AppBar(
@@ -480,156 +380,191 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: LinearProgressIndicator(),
             ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.teal.shade700, Colors.teal.shade500],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.teal.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory_2_outlined),
-                _buildStatDivider(),
-                _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle_outline),
-                _buildStatDivider(),
-                _buildStatItem(context, 'Categories', categories.toString(), Icons.category_outlined),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DebouncedSearchBar(
-                    controller: _searchController,
-                    hintText: 'Search instruments...',
-                    onChanged: (value) => setState(() {
-                      _page = 0;
-                    }),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: _typeFilter,
-                  items: const [
-                    DropdownMenuItem(value: 'All', child: Text('All Types')),
-                    DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
-                    DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
-                  ],
-                  onChanged: (v) => setState(() {
-                    _typeFilter = v ?? 'All';
-                    _page = 0;
-                  }),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _addInstrument,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildStatsRow(),
+          _buildSearchFilterBar(),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: LayoutBuilder(
-                key: ValueKey('${_searchController.text}_$_page'),
-                builder: (context, constraints) {
-                  final int crossAxisCount = R.columns(constraints.maxWidth, xs: 2, sm: 3, md: 4, lg: 5);
-                  const double spacing = 6.0;
-                  const double totalPadding = 32.0;
-                  final double itemWidth =
-                      (constraints.maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+            child: _buildInstrumentList(filteredInstruments),
+          ),
+        ],
+      ),
+    );
+  }
 
-                  const double fixedContentHeight = 64;
-                  final double cellHeight = (itemWidth / 1.77) + fixedContentHeight;
-                  final double childAspectRatio = (itemWidth / cellHeight).clamp(0.5, 1.0);
+  List<Instrument> _getFilteredInstruments(String searchTerm) {
+    return _instruments.where((instrument) {
+      if (_typeFilter != 'All' && instrument.type.toLowerCase() != _typeFilter.toLowerCase()) {
+        return false;
+      }
+      if (searchTerm.isEmpty) return true;
+      return instrument.name.toLowerCase().contains(searchTerm) ||
+          instrument.category.toLowerCase().contains(searchTerm) ||
+          instrument.status.toLowerCase().contains(searchTerm) ||
+          instrument.condition.toLowerCase().contains(searchTerm) ||
+          instrument.location.toLowerCase().contains(searchTerm);
+    }).toList();
+  }
 
-                  final totalPages = (filteredInstruments.length / _perPage).ceil();
-                  final start = (_page * _perPage).clamp(0, filteredInstruments.length);
-                  final end = (start + _perPage).clamp(0, filteredInstruments.length);
-                  final pageItems = filteredInstruments.sublist(start, end);
+  Widget _buildStatsRow() {
+    final totalInstruments = _instruments.length;
+    final availableInstruments = _instruments.where((i) => i.available > 0).length;
+    final categories = _instruments.map((i) => i.category).toSet().length;
 
-                  if (pageItems.isEmpty) {
-                    return const Center(child: Text('No instruments found.'));
-                  }
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.teal.shade700, Colors.teal.shade500],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.teal.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory_2_outlined),
+          _buildStatDivider(),
+          _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle_outline),
+          _buildStatDivider(),
+          _buildStatItem(context, 'Categories', categories.toString(), Icons.category_outlined),
+        ],
+      ),
+    );
+  }
 
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            mainAxisSpacing: spacing,
-                            crossAxisSpacing: spacing,
-                            childAspectRatio: childAspectRatio,
-                          ),
-                          itemCount: pageItems.length,
-                          itemBuilder: (context, index) {
-                            final instrument = pageItems[index];
-                            final originalIndex = _instruments.indexOf(instrument);
-                            return InstrumentCard(
-                              instrument: instrument,
-                              highlight: _searchController.text,
-                              onTap: () => _showInstrumentDetails(context, instrument, originalIndex),
-                            );
-                          },
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Page ${_page + 1} of ${totalPages == 0 ? 1 : totalPages}',
-                              style: TextStyle(fontSize: R.text(12, w)),
-                            ),
-                            const SizedBox(width: 12),
-                            OutlinedButton(
-                              onPressed: _page > 0
-                                  ? () => setState(() {
-                                        _page--;
-                                      })
-                                  : null,
-                              child: const Text('Prev'),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: _page < totalPages - 1
-                                  ? () => setState(() {
-                                        _page++;
-                                      })
-                                  : null,
-                              child: const Text('Next'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+  Widget _buildSearchFilterBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: DebouncedSearchBar(
+              controller: _searchController,
+              hintText: 'Search instruments...',
+              onChanged: (value) => setState(() {
+                _page = 0;
+              }),
             ),
+          ),
+          const SizedBox(width: 12),
+          DropdownButton<String>(
+            value: _typeFilter,
+            items: const [
+              DropdownMenuItem(value: 'All', child: Text('All Types')),
+              DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
+              DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
+            ],
+            onChanged: (v) => setState(() {
+              _typeFilter = v ?? 'All';
+              _page = 0;
+            }),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _addInstrument,
+            icon: const Icon(Icons.add),
+            label: const Text('Add'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstrumentList(List<Instrument> filteredInstruments) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: LayoutBuilder(
+        key: ValueKey('${_searchController.text}_$_page'),
+        builder: (context, constraints) {
+          final int crossAxisCount = R.columns(constraints.maxWidth, xs: 2, sm: 3, md: 4, lg: 5);
+          const double spacing = 6.0;
+          const double totalPadding = 32.0;
+          final double itemWidth =
+              (constraints.maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+
+          const double fixedContentHeight = 64;
+          final double cellHeight = (itemWidth / 1.77) + fixedContentHeight;
+          final double childAspectRatio = (itemWidth / cellHeight).clamp(0.5, 1.0);
+
+          final totalPages = (filteredInstruments.length / _perPage).ceil();
+          final start = (_page * _perPage).clamp(0, filteredInstruments.length);
+          final end = (start + _perPage).clamp(0, filteredInstruments.length);
+          final pageItems = filteredInstruments.sublist(start, end);
+
+          if (pageItems.isEmpty) {
+            return const Center(child: Text('No instruments found.'));
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisSpacing: spacing,
+                    crossAxisSpacing: spacing,
+                    childAspectRatio: childAspectRatio,
+                  ),
+                  itemCount: pageItems.length,
+                  itemBuilder: (context, index) {
+                    final instrument = pageItems[index];
+                    final originalIndex = _instruments.indexOf(instrument);
+                    return InstrumentCard(
+                      instrument: instrument,
+                      highlight: _searchController.text,
+                      onTap: () => _showInstrumentDetails(context, instrument, originalIndex),
+                    );
+                  },
+                ),
+              ),
+              _buildPagination(totalPages),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPagination(int totalPages) {
+    final w = MediaQuery.of(context).size.width;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            'Page ${_page + 1} of ${totalPages == 0 ? 1 : totalPages}',
+            style: TextStyle(fontSize: R.text(12, w)),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: _page > 0
+                ? () => setState(() {
+                      _page--;
+                    })
+                : null,
+            child: const Text('Prev'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: _page < totalPages - 1
+                ? () => setState(() {
+                      _page++;
+                    })
+                : null,
+            child: const Text('Next'),
           ),
         ],
       ),

@@ -12,6 +12,8 @@ class UserManagementScreen extends StatefulWidget {
 }
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
+  static const String _exceptionPrefix = 'Exception: ';
+
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _users = [];
   bool _loading = true;
@@ -40,7 +42,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
     }
   }
@@ -120,7 +122,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         } catch (e) {
                           setStateDialog(() => submitting = false);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                            SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                           );
                         }
                       },
@@ -199,7 +201,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         } catch (e) {
                           setStateDialog(() => submitting = false);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                            SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                           );
                         }
                       },
@@ -237,7 +239,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                  SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                 );
               }
             },
@@ -310,128 +312,122 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               onChanged: (value) => setState(() {}),
             ),
           ),
-          // Summary Cards
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Card(
-                    elevation: 4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Text(
-                            _users.length.toString(),
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                          ),
-                          const Text('Total Users'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Card(
-                    elevation: 4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Text(
-                            _users
-                                .where((u) {
-                                  final r = (u['role'] as String).toLowerCase();
-                                  return r == 'teacher' || r == 'staff';
-                                })
-                                .length
-                                .toString(),
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue),
-                          ),
-                          const Text('Teacher Users'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Users List
+          _buildSummaryCards(),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredUsers.length,
-              itemBuilder: (context, index) {
-                final user = filteredUsers[index];
-                final originalIndex = _users.indexOf(user);
-                return Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    user['username'],
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: _getRoleColor(user['role']).withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          _formatRole(user['role']),
-                                          style: TextStyle(
-                                            color: _getRoleColor(user['role']),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  onPressed: () => _editUser(originalIndex),
-                                  tooltip: 'Edit User',
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _deleteUser(originalIndex),
-                                  tooltip: 'Delete User',
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+            child: _buildUserList(filteredUsers),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCards() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _summaryCard(_users.length.toString(), 'Total Users'),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _summaryCard(
+              _users
+                  .where((u) {
+                    final r = (u['role'] as String).toLowerCase();
+                    return r == 'teacher' || r == 'staff';
+                  })
+                  .length
+                  .toString(),
+              'Teacher Users',
+              color: Colors.blue,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _summaryCard(String value, String label, {Color? color}) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
+            ),
+            Text(label),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserList(List<Map<String, dynamic>> filteredUsers) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: filteredUsers.length,
+      itemBuilder: (context, index) {
+        final user = filteredUsers[index];
+        final originalIndex = _users.indexOf(user);
+        return _userCard(user, originalIndex);
+      },
+    );
+  }
+
+  Widget _userCard(Map<String, dynamic> user, int originalIndex) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user['username'],
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getRoleColor(user['role']).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _formatRole(user['role']),
+                      style: TextStyle(
+                        color: _getRoleColor(user['role']),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _editUser(originalIndex),
+                  tooltip: 'Edit User',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _deleteUser(originalIndex),
+                  tooltip: 'Delete User',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
