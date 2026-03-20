@@ -181,6 +181,34 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Future<void> _handleInventoryCode(String code) async {
+    final parsed = _parseInventoryCode(code);
+    final type = parsed['type'];
+    final name = parsed['name'];
+
+    List<Instrument> inventory = [];
+    try {
+      inventory = await ApiClient.instance.fetchInstruments();
+    } catch (_) {}
+
+    final instrument = inventory.firstWhere(
+      (inst) => inst.name == (name ?? ''),
+      orElse: () => Instrument(
+        name: '',
+        category: '',
+        quantity: 0,
+        available: 0,
+        status: '',
+        condition: '',
+        location: '',
+        lastMaintenance: '',
+      ),
+    );
+
+    if (!mounted) return;
+    _processInventoryScan(instrument, type);
+  }
+
+  Map<String, String?> _parseInventoryCode(String code) {
     String? type;
     String? name;
 
@@ -204,28 +232,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     } else {
       name = code;
     }
-
-    List<Instrument> inventory = [];
-    try {
-      inventory = await ApiClient.instance.fetchInstruments();
-    } catch (_) {}
-
-    final instrument = inventory.firstWhere(
-      (inst) => inst.name == (name ?? ''),
-      orElse: () => Instrument(
-        name: '',
-        category: '',
-        quantity: 0,
-        available: 0,
-        status: '',
-        condition: '',
-        location: '',
-        lastMaintenance: '',
-      ),
-    );
-
-    if (!mounted) return;
-    _processInventoryScan(instrument, type);
+    return {'type': type, 'name': name};
   }
 
   void _processInventoryScan(Instrument instrument, String? type) {

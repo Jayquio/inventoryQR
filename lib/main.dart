@@ -110,7 +110,7 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           initialRoute: '/login',
           routes: {
-            '/login': (context) => LoginScreen(),
+            '/login': (context) => const LoginScreen(),
             '/admin_dashboard': (context) => const AdminDashboard(),
             '/staff_dashboard': (context) => const StaffDashboard(),
             '/student_dashboard': (context) => const StudentDashboard(),

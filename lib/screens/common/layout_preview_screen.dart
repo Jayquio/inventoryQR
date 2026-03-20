@@ -14,11 +14,11 @@ class LayoutPreviewScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF4B0082),
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [const Color(0xFFF5F2FA), Colors.white],
+            colors: [Color(0xFFF5F2FA), Colors.white],
           ),
         ),
         child: LayoutBuilder(

@@ -201,9 +201,25 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
+    final filteredRequests = _getFilteredRequests();
+    final totalPages = (filteredRequests.length / _perPage).ceil();
+    final pageItems = _getPageItems(filteredRequests);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Manage Requests')),
+      body: Column(
+        children: [
+          _buildFilters(),
+          _buildRequestList(filteredRequests, pageItems),
+          _buildPagination(totalPages),
+        ],
+      ),
+    );
+  }
+
+  List<Request> _getFilteredRequests() {
     final searchTerm = _searchController.text.toLowerCase();
-    final filteredRequests = requests.where((req) {
+    return requests.where((req) {
       final bySearch = searchTerm.isEmpty ||
           req.studentName.toLowerCase().contains(searchTerm) ||
           req.instrumentName.toLowerCase().contains(searchTerm) ||
@@ -216,184 +232,201 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           (_statusFilter == 'Returned' && req.status == RequestStatus.returned);
       return bySearch && byStatus;
     }).toList();
-    final totalPages = (filteredRequests.length / _perPage).ceil();
+  }
+
+  List<Request> _getPageItems(List<Request> filteredRequests) {
     final start = (_page * _perPage).clamp(0, filteredRequests.length);
     final end = (start + _perPage).clamp(0, filteredRequests.length);
-    final pageItems = filteredRequests.sublist(start, end);
+    return filteredRequests.sublist(start, end);
+  }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Manage Requests')),
-      body: Column(
+  Widget _buildFilters() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Column(
-              children: [
-                DebouncedSearchBar(
-                  controller: _searchController,
-                  hintText: 'Search requests...',
-                  onChanged: (value) => setState(() {
-                    _page = 0;
-                  }),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _statusFilter,
-                  isExpanded: true,
-                  items: const [
-                    DropdownMenuItem(value: 'All', child: Text('All')),
-                    DropdownMenuItem(value: 'Pending', child: Text('Pending')),
-                    DropdownMenuItem(value: 'Approved', child: Text('Approved')),
-                    DropdownMenuItem(value: 'Rejected', child: Text('Rejected')),
-                    DropdownMenuItem(value: 'Returned', child: Text('Returned')),
-                  ],
-                  onChanged: (v) => setState(() {
-                    _statusFilter = v ?? 'Pending';
-                    _page = 0;
-                  }),
-                  decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Filter by status'),
-                ),
-              ],
+          DebouncedSearchBar(
+            controller: _searchController,
+            hintText: 'Search requests...',
+            onChanged: (value) => setState(() {
+              _page = 0;
+            }),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _statusFilter,
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'All', child: Text('All')),
+              DropdownMenuItem(value: 'Pending', child: Text('Pending')),
+              DropdownMenuItem(value: 'Approved', child: Text('Approved')),
+              DropdownMenuItem(value: 'Rejected', child: Text('Rejected')),
+              DropdownMenuItem(value: 'Returned', child: Text('Returned')),
+            ],
+            onChanged: (v) => setState(() {
+              _statusFilter = v ?? 'Pending';
+              _page = 0;
+            }),
+            decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Filter by status'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequestList(List<Request> filteredRequests, List<Request> pageItems) {
+    return Expanded(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: filteredRequests.isEmpty
+            ? const Center(child: Text('No pending requests.'))
+            : ListView.builder(
+                key: ValueKey(pageItems.length),
+                padding: const EdgeInsets.all(16),
+                itemCount: pageItems.length,
+                itemBuilder: (context, index) => _buildRequestCard(pageItems[index]),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildRequestCard(Request request) {
+    final originalIndex = requests.indexOf(request);
+    return _HoverListCard(
+      margin: const EdgeInsets.only(bottom: 12),
+      onTap: () => _showRequestDetails(request),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCardHeader(request),
+            const SizedBox(height: 8),
+            _buildCardContent(request),
+            const SizedBox(height: 12),
+            _buildCardActions(request, originalIndex),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardHeader(Request request) {
+    final statusColor = _getStatusColor(request.status);
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: Colors.orange.shade100,
+          child: const Icon(Icons.assignment, color: Colors.orange),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            request.studentName,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            request.status.name[0].toUpperCase() + request.status.name.substring(1),
+            style: TextStyle(
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
           ),
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: filteredRequests.isEmpty
-                        ? const Center(child: Text('No pending requests.'))
-                        : ListView.builder(
-                            key: ValueKey(pageItems.length),
-                            padding: const EdgeInsets.all(16),
-                            itemCount: pageItems.length,
-                            itemBuilder: (context, index) {
-                              final request = pageItems[index];
-                              final originalIndex = requests.indexOf(request);
-                              return _HoverListCard(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                onTap: () => _showRequestDetails(request),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          CircleAvatar(
-                                            backgroundColor: Colors.orange.shade100,
-                                            child: const Icon(Icons.assignment, color: Colors.orange),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              request.studentName,
-                                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: (request.status == RequestStatus.pending
-                                                      ? Colors.orange
-                                                      : request.status == RequestStatus.approved
-                                                          ? Colors.green
-                                                          : request.status == RequestStatus.rejected
-                                                              ? Colors.red
-                                                              : Colors.blue)
-                                                  .withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Text(
-                                              request.status.name[0].toUpperCase() + request.status.name.substring(1),
-                                              style: TextStyle(
-                                                color: request.status == RequestStatus.pending
-                                                    ? Colors.orange
-                                                    : request.status == RequestStatus.approved
-                                                        ? Colors.green
-                                                        : request.status == RequestStatus.rejected
-                                                            ? Colors.red
-                                                            : Colors.blue,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      RichText(
-                                        text: TextSpan(
-                                          style: const TextStyle(color: Colors.black),
-                                          children: _highlightSpans(request.instrumentName, _searchController.text.toLowerCase()),
-                                        ),
-                                      ),
-                                      Text("Purpose: ${request.purpose}"),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          if (request.status == RequestStatus.pending) ...[
-                                            ElevatedButton(
-                                              onPressed: () => _approveRequest(originalIndex),
-                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                                              child: const Text('Approve'),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            ElevatedButton(
-                                              onPressed: () => _rejectRequest(originalIndex),
-                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                              child: const Text('Reject'),
-                                            ),
-                                          ] else if (request.status == RequestStatus.approved) ...[
-                                            ElevatedButton(
-                                              onPressed: () => _markReturned(originalIndex),
-                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                                              child: const Text('Returned'),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            OutlinedButton(
-                                              onPressed: () => _deleteRequest(originalIndex),
-                                              child: const Text('Delete'),
-                                            ),
-                                          ] else ...[
-                                            OutlinedButton(
-                                              onPressed: () => _deleteRequest(originalIndex),
-                                              child: const Text('Delete'),
-                                            ),
-                                          ]
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text('Page ${_page + 1} of ${totalPages == 0 ? 1 : totalPages}', style: TextStyle(fontSize: R.text(12, w))),
-                      const SizedBox(width: 12),
-                      OutlinedButton(
-                        onPressed: _page > 0 ? () => setState(() => _page--) : null,
-                        child: const Text('Prev'),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: (_page + 1) < totalPages ? () => setState(() => _page++) : null,
-                        child: const Text('Next'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        ),
+      ],
+    );
+  }
+
+  Color _getStatusColor(RequestStatus status) {
+    switch (status) {
+      case RequestStatus.pending:
+        return Colors.orange;
+      case RequestStatus.approved:
+        return Colors.green;
+      case RequestStatus.rejected:
+        return Colors.red;
+      case RequestStatus.returned:
+        return Colors.blue;
+    }
+  }
+
+  Widget _buildCardContent(Request request) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            style: const TextStyle(color: Colors.black),
+            children: _highlightSpans(request.instrumentName, _searchController.text.toLowerCase()),
+          ),
+        ),
+        Text("Purpose: ${request.purpose}"),
+      ],
+    );
+  }
+
+  Widget _buildCardActions(Request request, int originalIndex) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (request.status == RequestStatus.pending) ...[
+          ElevatedButton(
+            onPressed: () => _approveRequest(originalIndex),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Approve'),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () => _rejectRequest(originalIndex),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Reject'),
+          ),
+        ] else if (request.status == RequestStatus.approved) ...[
+          ElevatedButton(
+            onPressed: () => _markReturned(originalIndex),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            child: const Text('Returned'),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: () => _deleteRequest(originalIndex),
+            child: const Text('Delete'),
+          ),
+        ] else ...[
+          OutlinedButton(
+            onPressed: () => _deleteRequest(originalIndex),
+            child: const Text('Delete'),
+          ),
+        ]
+      ],
+    );
+  }
+
+  Widget _buildPagination(int totalPages) {
+    final w = MediaQuery.of(context).size.width;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text('Page ${_page + 1} of ${totalPages == 0 ? 1 : totalPages}', style: TextStyle(fontSize: R.text(12, w))),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: _page > 0 ? () => setState(() => _page--) : null,
+            child: const Text('Prev'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: (_page + 1) < totalPages ? () => setState(() => _page++) : null,
+            child: const Text('Next'),
           ),
         ],
       ),

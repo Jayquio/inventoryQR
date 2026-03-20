@@ -86,7 +86,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
             const SizedBox(height: 16),
             LayoutBuilder(
               builder: (ctx, constraints) {
-                final spacing = 8.0;
+                const spacing = 8.0;
                 final w = constraints.maxWidth;
                 final cols = w < 480 ? 2 : 3;
                 final bw = ((w - (spacing * (cols - 1))) / cols).clamp(160.0, w);

@@ -34,7 +34,7 @@ class AdminDashboard extends StatelessWidget {
           ),
         ],
       ),
-      drawer: AppDrawer(userRole: 'Admin'),
+      drawer: const AppDrawer(userRole: 'Admin'),
       body: const _AdminDashboardBody(),
     );
   }
@@ -47,6 +47,49 @@ class AdminDashboard extends StatelessWidget {
 
  
  
+class _OperationalStatusIndicator extends StatelessWidget {
+  const _OperationalStatusIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.green, size: 18),
+          SizedBox(width: 6),
+          Text(
+            'Operational',
+            style: TextStyle(
+              color: Colors.green,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpdatedTimeText extends StatelessWidget {
+  const _UpdatedTimeText();
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final tsText = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    return Text(
+      'Updated $tsText',
+      style: const TextStyle(color: Colors.grey, fontSize: 12),
+    );
+  }
+}
+
 class _AdminDashboardBody extends StatefulWidget {
   const _AdminDashboardBody();
   @override
@@ -729,34 +772,11 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                 const SizedBox(height: 16),
                 const Divider(height: 1),
                 const SizedBox(height: 12),
-                Row(
+                const Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.check_circle, color: Colors.green, size: 18),
-                          SizedBox(width: 6),
-                          Text(
-                            'Operational',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'Updated $tsText',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
+                    _OperationalStatusIndicator(),
+                    Spacer(),
+                    _UpdatedTimeText(),
                   ],
                 ),
               ],
