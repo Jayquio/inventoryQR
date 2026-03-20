@@ -2,14 +2,10 @@
 
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
-import '../admin/admin_dashboard.dart';
-import '../staff/staff_dashboard.dart';
-import '../student/student_dashboard.dart';
+import '../../core/constants.dart';
 import '../../data/auth_service.dart';
-import '../../widgets/module_search_bar.dart';
 import '../../data/notification_service.dart';
 import '../../data/api_client.dart';
-import '../../data/app_config_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,6 +25,18 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
+            tooltip: 'Server Settings',
+          ),
+        ],
+      ),
       body: Container(
         decoration: _buildBackgroundDecoration(),
         child: Center(
@@ -45,18 +53,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   BoxDecoration _buildBackgroundDecoration() {
-    return BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Colors.blue.shade900, Colors.blue.shade600],
-      ),
+    return const BoxDecoration(
+      gradient: AppTheme.primaryGradient,
     );
   }
 
   Widget _buildLoginCard() {
     return Card(
       elevation: 12,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -84,11 +89,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildHeader() {
     return const Column(
       children: [
-        Icon(Icons.inventory_2, size: 64, color: Colors.blue),
+        Icon(Icons.inventory_2, size: 64, color: AppTheme.primaryColor),
         SizedBox(height: 16),
         Text(
           _userLoginTitle,
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            color: AppTheme.primaryColor,
+          ),
         ),
         SizedBox(height: 8),
         Text(
@@ -105,8 +115,12 @@ class _LoginScreenState extends State<LoginScreen> {
       controller: _usernameController,
       decoration: InputDecoration(
         labelText: 'Username',
-        prefixIcon: const Icon(Icons.person_outline),
+        prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryColor),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+        ),
       ),
       validator: (v) => v == null || v.isEmpty ? 'Required' : null,
     );
@@ -118,12 +132,19 @@ class _LoginScreenState extends State<LoginScreen> {
       obscureText: _obscurePassword,
       decoration: InputDecoration(
         labelText: 'Password',
-        prefixIcon: const Icon(Icons.lock_outline),
+        prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.primaryColor),
         suffixIcon: IconButton(
-          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+          icon: Icon(
+            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+            color: AppTheme.primaryColor,
+          ),
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+        ),
       ),
       validator: (v) => v == null || v.isEmpty ? 'Required' : null,
     );
@@ -137,8 +158,9 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          backgroundColor: Colors.blue.shade700,
+          backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
+          elevation: 4,
         ),
         child: _isLoading
             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -150,8 +172,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildQrLoginOption() {
     return TextButton.icon(
       onPressed: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'login'),
-      icon: const Icon(Icons.qr_code_scanner),
-      label: const Text('Login via QR Code'),
+      icon: const Icon(Icons.qr_code_scanner, color: AppTheme.secondaryColor),
+      label: const Text(
+        'Login via QR Code',
+        style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
