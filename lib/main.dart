@@ -59,8 +59,7 @@ class MyApp extends StatelessWidget {
             ).copyWith(
               secondary: AppTheme.secondaryColor,
               primary: AppTheme.primaryColor,
-              background: AppTheme.backgroundLight,
-              surface: Colors.white,
+              surface: AppTheme.backgroundLight,
             );
             return ThemeData(
               useMaterial3: true,

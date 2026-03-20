@@ -211,7 +211,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                             DropdownButtonFormField<String>(
                             decoration: _inputDecoration('Select Instrument', Icons.inventory),
                             isExpanded: true,
-                            value: _selectedInstrument.isNotEmpty &&
+                            initialValue: _selectedInstrument.isNotEmpty &&
                                     _instruments.any((i) => i.name == _selectedInstrument)
                                 ? _selectedInstrument
                                 : null,
@@ -249,12 +249,12 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                 firstDate: now,
                                 lastDate: DateTime(now.year + 1),
                               );
-                              if (date != null) {
+                              if (date != null && context.mounted) {
                                 final time = await showTimePicker(
                                   context: context,
                                   initialTime: TimeOfDay.now(),
                                 );
-                                if (time != null) {
+                                if (time != null && mounted) {
                                   setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
                                 }
                               }

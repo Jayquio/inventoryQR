@@ -57,113 +57,134 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Future<void> _handleScannedCode(String code) async {
-    String? type;
-    String? name;
     if (code.startsWith('USR|')) {
-      String? userId;
-      String? role;
-      final parts = code.substring(4).split(';');
-      for (final p in parts) {
-        final kv = p.split('=');
-        if (kv.length == 2) {
-          if (kv[0] == 'id') userId = kv[1];
-          if (kv[0] == 'role') role = kv[1];
-        }
+      await _handleUserCode(code);
+    } else {
+      await _handleInventoryCode(code);
+    }
+  }
+
+  Future<void> _handleUserCode(String code) async {
+    String? userId;
+    String? role;
+    final parts = code.substring(4).split(';');
+    for (final p in parts) {
+      final kv = p.split('=');
+      if (kv.length == 2) {
+        if (kv[0] == 'id') userId = kv[1];
+        if (kv[0] == 'role') role = kv[1];
       }
-      final isLoginMode = widget.userRole.toLowerCase() == 'login';
-      if (isLoginMode) {
-        if (userId == null) {
+    }
+
+    final isLoginMode = widget.userRole.toLowerCase() == 'login';
+    if (isLoginMode) {
+      await _handleUserLogin(userId);
+    } else {
+      _showUserDetectedDialog(userId, role);
+    }
+  }
+
+  Future<void> _handleUserLogin(String? userId) async {
+    if (userId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid User QR')),
+        );
+        setState(() => _isScanning = true);
+      }
+      return;
+    }
+
+    try {
+      final users = await ApiClient.instance.fetchUsers();
+      final userRec = users.firstWhere(
+        (u) => (u['username']?.toString() ?? '') == userId,
+        orElse: () => {},
+      );
+
+      if (userRec.isEmpty) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invalid User QR')),
+            const SnackBar(content: Text('User not found in database')),
           );
           setState(() => _isScanning = true);
-          return;
         }
-
-        try {
-          final users = await ApiClient.instance.fetchUsers();
-          final userRec = users.firstWhere(
-            (u) => (u['username']?.toString() ?? '') == userId,
-            orElse: () => {},
-          );
-
-          if (userRec.isEmpty) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('User not found in database')),
-            );
-            setState(() => _isScanning = true);
-            return;
-          }
-
-          final dbRoleStr = (userRec['role']?.toString() ?? '').toLowerCase();
-          UserRole? parsedRole = _parseUserRole(dbRoleStr);
-
-          if (parsedRole == null) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Invalid user role')),
-            );
-            setState(() => _isScanning = true);
-            return;
-          }
-
-          AuthService.instance.setUsername(userId);
-          AuthService.instance.setRole(parsedRole);
-
-          NotificationService.instance.add(
-            NotificationItem(
-              id: DateTime.now().microsecondsSinceEpoch.toString(),
-              title: 'User Login',
-              message: '$userId logged in',
-              type: 'login',
-              timestamp: DateTime.now().toIso8601String(),
-              recipient: 'Admin',
-              priority: 'low',
-            ),
-          );
-          
-          final route = _getDashboardRoute(parsedRole);
-          if (mounted) {
-            Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
-          }
-          return;
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Login error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
-            );
-            setState(() => _isScanning = true);
-          }
-          return;
-        }
-      } else {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('User QR Detected'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('ID: ${userId ?? "unknown"}') ,
-                Text('Role: ${role ?? "unknown"}') ,
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  if (context.mounted) Navigator.pop(context);
-                  if (mounted) setState(() => _isScanning = true);
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
         return;
       }
-    } else if (code.startsWith('QR|')) {
+
+      final dbRoleStr = (userRec['role']?.toString() ?? '').toLowerCase();
+      UserRole? parsedRole = _parseUserRole(dbRoleStr);
+
+      if (parsedRole == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invalid user role')),
+          );
+          setState(() => _isScanning = true);
+        }
+        return;
+      }
+
+      AuthService.instance.setUsername(userId);
+      AuthService.instance.setRole(parsedRole);
+
+      NotificationService.instance.add(
+        NotificationItem(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          title: 'User Login',
+          message: '$userId logged in',
+          type: 'login',
+          timestamp: DateTime.now().toIso8601String(),
+          recipient: 'Admin',
+          priority: 'low',
+        ),
+      );
+
+      final route = _getDashboardRoute(parsedRole);
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+        );
+        setState(() => _isScanning = true);
+      }
+    }
+  }
+
+  void _showUserDetectedDialog(String? userId, String? role) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('User QR Detected'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('ID: ${userId ?? "unknown"}'),
+            Text('Role: ${role ?? "unknown"}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (context.mounted) Navigator.pop(context);
+              if (mounted) setState(() => _isScanning = true);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleInventoryCode(String code) async {
+    String? type;
+    String? name;
+
+    if (code.startsWith('QR|')) {
       final parts = code.substring(3).split(';');
       for (final p in parts) {
         final kv = p.split('=');
@@ -183,10 +204,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     } else {
       name = code;
     }
+
     List<Instrument> inventory = [];
     try {
       inventory = await ApiClient.instance.fetchInstruments();
     } catch (_) {}
+
     final instrument = inventory.firstWhere(
       (inst) => inst.name == (name ?? ''),
       orElse: () => Instrument(
@@ -201,6 +224,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       ),
     );
 
+    if (!mounted) return;
+    _processInventoryScan(instrument, type);
+  }
+
+  void _processInventoryScan(Instrument instrument, String? type) {
     if (instrument.name.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -212,67 +240,47 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     }
 
     final role = AuthService.instance.currentRole;
-    if (type == null) {
-      if (role == UserRole.student || role == UserRole.staff) {
-        if (instrument.available <= 0) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Instrument not available')),
-            );
-            setState(() => _isScanning = true);
-          }
-          return;
-        }
-        if (mounted) {
-          Navigator.pushNamed(context, '/submit_request', arguments: instrument.name)
-              .then((_) {
-            if (mounted) setState(() => _isScanning = true);
-          });
-        }
-        return;
-      } else {
-        _showInstrumentDetailsDialog(context, instrument, type);
-        return;
-      }
-    }
-    if (type == 'borrow' && !(role == UserRole.student || role == UserRole.staff)) {
+    
+    // Authorization checks
+    if (!_isAuthorized(role, type)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unauthorized: Only Students/Teachers can use BORROW QR codes')),
-        );
-        setState(() => _isScanning = true);
-      }
-      return;
-    }
-    if ((type == 'receive' || type == 'return') &&
-        role != UserRole.admin) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unauthorized: Only Admin can use RECEIVE/RETURN QR codes')),
-        );
+        String msg = type == 'borrow' 
+            ? 'Unauthorized: Only Students/Teachers can use BORROW QR codes'
+            : 'Unauthorized: Only Admin can use RECEIVE/RETURN QR codes';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
         setState(() => _isScanning = true);
       }
       return;
     }
 
-    if ((role == UserRole.student || role == UserRole.staff) && type == 'borrow') {
-      if (instrument.available <= 0) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Instrument not available')),
-          );
-          setState(() => _isScanning = true);
-        }
-        return;
-      }
-      if (mounted) {
-        Navigator.pushNamed(context, '/submit_request', arguments: instrument.name)
-            .then((_) {
-          if (mounted) setState(() => _isScanning = true);
-        });
-      }
+    // Process logic
+    if ((role == UserRole.student || role == UserRole.staff) && (type == null || type == 'borrow')) {
+      _handleStudentBorrow(instrument);
     } else {
       _showInstrumentDetailsDialog(context, instrument, type);
+    }
+  }
+
+  bool _isAuthorized(UserRole role, String? type) {
+    if (type == 'borrow' && !(role == UserRole.student || role == UserRole.staff)) return false;
+    if ((type == 'receive' || type == 'return') && role != UserRole.admin) return false;
+    return true;
+  }
+
+  void _handleStudentBorrow(Instrument instrument) {
+    if (instrument.available <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Instrument not available')),
+        );
+        setState(() => _isScanning = true);
+      }
+      return;
+    }
+    if (mounted) {
+      Navigator.pushNamed(context, '/submit_request', arguments: instrument.name).then((_) {
+        if (mounted) setState(() => _isScanning = true);
+      });
     }
   }
 

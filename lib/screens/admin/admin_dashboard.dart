@@ -23,7 +23,7 @@ class AdminDashboard extends StatelessWidget {
         title: const Text("Admin Dashboard"),
         backgroundColor: AppTheme.primaryColor,
         actions: [
-          const NotificationIcon(recipients: const ['Admin'], types: const ['login', 'request']),
+          const NotificationIcon(recipients: ['Admin'], types: ['login', 'request']),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -704,7 +704,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         title: const Text('System Overview'),
         content: Builder(builder: (context) {
           final ts = TimeOfDay.now();
-          final tsText = '${ts.format(context)}';
+          final tsText = ts.format(context);
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -721,10 +721,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                       label: 'Total Instruments',
                     ),
                     _overviewStatTile(
-                      color: Colors.green,
-                      icon: Icons.assignment,
-                      value: requests.length.toString(),
-                      label: 'Total Requests',
+                      color: Colors.orange,
+                      icon: Icons.pending_actions,
+                      value: requests.where((req) => req.status == RequestStatus.pending).length.toString(),
+                      label: 'Active Requests',
                     ),
                     _overviewStatTile(
                       color: Colors.purple,

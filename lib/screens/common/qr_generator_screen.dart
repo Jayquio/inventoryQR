@@ -54,165 +54,204 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildPrintOptionsHeader(),
+            const SizedBox(height: 8),
+            _buildTypeSelection(),
+            const SizedBox(height: 16),
+            _buildInstrumentSelection(),
+            const SizedBox(height: 16),
+            _buildGenerateButton(),
+            const SizedBox(height: 24),
+            _buildQrResult(),
+            const SizedBox(height: 16),
+            _buildInfoCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar() {
     final roleName = AuthService.instance.currentRole.name;
     final allowed = [
       if (_canGenerateBorrow) 'Borrow',
       if (_canGenerateReceiveReturn) 'Receive',
       if (_canGenerateReceiveReturn) 'Return',
     ];
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return AppBar(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Generate QR Code'),
+          Text(
+            'Role: $roleName • Allowed: ${allowed.join(", ")}',
+            style: const TextStyle(fontSize: 12, color: Colors.white70),
+          ),
+        ],
+      ),
+      actions: [
+        if (_payload != null)
+          IconButton(
+            tooltip: 'Print view',
+            icon: const Icon(Icons.print),
+            onPressed: _showPrintDialog,
+          ),
+      ],
+    );
+  }
+
+  void _showPrintDialog() {
+    if (_payload == null) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        contentPadding: const EdgeInsets.all(16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Generate QR Code'),
-            Text(
-              'Role: $roleName • Allowed: ${allowed.join(", ")}',
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
-            ),
+            Text(_selectedInstrument ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            QrCodeService.instance.buildQrWidget(_payload!, size: 260),
+            const SizedBox(height: 8),
+            const Text('Tip: Use system print or screenshot to create a label.'),
           ],
         ),
         actions: [
-          if (_payload != null)
-            IconButton(
-              tooltip: 'Print view',
-              icon: const Icon(Icons.print),
-              onPressed: () {
-                if (_payload == null) return;
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    contentPadding: const EdgeInsets.all(16),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_selectedInstrument ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        QrCodeService.instance.buildQrWidget(_payload!, size: 260),
-                        const SizedBox(height: 8),
-                        const Text('Tip: Use system print or screenshot to create a label.'),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
-                    ],
-                  ),
-                );
-              },
-            ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildPrintOptionsHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'Print Options',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Print Options',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Row(
-                  children: [
-                    const Text('Advanced'),
-                    Switch.adaptive(
-                      value: _advanced,
-                      onChanged: (v) => setState(() => _advanced = v),
-                    ),
-                  ],
-                ),
-              ],
+            const Text('Advanced'),
+            Switch.adaptive(
+              value: _advanced,
+              onChanged: (v) => setState(() => _advanced = v),
             ),
-            const SizedBox(height: 8),
-            if (!_advanced)
-              Wrap(
-                spacing: 12,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Label'),
-                    selected: true,
-                    onSelected: null,
-                  ),
-                ],
-              )
-            else
-              Wrap(
-                spacing: 12,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Borrow'),
-                    selected: _selectedType == QrType.borrow,
-                    onSelected: _canGenerateBorrow
-                        ? (v) => setState(() => _selectedType = QrType.borrow)
-                        : null,
-                  ),
-                  ChoiceChip(
-                    label: const Text('Receive'),
-                    selected: _selectedType == QrType.receive,
-                    onSelected: _canGenerateReceiveReturn
-                        ? (v) => setState(() => _selectedType = QrType.receive)
-                        : null,
-                  ),
-                  ChoiceChip(
-                    label: const Text('Return'),
-                    selected: _selectedType == QrType.returnItem,
-                    onSelected: _canGenerateReceiveReturn
-                        ? (v) => setState(() => _selectedType = QrType.returnItem)
-                        : null,
-                  ),
-                ],
-              ),
-            const SizedBox(height: 16),
-            const Text('Instrument', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            if (_loading)
-              const Center(child: CircularProgressIndicator())
-            else
-              DropdownButtonFormField<String>(
-                value: _selectedInstrument,
-                items: _instrumentNames
-                    .map((name) => DropdownMenuItem<String>(value: name, child: Text(name)))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedInstrument = v),
-                decoration: const InputDecoration(
-                  labelText: 'Select Instrument',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _generate,
-              icon: const Icon(Icons.qr_code_2),
-              label: Text(_advanced ? 'Generate QR Code' : 'Generate Label'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypeSelection() {
+    if (!_advanced) {
+      return const Wrap(
+        spacing: 12,
+        children: [
+          ChoiceChip(
+            label: Text('Label'),
+            selected: true,
+            onSelected: null,
+          ),
+        ],
+      );
+    }
+    return Wrap(
+      spacing: 12,
+      children: [
+        ChoiceChip(
+          label: const Text('Borrow'),
+          selected: _selectedType == QrType.borrow,
+          onSelected: _canGenerateBorrow
+              ? (v) => setState(() => _selectedType = QrType.borrow)
+              : null,
+        ),
+        ChoiceChip(
+          label: const Text('Receive'),
+          selected: _selectedType == QrType.receive,
+          onSelected: _canGenerateReceiveReturn
+              ? (v) => setState(() => _selectedType = QrType.receive)
+              : null,
+        ),
+        ChoiceChip(
+          label: const Text('Return'),
+          selected: _selectedType == QrType.returnItem,
+          onSelected: _canGenerateReceiveReturn
+              ? (v) => setState(() => _selectedType = QrType.returnItem)
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInstrumentSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Instrument', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        if (_loading)
+          const Center(child: CircularProgressIndicator())
+        else
+          DropdownButtonFormField<String>(
+            initialValue: _selectedInstrument,
+            items: _instrumentNames
+                .map((name) => DropdownMenuItem<String>(value: name, child: Text(name)))
+                .toList(),
+            onChanged: (v) => setState(() => _selectedInstrument = v),
+            decoration: const InputDecoration(
+              labelText: 'Select Instrument',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 24),
-            if (_payload != null) ...[
-              const Text('Generated QR', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Center(child: QrCodeService.instance.buildQrWidget(_payload!, size: 220)),
-              const SizedBox(height: 12),
-              SelectableText(_payload!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            ],
-            const SizedBox(height: 16),
-            Card(
-              elevation: 0,
-              color: Colors.blue.withValues(alpha: 0.05),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Default: Prints a universal instrument label (INSTR). Toggle Advanced to create Borrow/Receive/Return QR.',
-                        style: const TextStyle(color: Colors.blue),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGenerateButton() {
+    return ElevatedButton.icon(
+      onPressed: _generate,
+      icon: const Icon(Icons.qr_code_2),
+      label: Text(_advanced ? 'Generate QR Code' : 'Generate Label'),
+    );
+  }
+
+  Widget _buildQrResult() {
+    if (_payload == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Generated QR', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Center(child: QrCodeService.instance.buildQrWidget(_payload!, size: 220)),
+        const SizedBox(height: 12),
+        SelectableText(_payload!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard() {
+    return Card(
+      elevation: 0,
+      color: Colors.blue.withValues(alpha: 0.05),
+      child: const Padding(
+        padding: EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.info, color: Colors.blue),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Default: Prints a universal instrument label (INSTR). Toggle Advanced to create Borrow/Receive/Return QR.',
+                style: TextStyle(color: Colors.blue),
               ),
             ),
           ],

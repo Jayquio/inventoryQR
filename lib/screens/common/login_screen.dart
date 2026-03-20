@@ -19,329 +19,206 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _loading = false;
-
-  Future<void> _openApiDialog() async {
-    final controller = TextEditingController(
-      text: AppConfigService.instance.baseUrl.isEmpty
-          ? 'http://192.168.1.88/inventory_api'
-          : AppConfigService.instance.baseUrl,
-    );
-    final newUrl = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Set API Base URL'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'http://192.168.1.88/inventory_api'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, controller.text), child: const Text('Save')),
-        ],
-      ),
-    );
-    if (newUrl != null && newUrl.trim().isNotEmpty) {
-      await AppConfigService.instance.setBaseUrl(newUrl);
-      ApiClient.setBaseUrl(AppConfigService.instance.baseUrl);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('API set to ${AppConfigService.instance.baseUrl}')),
-      );
-    }
-  }
-
-  Future<void> _login() async {
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both username and password')),
-      );
-      return;
-    }
-
-    setState(() => _loading = true);
-    try {
-      final result = await ApiClient.instance.login(username: username, password: password);
-      final roleStr = (result['role'] as String).toLowerCase();
-      ModuleSearchController.instance.setQuery('');
-      AuthService.instance.setUsername(result['username'] as String);
-      if (roleStr == 'admin') {
-        AuthService.instance.setRole(UserRole.admin);
-        NotificationService.instance.add(
-          NotificationItem(
-            id: DateTime.now().microsecondsSinceEpoch.toString(),
-            title: 'User Login',
-            message: '${result['username']} logged in',
-            type: 'login',
-            timestamp: DateTime.now().toIso8601String(),
-            recipient: 'Admin',
-            priority: 'low',
-          ),
-        );
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => AdminDashboard()),
-          );
-        }
-      } else if (roleStr == 'teacher' || roleStr == 'staff') {
-        AuthService.instance.setRole(UserRole.staff);
-        NotificationService.instance.add(
-          NotificationItem(
-            id: DateTime.now().microsecondsSinceEpoch.toString(),
-            title: 'User Login',
-            message: '${result['username']} logged in',
-            type: 'login',
-            timestamp: DateTime.now().toIso8601String(),
-            recipient: 'Admin',
-            priority: 'low',
-          ),
-        );
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => StaffDashboard()),
-          );
-        }
-      } else {
-        AuthService.instance.setRole(UserRole.student);
-        NotificationService.instance.add(
-          NotificationItem(
-            id: DateTime.now().microsecondsSinceEpoch.toString(),
-            title: 'User Login',
-            message: '${result['username']} logged in',
-            type: 'login',
-            timestamp: DateTime.now().toIso8601String(),
-            recipient: 'Admin',
-            priority: 'low',
-          ),
-        );
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => StudentDashboard()),
-          );
-        }
-      }
-      setState(() => _loading = false);
-      return;
-    } catch (e) {
-      setState(() => _loading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-        );
-      }
-    }
-  }
+  static const String _userLoginTitle = 'User Login';
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: AppTheme.primaryGradient,
-        ),
+        decoration: _buildBackgroundDecoration(),
         child: Center(
           child: SingleChildScrollView(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Icon
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.primaryGradient,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.science,
-                      color: Colors.white,
-                      size: 40,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Title
-                  GestureDetector(
-                    onLongPress: _openApiDialog,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
-                      child: const Text(
-                        "MedLab Inventory",
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "Medical Laboratory Instruments\nJose Maria College Foundation, Inc.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  // Username
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Username",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _usernameController,
-                        decoration: InputDecoration(
-                          hintText: "Enter your username",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.secondaryColor, width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Password
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Password",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          hintText: "Enter your password",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.secondaryColor, width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  // Button
-                  Container(
-                    width: double.infinity,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.primaryGradient,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blue.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _loading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              "Sign In",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Login'),
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Sign in with QR'),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: _buildLoginCard(),
             ),
           ),
         ),
       ),
     );
+  }
+
+  BoxDecoration _buildBackgroundDecoration() {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Colors.blue.shade900, Colors.blue.shade600],
+      ),
+    );
+  }
+
+  Widget _buildLoginCard() {
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 32),
+              _buildUsernameField(),
+              const SizedBox(height: 16),
+              _buildPasswordField(),
+              const SizedBox(height: 24),
+              _buildLoginButton(),
+              const SizedBox(height: 16),
+              _buildQrLoginOption(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return const Column(
+      children: [
+        Icon(Icons.inventory_2, size: 64, color: Colors.blue),
+        SizedBox(height: 16),
+        Text(
+          _userLoginTitle,
+          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Inventory Management System',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey, fontSize: 14),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUsernameField() {
+    return TextFormField(
+      controller: _usernameController,
+      decoration: InputDecoration(
+        labelText: 'Username',
+        prefixIcon: const Icon(Icons.person_outline),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        labelText: 'Password',
+        prefixIcon: const Icon(Icons.lock_outline),
+        suffixIcon: IconButton(
+          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+    );
+  }
+
+  Widget _buildLoginButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _login,
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: Colors.blue.shade700,
+          foregroundColor: Colors.white,
+        ),
+        child: _isLoading
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : const Text('LOGIN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildQrLoginOption() {
+    return TextButton.icon(
+      onPressed: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'login'),
+      icon: const Icon(Icons.qr_code_scanner),
+      label: const Text('Login via QR Code'),
+    );
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text;
+
+      final res = await ApiClient.instance.login(username: username, password: password);
+      final roleStr = (res['role']?.toString() ?? '').toLowerCase();
+      UserRole? role = _parseRole(roleStr);
+
+      if (role != null) {
+        AuthService.instance.setUsername(username);
+        AuthService.instance.setRole(role);
+        _addLoginNotification(username);
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, _getRoute(role));
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials')));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  UserRole? _parseRole(String roleStr) {
+    if (roleStr == 'admin') return UserRole.admin;
+    if (roleStr == 'teacher' || roleStr == 'staff') return UserRole.staff;
+    if (roleStr == 'student') return UserRole.student;
+    return null;
+  }
+
+  String _getRoute(UserRole role) {
+    if (role == UserRole.admin) return '/admin_dashboard';
+    if (role == UserRole.staff) return '/staff_dashboard';
+    return '/student_dashboard';
+  }
+
+  void _addLoginNotification(String username) {
+    NotificationService.instance.add(
+      NotificationItem(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        title: _userLoginTitle,
+        message: '$username logged in',
+        type: 'login',
+        timestamp: DateTime.now().toIso8601String(),
+        recipient: 'Admin',
+        priority: 'low',
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }

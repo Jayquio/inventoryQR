@@ -73,12 +73,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
         title: const Text("Teacher Dashboard"),
         backgroundColor: AppTheme.primaryColor,
         actions: [
-          const NotificationIcon(recipients: ['Teacher'], types: ['success', 'error']),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _load,
-          ),
+          const NotificationIcon(recipients: ['Teacher', 'Staff'], types: ['request', 'info', 'success']),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

@@ -73,12 +73,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         title: const Text("Student Dashboard"),
         backgroundColor: AppTheme.primaryColor,
         actions: [
-          const NotificationIcon(recipients: ['Student'], types: ['success', 'error']),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _load,
-            tooltip: 'Refresh',
-          ),
+          const NotificationIcon(recipients: ['Student'], types: ['success', 'info', 'error']),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
