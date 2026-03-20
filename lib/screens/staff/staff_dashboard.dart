@@ -69,24 +69,10 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     final myRequests = _requests.where((req) => req.studentName == myName).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Teacher Dashboard"),
-        backgroundColor: AppTheme.primaryColor,
-        actions: [
-          const NotificationIcon(recipients: ['Teacher', 'Staff'], types: ['request', 'info', 'success']),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ModuleSearchController.instance.setQuery('');
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-            },
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-      drawer: AppDrawer(userRole: 'Teacher'),
+      appBar: _buildAppBar(),
+      drawer: const AppDrawer(userRole: 'Teacher'),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -105,275 +91,290 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
                   padding: EdgeInsets.symmetric(horizontal: 8.0),
                   child: LinearProgressIndicator(),
                 ),
-              // Welcome Section
-              Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome, ${AuthService.instance.currentUsername}!',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Request instruments and track your borrowing status',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
+              _buildWelcomeCard(),
               const SizedBox(height: 24),
-
-              // Statistics Cards
-              Text('Current Status',
-                  style: TextStyle(
-                    fontSize: R.text(20, w),
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  )),
-
+              _buildSectionTitle('Current Status', w),
               const SizedBox(height: 16),
-
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatItem(
-                        context,
-                        'Pending',
-                        pendingRequests.toString(),
-                        Icons.pending_actions,
-                        AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/track_status'),
-                      ),
-                      _buildStatDivider(),
-                      _buildStatItem(
-                        context,
-                        'Active',
-                        approvedRequests.toString(),
-                        Icons.inventory_2,
-                        AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/track_status'),
-                      ),
-                      _buildStatDivider(),
-                      _buildStatItem(
-                        context,
-                        'Returns',
-                        returnedRequests.toString(),
-                        Icons.assignment_return,
-                        AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/track_status'),
-                      ),
-                      _buildStatDivider(),
-                      _buildStatItem(
-                        context,
-                        'Low Stock',
-                        lowStockInstruments.toString(),
-                        Icons.warning,
-                        Colors.red,
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
+              _buildOverviewSection(context, pendingRequests, approvedRequests, returnedRequests, lowStockInstruments),
               const SizedBox(height: 32),
-
-              // Daily Tasks
-              Text('Daily Tasks',
-                  style: TextStyle(
-                    fontSize: R.text(20, w),
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  )),
+              _buildSectionTitle('Daily Tasks', w),
               const SizedBox(height: 16),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
-                  return GridView.count(
-                    crossAxisCount: crossAxisCount,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: R.tileAspect(constraints.maxWidth),
-                    children: [
-                      _buildActionCard(
-                        context,
-                        title: 'Request',
-                        icon: Icons.add_circle,
-                        color: AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/submit_request'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Track Status',
-                        icon: Icons.timeline,
-                        color: AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/track_status'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Scan QR',
-                        icon: Icons.qr_code_scanner,
-                        color: AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Teacher'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'My QR',
-                        icon: Icons.qr_code_2,
-                        color: AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/user_qr'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Monitor',
-                        icon: Icons.inventory,
-                        color: AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Overview',
-                        icon: Icons.dashboard,
-                        color: AppTheme.primaryColor,
-                        onTap: () => _showOverviewDialog(context, myRequests),
-                      ),
-                    ],
-                  );
-                },
-              ),
-
-
+              _buildQuickActionsGrid(myRequests),
               const SizedBox(height: 24),
-
-              // My Borrow History
-              Text('My Borrow History',
-                  style: TextStyle(
-                    fontSize: R.text(20, w),
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  )),
-
+              _buildSectionTitle('My Borrow History', w),
               const SizedBox(height: 12),
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: myRequests.isEmpty
-                      ? const Text('No borrow history yet.')
-                      : Column(
-                          children: [
-                            ...myRequests.take(5).map((req) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _getStatusIcon(req.status),
-                                      color: _getStatusColor(req.status),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        req.instrumentName,
-                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                    Text(
-                                      _getStatusText(req.status),
-                                      style: TextStyle(
-                                        color: _getStatusColor(req.status),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton.icon(
-                                onPressed: () => Navigator.pushNamed(context, '/track_status'),
-                                icon: const Icon(Icons.open_in_new),
-                                label: const Text('View All'),
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-
+              _buildBorrowHistoryCard(myRequests),
               const SizedBox(height: 24),
-
-              // Teacher dashboard simplified (no transaction notifications or urgent admin sections)
-              const SizedBox(height: 8),
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info, color: AppTheme.primaryColor),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'As a Teacher, you can submit requests, scan equipment labels, and track your status.',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildInfoCard(),
             ],
           ),
         ),
       ),
     );
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: const Text("Teacher Dashboard"),
+      backgroundColor: AppTheme.primaryColor,
+      actions: [
+        const NotificationIcon(recipients: ['Teacher', 'Staff'], types: ['request', 'info', 'success']),
+        IconButton(
+          icon: const Icon(Icons.logout),
+          onPressed: () {
+            ModuleSearchController.instance.setQuery('');
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          },
+          tooltip: 'Logout',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeCard() {
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome, ${AuthService.instance.currentUsername}!',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Request instruments and track your borrowing status',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, double w) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: R.text(20, w),
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget _buildOverviewSection(BuildContext context, int pending, int active, int returned, int lowStock) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              context,
+              'Pending',
+              pending.toString(),
+              Icons.pending_actions,
+              AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/track_status'),
+            ),
+            _buildStatDivider(),
+            _buildStatItem(
+              context,
+              'Active',
+              active.toString(),
+              Icons.inventory_2,
+              AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/track_status'),
+            ),
+            _buildStatDivider(),
+            _buildStatItem(
+              context,
+              'Returns',
+              returned.toString(),
+              Icons.assignment_return,
+              AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/track_status'),
+            ),
+            _buildStatDivider(),
+            _buildStatItem(
+              context,
+              'Low Stock',
+              lowStock.toString(),
+              Icons.warning,
+              Colors.red,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsGrid(List<Request> myRequests) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: R.tileAspect(constraints.maxWidth),
+          children: [
+            _buildActionCard(
+              context,
+              title: 'Request',
+              icon: Icons.add_circle,
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/submit_request'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Track Status',
+              icon: Icons.timeline,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/track_status'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Scan QR',
+              icon: Icons.qr_code_scanner,
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Teacher'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'My QR',
+              icon: Icons.qr_code_2,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/user_qr'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Monitor',
+              icon: Icons.inventory,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Overview',
+              icon: Icons.dashboard,
+              color: AppTheme.primaryColor,
+              onTap: () => _showOverviewDialog(context, myRequests),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBorrowHistoryCard(List<Request> myRequests) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: myRequests.isEmpty
+            ? const Text('No borrow history yet.')
+            : Column(
+                children: [
+                  ...myRequests.take(5).map((req) => _buildHistoryRow(req)),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => Navigator.pushNamed(context, '/track_status'),
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('View All'),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryRow(Request req) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(
+            _getStatusIcon(req.status),
+            color: _getStatusColor(req.status),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              req.instrumentName,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Text(
+            _getStatusText(req.status),
+            style: TextStyle(
+              color: _getStatusColor(req.status),
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard() {
+    return const SizedBox(height: 8);
+    /* 
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Icon(Icons.info, color: AppTheme.primaryColor),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'As a Teacher, you can submit requests, scan equipment labels, and track your status.',
+                style: TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    */
   }
 
   void _showOverviewDialog(BuildContext context, List<Request> myRequests) {

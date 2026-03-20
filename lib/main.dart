@@ -154,7 +154,7 @@ class MyApp extends StatelessWidget {
             '/user_qr': (context) {
               return const UserQrScreen();
             },
-            '/settings': (context) {
+            AppRoutes.settings: (context) {
               final args = ModalRoute.of(context)!.settings.arguments as String?;
               return SettingsScreen(userRole: args ?? 'Student');
             },

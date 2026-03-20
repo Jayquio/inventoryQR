@@ -87,7 +87,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text("Settings"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings', arguments: userRole);
+                Navigator.pushNamed(context, AppRoutes.settings, arguments: userRole);
               },
             ),
           ],
@@ -113,7 +113,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text("Settings"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings', arguments: userRole);
+                Navigator.pushNamed(context, AppRoutes.settings, arguments: userRole);
               },
             ),
           ],
@@ -147,7 +147,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text("Settings"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings', arguments: userRole);
+                Navigator.pushNamed(context, AppRoutes.settings, arguments: userRole);
               },
             ),
           ],

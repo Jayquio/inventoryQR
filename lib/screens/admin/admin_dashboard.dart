@@ -102,11 +102,11 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     final searchTerm = _searchController.text.toLowerCase();
  
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: const [AppTheme.backgroundLight, Colors.white],
+          colors: [AppTheme.backgroundLight, Colors.white],
         ),
       ),
       child: SingleChildScrollView(
@@ -116,182 +116,174 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
           children: [
             const ModuleSearchBar(),
             const SizedBox(height: 12),
-            Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome, ${AuthService.instance.currentUsername}!',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Manage your laboratory inventory efficiently',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
- 
+            _buildWelcomeCard(),
             const SizedBox(height: 24),
- 
-            Text('Quick Overview',
-                style: TextStyle(
-                  fontSize: R.text(20, w),
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                )),
+            _buildSectionTitle('Quick Overview', w),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory, AppTheme.primaryColor, AppRoutes.viewInstruments),
-                    _buildStatDivider(),
-                    _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.viewInstruments),
-                    _buildStatDivider(),
-                    _buildStatItem(context, 'Pending', pendingRequests.toString(), Icons.pending, AppTheme.primaryColor, AppRoutes.manageRequests),
-                    _buildStatDivider(),
-                    _buildStatItem(context, 'Approved', approvedRequests.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.manageRequests),
-                    _buildStatDivider(),
-                    _buildStatItem(context, 'Out of Stock', outOfStockInstruments.toString(), Icons.error_outline, Colors.red, AppRoutes.viewInstruments),
-                  ],
-                ),
-              ),
-            ),
- 
+            _buildOverviewSection(context, totalInstruments, availableInstruments, pendingRequests, approvedRequests, outOfStockInstruments),
             const SizedBox(height: 32),
- 
-            Text('Quick Actions',
-                style: TextStyle(
-                  fontSize: R.text(20, w),
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                )),
+            _buildSectionTitle('Quick Actions', w),
             const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
-                return GridView.count(
-                  crossAxisCount: crossAxisCount,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: R.tileAspect(constraints.maxWidth),
-                  children: [
-                    _buildActionCard(
-                      context,
-                      title: 'Manage Instruments',
-                      icon: Icons.inventory,
-                      color: AppTheme.primaryColor,
-                      onTap: () => Navigator.pushNamed(context, '/manage_instruments'),
-                    ),
-                    _buildActionCard(
-                      context,
-                      title: 'Generate QR',
-                      icon: Icons.qr_code_2,
-                      color: AppTheme.primaryColor,
-                      onTap: () => Navigator.pushNamed(context, '/qr_generator', arguments: 'Admin'),
-                    ),
-                    _buildActionCard(
-                      context,
-                      title: 'Scan QR Code',
-                      icon: Icons.qr_code_scanner,
-                      color: AppTheme.secondaryColor,
-                      onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Admin'),
-                    ),
-                    _buildActionCard(
-                      context,
-                      title: 'My QR',
-                      icon: Icons.qr_code_2,
-                      color: AppTheme.primaryColor,
-                      onTap: () => Navigator.pushNamed(context, '/user_qr'),
-                    ),
-                    _buildActionCard(
-                      context,
-                      title: 'Requests',
-                      icon: Icons.assignment,
-                      color: AppTheme.secondaryColor,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.manageRequests),
-                    ),
-                    _buildActionCard(
-                      context,
-                      title: 'Reports',
-                      icon: Icons.report,
-                      color: AppTheme.secondaryColor,
-                      onTap: () => Navigator.pushNamed(context, '/generate_reports'),
-                    ),
-                    _buildActionCard(
-                      context,
-                      title: 'Overview',
-                      icon: Icons.dashboard,
-                      color: AppTheme.primaryColor,
-                      onTap: () => _showAllDataDialog(context),
-                    ),
-                  ],
-                );
-              },
-            ),
- 
+            _buildQuickActionsGrid(context),
             const SizedBox(height: 24),
-
-            const SizedBox(height: 8),
- 
             DebouncedSearchBar(
               controller: _searchController,
               hintText: 'Search notifications...',
               onChanged: (value) => setState(() {}),
             ),
             const SizedBox(height: 12),
-            Text('Transaction Notifications',
-                style: TextStyle(
-                  fontSize: R.text(20, w),
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                )),
+            _buildSectionTitle('Transaction Notifications', w),
             const SizedBox(height: 16),
             _buildTransactionNotificationsCard(context, searchTerm),
- 
             const SizedBox(height: 24),
- 
             _buildRecentActivityCard(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildWelcomeCard() {
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome, ${AuthService.instance.currentUsername}!',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Manage your laboratory inventory efficiently',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, double w) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: R.text(20, w),
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget _buildOverviewSection(BuildContext context, int total, int available, int pending, int approved, int outOfStock) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(context, 'Total', total.toString(), Icons.inventory, AppTheme.primaryColor, AppRoutes.viewInstruments),
+            _buildStatDivider(),
+            _buildStatItem(context, 'Available', available.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.viewInstruments),
+            _buildStatDivider(),
+            _buildStatItem(context, 'Pending', pending.toString(), Icons.pending, AppTheme.primaryColor, AppRoutes.manageRequests),
+            _buildStatDivider(),
+            _buildStatItem(context, 'Approved', approved.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.manageRequests),
+            _buildStatDivider(),
+            _buildStatItem(context, 'Out of Stock', outOfStock.toString(), Icons.error_outline, Colors.red, AppRoutes.viewInstruments),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: R.tileAspect(constraints.maxWidth),
+          children: [
+            _buildActionCard(
+              context,
+              title: 'Manage Instruments',
+              icon: Icons.inventory,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/manage_instruments'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Generate QR',
+              icon: Icons.qr_code_2,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/qr_generator', arguments: 'Admin'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Scan QR Code',
+              icon: Icons.qr_code_scanner,
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Admin'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'My QR',
+              icon: Icons.qr_code_2,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/user_qr'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Requests',
+              icon: Icons.assignment,
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.manageRequests),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Reports',
+              icon: Icons.report,
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/generate_reports'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Overview',
+              icon: Icons.dashboard,
+              color: AppTheme.primaryColor,
+              onTap: () => _showAllDataDialog(context),
+            ),
+          ],
+        );
+      },
     );
   }
 

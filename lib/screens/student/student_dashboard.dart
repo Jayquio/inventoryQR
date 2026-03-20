@@ -66,27 +66,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final pendingRequests = myRequests.where((req) => req.status == RequestStatus.pending).length;
     final approvedRequests = myRequests.where((req) => req.status == RequestStatus.approved).length;
     final availableInstruments = _instruments.where((inst) => inst.available > 0).length;
-    
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Student Dashboard"),
-        backgroundColor: AppTheme.primaryColor,
-        actions: [
-          const NotificationIcon(recipients: ['Student'], types: ['success', 'info', 'error']),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ModuleSearchController.instance.setQuery('');
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-            },
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-      drawer: AppDrawer(userRole: 'Student'),
+      appBar: _buildAppBar(),
+      drawer: const AppDrawer(userRole: 'Student'),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -105,296 +90,295 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   padding: EdgeInsets.symmetric(horizontal: 8),
                   child: LinearProgressIndicator(),
                 ),
-              // Welcome Section
-              Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome, ${AuthService.instance.currentUsername}!',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Access laboratory instruments for your research',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
+              _buildWelcomeCard(),
               const SizedBox(height: 24),
-
-              Text('Overview',
-                  style: TextStyle(
-                    fontSize: R.text(20, w),
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  )),
-
+              _buildSectionTitle('Overview', w),
               const SizedBox(height: 16),
-
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatItem(
-                        context,
-                        'Pending',
-                        pendingRequests.toString(),
-                        Icons.pending,
-                        AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/track_status'),
-                      ),
-                      _buildStatDivider(),
-                      _buildStatItem(
-                        context,
-                        'Approved',
-                        approvedRequests.toString(),
-                        Icons.check_circle,
-                        AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/track_status'),
-                      ),
-                      _buildStatDivider(),
-                      _buildStatItem(
-                        context,
-                        'Total',
-                        myRequests.length.toString(),
-                        Icons.assignment,
-                        AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/track_status'),
-                      ),
-                      _buildStatDivider(),
-                      _buildStatItem(
-                        context,
-                        'Available',
-                        availableInstruments.toString(),
-                        Icons.inventory,
-                        AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Student'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
+              _buildOverviewSection(context, myRequests.length, pendingRequests, approvedRequests, availableInstruments),
               const SizedBox(height: 32),
-
-              // Quick Actions
-              Text('Quick Actions',
-                  style: TextStyle(
-                    fontSize: R.text(20, w),
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  )),
-
+              _buildSectionTitle('Quick Actions', w),
               const SizedBox(height: 16),
-
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
-                  return GridView.count(
-                    crossAxisCount: crossAxisCount,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: R.tileAspect(constraints.maxWidth),
-                    children: [
-                      _buildActionCard(
-                        context,
-                        title: 'Request',
-                        icon: Icons.add_circle,
-                      color: AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/submit_request'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Scan QR',
-                        icon: Icons.qr_code_scanner,
-                      color: AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Student'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'My QR',
-                        icon: Icons.qr_code_2,
-                      color: AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/user_qr'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Instruments',
-                        icon: Icons.inventory,
-                      color: AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Track',
-                        icon: Icons.track_changes,
-                      color: AppTheme.primaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/track_status'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Notifications',
-                        icon: Icons.notifications,
-                      color: AppTheme.secondaryColor,
-                        onTap: () => Navigator.pushNamed(context, '/notification_center'),
-                      ),
-                      _buildActionCard(
-                        context,
-                        title: 'Overview',
-                        icon: Icons.dashboard,
-                        color: AppTheme.primaryColor,
-                        onTap: () => _showOverviewDialog(context, myRequests.length, pendingRequests, approvedRequests, availableInstruments),
-                      ),
-                    ],
-                  );
-                },
-              ),
-
+              _buildQuickActionsGrid(myRequests.length, pendingRequests, approvedRequests, availableInstruments),
               const SizedBox(height: 24),
-
-              // Recent Requests
               if (myRequests.isNotEmpty) ...[
-                const Text(
-                  'Recent Requests',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-
+                _buildSectionTitle('Recent Requests', w),
                 const SizedBox(height: 16),
-
-                ...myRequests.take(3).map((request) => Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          _getStatusIcon(request.status),
-                          color: _getStatusColor(request.status),
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                request.instrumentName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                'Status: ${_getStatusText(request.status)}',
-                                style: TextStyle(
-                                  color: _getStatusColor(request.status),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )),
+                ...myRequests.take(3).map((request) => _buildRecentRequestCard(request)),
               ],
-
               const SizedBox(height: 24),
-
-              // Important Notices
-              const Text(
-                'Important Notices',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-
+              _buildSectionTitle('Important Notices', w),
               const SizedBox(height: 16),
-
-              Card(
-                elevation: 4,
-                color: AppTheme.wisteria.withValues(alpha: 0.2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.announcement, color: AppTheme.primaryColor),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Lab Usage Guidelines',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '• Return instruments promptly after use\n• Handle equipment with care\n• Report any damage immediately\n• Follow safety protocols at all times',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildLabGuidelines(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: const Text("Student Dashboard"),
+      backgroundColor: AppTheme.primaryColor,
+      actions: [
+        const NotificationIcon(recipients: ['Student'], types: ['success', 'info', 'error']),
+        IconButton(
+          icon: const Icon(Icons.logout),
+          onPressed: () {
+            ModuleSearchController.instance.setQuery('');
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          },
+          tooltip: 'Logout',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeCard() {
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome, ${AuthService.instance.currentUsername}!',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Access laboratory instruments for your research',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, double w) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: R.text(20, w),
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget _buildOverviewSection(BuildContext context, int total, int pending, int approved, int available) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              context,
+              'Pending',
+              pending.toString(),
+              Icons.pending,
+              AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/track_status'),
+            ),
+            _buildStatDivider(),
+            _buildStatItem(
+              context,
+              'Approved',
+              approved.toString(),
+              Icons.check_circle,
+              AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/track_status'),
+            ),
+            _buildStatDivider(),
+            _buildStatItem(
+              context,
+              'Total',
+              total.toString(),
+              Icons.assignment,
+              AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/track_status'),
+            ),
+            _buildStatDivider(),
+            _buildStatItem(
+              context,
+              'Available',
+              available.toString(),
+              Icons.inventory,
+              AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Student'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsGrid(int total, int pending, int approved, int available) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: R.tileAspect(constraints.maxWidth),
+          children: [
+            _buildActionCard(
+              context,
+              title: 'Request',
+              icon: Icons.add_circle,
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/submit_request'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Scan QR',
+              icon: Icons.qr_code_scanner,
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Student'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'My QR',
+              icon: Icons.qr_code_2,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/user_qr'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Instruments',
+              icon: Icons.inventory,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Track',
+              icon: Icons.track_changes,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/track_status'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Notifications',
+              icon: Icons.notifications,
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.pushNamed(context, '/notification_center'),
+            ),
+            _buildActionCard(
+              context,
+              title: 'Overview',
+              icon: Icons.dashboard,
+              color: AppTheme.primaryColor,
+              onTap: () => _showOverviewDialog(context, total, pending, approved, available),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentRequestCard(Request request) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              _getStatusIcon(request.status),
+              color: _getStatusColor(request.status),
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    request.instrumentName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    'Status: ${_getStatusText(request.status)}',
+                    style: TextStyle(
+                      color: _getStatusColor(request.status),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabGuidelines() {
+    return Card(
+      elevation: 4,
+      color: AppTheme.wisteriaLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.announcement, color: AppTheme.primaryColor),
+                SizedBox(width: 8),
+                Text(
+                  'Lab Usage Guidelines',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Return instruments promptly after use\n• Handle equipment with care\n• Report any damage immediately\n• Follow safety protocols at all times',
+              style: TextStyle(fontSize: 14),
+            ),
+          ],
         ),
       ),
     );

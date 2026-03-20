@@ -51,7 +51,7 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
       ModuleSearchItem(title: 'Generate Reports', description: 'Create inventory and usage reports', route: '/generate_reports', icon: Icons.report),
       ModuleSearchItem(title: 'Transaction Logs', description: 'View system activity logs', route: '/transaction_logs', icon: Icons.history),
       ModuleSearchItem(title: 'Notification Center', description: 'View all notifications', route: '/notification_center', icon: Icons.notifications),
-      ModuleSearchItem(title: 'Settings', description: 'Configure preferences', route: '/settings', icon: Icons.settings),
+      ModuleSearchItem(title: 'Settings', description: 'Configure preferences', route: AppRoutes.settings, icon: Icons.settings),
       ModuleSearchItem(title: 'View Instruments', description: 'Browse available instruments', route: AppRoutes.viewInstruments, icon: Icons.inventory_2),
       ModuleSearchItem(title: 'Log Maintenance', description: 'Record maintenance activities', route: '/log_maintenance', icon: Icons.build),
       ModuleSearchItem(title: 'Handle Returns', description: 'Process item returns', route: '/handle_returns', icon: Icons.assignment_return),
