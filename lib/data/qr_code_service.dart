@@ -16,7 +16,12 @@ class QrCodeService {
   QrCodeService._();
   static final QrCodeService instance = QrCodeService._();
 
-  String buildPayload({required QrType type, required String instrumentName}) {
+  String buildPayload({
+    required QrType type,
+    required String instrumentName,
+    String? course,
+    DateTime? neededAt,
+  }) {
     final role = AuthService.instance.currentRole;
     switch (type) {
       case QrType.borrow:
@@ -36,14 +41,22 @@ class QrCodeService {
       QrType.receive => 'receive',
       QrType.returnItem => 'return',
     };
-    final payload = 'QR|type=$typeStr;name=$instrumentName';
+    
+    var payload = 'QR|type=$typeStr;name=$instrumentName';
+    if (course != null && course.isNotEmpty) {
+      payload += ';course=$course';
+    }
+    if (neededAt != null) {
+      payload += ';date=${neededAt.toIso8601String()}';
+    }
+
     AuditLogService.instance.addEntry(
       AuditLogEntry(
         timestamp: DateTime.now(),
         userRole: role.name,
         action: 'GENERATE_QR',
         type: typeStr,
-        details: 'Instrument="$instrumentName"',
+        details: 'Instrument="$instrumentName" Course="$course"',
       ),
     );
     return payload;

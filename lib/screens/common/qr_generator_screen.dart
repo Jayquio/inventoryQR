@@ -16,10 +16,19 @@ class QrGeneratorScreen extends StatefulWidget {
 class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
   QrType? _selectedType;
   String? _selectedInstrument;
+  String? _selectedCourse;
+  DateTime? _neededAt;
   String? _payload;
   List<String> _instrumentNames = [];
   bool _loading = true;
   bool _advanced = false;
+
+  final List<String> _caseCourses = [
+    'BS Pharmacy',
+    'BS Biology',
+    'BS Radiologic Technology',
+    'BS Medical Technology/Medical Laboratory Science',
+  ];
 
   @override
   void initState() {
@@ -67,6 +76,12 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
             const SizedBox(height: 16),
             _buildInstrumentSelection(),
             const SizedBox(height: 16),
+            if (_advanced && _selectedType == QrType.borrow) ...[
+              _buildCourseSelection(),
+              const SizedBox(height: 16),
+              _buildDatePicker(),
+              const SizedBox(height: 16),
+            ],
             _buildGenerateButton(),
             const SizedBox(height: 24),
             _buildQrResult(),
@@ -216,6 +231,59 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
     );
   }
 
+  Widget _buildCourseSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Course (CASE)', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _selectedCourse,
+          items: _caseCourses
+              .map((c) => DropdownMenuItem<String>(value: c, child: Text(c, style: const TextStyle(fontSize: 12))))
+              .toList(),
+          onChanged: (v) => setState(() => _selectedCourse = v),
+          decoration: const InputDecoration(
+            labelText: 'Select Course',
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Scheduled Borrowing Date', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () async {
+            final now = DateTime.now();
+            final date = await showDatePicker(
+              context: context,
+              initialDate: _neededAt ?? now,
+              firstDate: now,
+              lastDate: DateTime(now.year + 1),
+            );
+            if (date != null && mounted) {
+              final time = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay.fromDateTime(_neededAt ?? now),
+              );
+              if (time != null && mounted) {
+                setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+              }
+            }
+          },
+          icon: const Icon(Icons.calendar_today),
+          label: Text(_neededAt == null ? 'Set Schedule' : _neededAt!.toString().split('.').first),
+        ),
+      ],
+    );
+  }
+
   Widget _buildGenerateButton() {
     return ElevatedButton.icon(
       onPressed: _generate,
@@ -281,7 +349,12 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
         final role = AuthService.instance.currentRole;
         payload = (_selectedType == QrType.borrow && !(role == UserRole.student || role == UserRole.staff))
             ? QrCodeService.instance.buildPayloadForPrint(type: _selectedType!, instrumentName: _selectedInstrument!)
-            : QrCodeService.instance.buildPayload(type: _selectedType!, instrumentName: _selectedInstrument!);
+            : QrCodeService.instance.buildPayload(
+                type: _selectedType!,
+                instrumentName: _selectedInstrument!,
+                course: _selectedCourse,
+                neededAt: _neededAt,
+              );
       }
       setState(() => _payload = payload);
     } on QrPermissionException catch (e) {

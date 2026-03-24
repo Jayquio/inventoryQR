@@ -120,8 +120,22 @@ class MyApp extends StatelessWidget {
             '/transaction_logs': (context) => const TransactionLogsScreen(),
             '/notification_center': (context) => const NotificationCenterScreen(),
             '/submit_request': (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as String?;
-              return SubmitRequestScreen(preSelectedInstrument: args);
+              final args = ModalRoute.of(context)!.settings.arguments;
+              String? instrument;
+              String? course;
+              DateTime? date;
+              if (args is String) {
+                instrument = args;
+              } else if (args is Map) {
+                instrument = args['instrumentName'] as String?;
+                course = args['course'] as String?;
+                date = args['date'] as DateTime?;
+              }
+              return SubmitRequestScreen(
+                preSelectedInstrument: instrument,
+                preSelectedCourse: course,
+                preSelectedDate: date,
+              );
             },
             AppRoutes.viewInstruments: (context) {
               final args = ModalRoute.of(context)!.settings.arguments as String?;

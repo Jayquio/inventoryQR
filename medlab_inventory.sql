@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 11, 2026 at 01:44 AM
+-- Generation Time: Mar 20, 2026 at 06:47 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -140,7 +140,7 @@ CREATE TABLE `requests` (
   `student_name` varchar(128) NOT NULL,
   `instrument_name` varchar(128) NOT NULL,
   `purpose` text DEFAULT NULL,
-  `course` varchar(128) DEFAULT NULL,
+  `course` enum('BS Pharmacy','BS Biology','BS Radiologic Technology','BS Medical Technology/Medical Laboratory Science') DEFAULT NULL,
   `needed_at` datetime DEFAULT NULL,
   `status` enum('pending','approved','rejected','returned') NOT NULL DEFAULT 'pending',
   `approved_by` varchar(64) DEFAULT NULL,
@@ -161,8 +161,8 @@ INSERT INTO `requests` (`id`, `student_name`, `instrument_name`, `purpose`, `cou
 (10, 'dmcb', 'microscope', 'for lab', NULL, NULL, 'approved', 'staff', '2026-03-07 14:55:11', NULL, NULL, NULL, NULL, '2026-03-07 06:54:26'),
 (11, 'alexa', 'Centrifuge Machine', 'for lab', NULL, NULL, 'approved', 'admin', '2026-03-11 02:01:36', NULL, NULL, NULL, NULL, '2026-03-07 08:24:01'),
 (12, 'teacher', 'microscope', 'for project', 'blah blah', '2026-03-13 02:13:00', 'approved', 'admin', '2026-03-11 02:01:42', NULL, NULL, NULL, NULL, '2026-03-10 17:13:39'),
-(13, 'teacher', 'Hematology Analyzer', 'yes', 'yeah', '2026-03-18 17:21:00', 'approved', 'admin', '2026-03-11 02:21:36', NULL, NULL, NULL, NULL, '2026-03-10 18:21:11'),
-(14, 'ryota-kun', 'microscope', 'wowo', 'wow', '2026-03-12 04:19:00', 'approved', 'admin', '2026-03-11 04:20:24', NULL, NULL, NULL, NULL, '2026-03-10 20:19:58');
+(14, 'ryota-kun', 'microscope', 'wowo', 'wow', '2026-03-12 04:19:00', 'approved', 'admin', '2026-03-11 04:20:24', NULL, NULL, NULL, NULL, '2026-03-10 20:19:58'),
+(15, 'ryota-kun', 'Microscope Olympus CX23', 'yes', '', '2026-03-12 12:15:00', 'approved', 'admin', '2026-03-11 10:15:48', NULL, NULL, NULL, NULL, '2026-03-11 01:15:58');
 
 -- --------------------------------------------------------
 
@@ -173,7 +173,7 @@ INSERT INTO `requests` (`id`, `student_name`, `instrument_name`, `purpose`, `cou
 CREATE TABLE `transactions` (
   `id` int(11) NOT NULL,
   `instrument_name` varchar(128) NOT NULL,
-  `type` enum('receive','return') NOT NULL,
+  `type` enum('receive','return','borrow') NOT NULL,
   `processed_by` varchar(64) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -237,7 +237,8 @@ ALTER TABLE `requests`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_requests_status` (`status`),
   ADD KEY `idx_requests_student` (`student_name`),
-  ADD KEY `idx_requests_instrument` (`instrument_name`);
+  ADD KEY `idx_requests_instrument` (`instrument_name`),
+  ADD KEY `idx_requests_returned_at` (`returned_at`);
 
 --
 -- Indexes for table `transactions`
@@ -274,7 +275,7 @@ ALTER TABLE `instrument_qr`
 -- AUTO_INCREMENT for table `requests`
 --
 ALTER TABLE `requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `transactions`

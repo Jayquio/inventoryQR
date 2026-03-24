@@ -182,8 +182,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _handleInventoryCode(String code) async {
     final parsed = _parseInventoryCode(code);
-    final type = parsed['type'];
-    final name = parsed['name'];
 
     List<Instrument> inventory = [];
     try {
@@ -191,7 +189,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     } catch (_) {}
 
     final instrument = inventory.firstWhere(
-      (inst) => inst.name == (name ?? ''),
+      (inst) => inst.name == (parsed['name'] ?? ''),
       orElse: () => Instrument(
         name: '',
         category: '',
@@ -205,12 +203,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     );
 
     if (!mounted) return;
-    _processInventoryScan(instrument, type);
+    _processInventoryScan(instrument, parsed['type'], parsed['course'], parsed['date']);
   }
 
-  Map<String, String?> _parseInventoryCode(String code) {
+  Map<String, dynamic> _parseInventoryCode(String code) {
     String? type;
     String? name;
+    String? course;
+    DateTime? date;
 
     if (code.startsWith('QR|')) {
       final parts = code.substring(3).split(';');
@@ -219,6 +219,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         if (kv.length == 2) {
           if (kv[0] == 'type') type = kv[1];
           if (kv[0] == 'name') name = kv[1];
+          if (kv[0] == 'course') course = kv[1];
+          if (kv[0] == 'date') date = DateTime.tryParse(kv[1]);
         }
       }
     } else if (code.startsWith('INSTR|')) {
@@ -232,10 +234,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     } else {
       name = code;
     }
-    return {'type': type, 'name': name};
+    return {'type': type, 'name': name, 'course': course, 'date': date};
   }
 
-  void _processInventoryScan(Instrument instrument, String? type) {
+  void _processInventoryScan(Instrument instrument, String? type, String? course, DateTime? date) {
     if (instrument.name.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -262,7 +264,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
     // Process logic
     if ((role == UserRole.student || role == UserRole.staff) && (type == null || type == 'borrow')) {
-      _handleStudentBorrow(instrument);
+      _handleStudentBorrow(instrument, course, date);
     } else {
       _showInstrumentDetailsDialog(context, instrument, type);
     }
@@ -274,7 +276,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     return true;
   }
 
-  void _handleStudentBorrow(Instrument instrument) {
+  void _handleStudentBorrow(Instrument instrument, String? course, DateTime? date) {
     if (instrument.available <= 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -285,7 +287,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       return;
     }
     if (mounted) {
-      Navigator.pushNamed(context, '/submit_request', arguments: instrument.name).then((_) {
+      Navigator.pushNamed(context, '/submit_request', arguments: {
+        'instrumentName': instrument.name,
+        'course': course,
+        'date': date,
+      }).then((_) {
         if (mounted) setState(() => _isScanning = true);
       });
     }

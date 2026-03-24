@@ -10,7 +10,14 @@ import '../../core/theme.dart';
 
 class SubmitRequestScreen extends StatefulWidget {
   final String? preSelectedInstrument;
-  const SubmitRequestScreen({super.key, this.preSelectedInstrument});
+  final String? preSelectedCourse;
+  final DateTime? preSelectedDate;
+  const SubmitRequestScreen({
+    super.key,
+    this.preSelectedInstrument,
+    this.preSelectedCourse,
+    this.preSelectedDate,
+  });
 
   @override
   State<SubmitRequestScreen> createState() => _SubmitRequestScreenState();
@@ -20,16 +27,25 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   final _formKey = GlobalKey<FormState>();
   late String _selectedInstrument;
   String _studentName = '';
-  String _course = '';
+  String? _selectedCourse;
   DateTime? _neededAt;
   String _purpose = '';
   List<Instrument> _instruments = [];
   bool _loading = true;
 
+  final List<String> _caseCourses = [
+    'BS Pharmacy',
+    'BS Biology',
+    'BS Radiologic Technology',
+    'BS Medical Technology/Medical Laboratory Science',
+  ];
+
   @override
   void initState() {
     super.initState();
     _selectedInstrument = widget.preSelectedInstrument ?? '';
+    _selectedCourse = widget.preSelectedCourse;
+    _neededAt = widget.preSelectedDate;
     _studentName = AuthService.instance.currentUsername;
     _load();
   }
@@ -64,7 +80,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         studentName: _studentName,
         instrumentName: _selectedInstrument,
         purpose: _purpose,
-        course: _course,
+        course: _selectedCourse ?? '',
         neededAtIso: _neededAt!.toIso8601String(),
       );
       
@@ -87,7 +103,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
   void _addRequestNotifications() {
     final neededStr = _neededAt!.toLocal().toString().split('.').first;
-    final extra = ' • Course: $_course • Needed: $neededStr';
+    final extra = ' • Course: $_selectedCourse • Needed: $neededStr';
     final nowIso = DateTime.now().toIso8601String();
 
     NotificationService.instance.add(
@@ -98,7 +114,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         type: 'success',
         timestamp: nowIso,
         recipient: 'Student',
-        course: _course,
+        course: _selectedCourse ?? '',
         priority: 'low',
       ),
     );
@@ -110,7 +126,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         type: 'request',
         timestamp: nowIso,
         recipient: 'Teacher',
-        course: _course,
+        course: _selectedCourse ?? '',
         priority: 'medium',
       ),
     );
@@ -122,7 +138,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         type: 'request',
         timestamp: nowIso,
         recipient: 'Admin',
-        course: _course,
+        course: _selectedCourse ?? '',
         priority: 'low',
       ),
     );
@@ -225,10 +241,18 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                             onChanged: (value) => setState(() => _selectedInstrument = value ?? ''),
                           ),
                           const SizedBox(height: 16),
-                          TextFormField(
-                            decoration: _inputDecoration('Course', Icons.school),
-                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                            onSaved: (v) => _course = v!.trim(),
+                          DropdownButtonFormField<String>(
+                            decoration: _inputDecoration('Course (CASE)', Icons.school),
+                            isExpanded: true,
+                            value: _selectedCourse,
+                            items: _caseCourses.map((course) {
+                              return DropdownMenuItem<String>(
+                                value: course,
+                                child: Text(course, style: const TextStyle(fontSize: 13)),
+                              );
+                            }).toList(),
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                            onChanged: (value) => setState(() => _selectedCourse = value),
                           ),
                           const SizedBox(height: 16),
                           ListTile(

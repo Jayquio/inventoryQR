@@ -69,20 +69,42 @@ if ($status === 'returned') {
     json_out(['error' => 'update_failed'], 500);
   }
 } elseif ($status === 'approved') {
+  $pdo->beginTransaction();
   try {
+    $selReq = $pdo->prepare('SELECT instrument_name, status FROM requests WHERE id = ? FOR UPDATE');
+    $selReq->execute([$id]);
+    $reqRow = $selReq->fetch();
+    if (!$reqRow) { $pdo->rollBack(); json_out(['error' => 'not_found'], 404); }
+
+    // ONLY decrement if moving FROM 'pending' TO 'approved'
+    if ($reqRow['status'] === 'pending') {
+      $instrument = $reqRow['instrument_name'];
+      $selInst = $pdo->prepare('SELECT available FROM instruments WHERE name = ? FOR UPDATE');
+      $selInst->execute([$instrument]);
+      $instRow = $selInst->fetch();
+      if ($instRow) {
+        $avail = (int)$instRow['available'];
+        if ($avail > 0) {
+          $avail--;
+          $updInst = $pdo->prepare('UPDATE instruments SET available = ? WHERE name = ?');
+          $updInst->execute([$avail, $instrument]);
+        } else {
+          $pdo->rollBack();
+          json_out(['error' => 'no_available_stock'], 409);
+        }
+      }
+    }
+
     $upd = $pdo->prepare('UPDATE requests
                           SET status = ?, approved_by = ?, approved_at = ?,
                               rejected_by = NULL, rejected_at = NULL,
                               returned_by = NULL, returned_at = NULL
                           WHERE id = ?');
     $upd->execute([$status, $user, $now, $id]);
+    $pdo->commit();
   } catch (Throwable $e) {
-    // Backward compatible with older schema (no returned_* columns yet)
-    $upd = $pdo->prepare('UPDATE requests
-                          SET status = ?, approved_by = ?, approved_at = ?,
-                              rejected_by = NULL, rejected_at = NULL
-                          WHERE id = ?');
-    $upd->execute([$status, $user, $now, $id]);
+    $pdo->rollBack();
+    json_out(['error' => 'update_failed'], 500);
   }
 } elseif ($status === 'rejected') {
   try {
