@@ -267,7 +267,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
               firstDate: now,
               lastDate: DateTime(now.year + 1),
             );
-            if (date != null && mounted) {
+            if (date != null && context.mounted) {
               final time = await showTimePicker(
                 context: context,
                 initialTime: TimeOfDay.fromDateTime(_neededAt ?? now),

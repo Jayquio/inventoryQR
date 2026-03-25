@@ -10,7 +10,7 @@ class LoginScreen extends StatelessWidget {
   void _login(BuildContext context, String user) {
     if (user == 'admin') {
       Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (_) => AdminDashboard()));
+          MaterialPageRoute(builder: (_) => const AdminDashboard()));
     } else if (user == 'staff') {
       Navigator.pushReplacement(context,
           MaterialPageRoute(builder: (_) => const StaffDashboard()));
@@ -24,7 +24,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
+        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
         child: Center(
           child: Card(
             elevation: 12,

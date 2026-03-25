@@ -205,7 +205,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
         color: AppTheme.primaryColor,
@@ -235,9 +235,9 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppTheme.primaryColor,
-        borderRadius: const BorderRadius.only(
+        borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(32),
           bottomRight: Radius.circular(32),
         ),

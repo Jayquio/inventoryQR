@@ -65,18 +65,18 @@ class _ReferenceCard extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.black,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.close, color: Colors.white70),
-                      const Spacer(),
-                      const Icon(Icons.more_vert, color: Colors.white70),
+                      Icon(Icons.close, color: Colors.white70),
+                      Spacer(),
+                      Icon(Icons.more_vert, color: Colors.white70),
                     ],
                   ),
                   const SizedBox(height: 8),

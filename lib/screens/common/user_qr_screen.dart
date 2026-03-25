@@ -162,11 +162,14 @@ class _UserQrScreenState extends State<UserQrScreen> {
       orElse: () => {},
     );
     final r = (rec['role']?.toString() ?? '').toLowerCase();
-    final userRole = r == 'admin'
-        ? UserRole.admin
-        : (r == 'teacher' || r == 'staff')
-            ? UserRole.staff
-            : UserRole.student;
+    final UserRole userRole;
+    if (r == 'admin') {
+      userRole = UserRole.admin;
+    } else if (r == 'teacher' || r == 'staff') {
+      userRole = UserRole.staff;
+    } else {
+      userRole = UserRole.student;
+    }
     final p = QrCodeService.instance.buildUserPayloadFor(id: uname, role: userRole);
     setState(() => _generatedPayload = p);
   }
