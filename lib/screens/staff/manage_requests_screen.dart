@@ -35,20 +35,20 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     _onlyPending = prefs.getBool('staff_show_pending_only') ?? false;
-    if (mounted) setState(() {});
+    if (context.mounted) setState(() {});
   }
 
   Future<void> _load() async {
     try {
       final rows = await ApiClient.instance.fetchRequests();
       final items = rows.map((e) => Request.fromJson(e)).toList();
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _requests = items;
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
@@ -77,7 +77,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         );
       });
     }).catchError((e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
@@ -137,14 +137,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                     priority: 'low',
                   ),
                 );
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Request deleted.')),
                   );
                 }
               } catch (e) {
                 setState(() => _loading = false);
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                   );

@@ -117,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (newUrl != null && newUrl.trim().isNotEmpty) {
       await AppConfigService.instance.setBaseUrl(newUrl);
       ApiClient.setBaseUrl(AppConfigService.instance.baseUrl);
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('API set to ${AppConfigService.instance.baseUrl}')));
       }
     }
@@ -132,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: const Text('Auto-detect and prefill LAN URL'),
         onTap: () async {
           final ok = await AppConfigService.instance.detectAndApply();
-          if (mounted) {
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(ok ? 'Detected: ${AppConfigService.instance.baseUrl}' : 'No server detected; set URL manually')),
             );
@@ -151,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: const Text('Call ping.php and show status'),
         onTap: () async {
           final ok = await ApiClient.instance.ping();
-          if (mounted) {
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'API reachable' : 'API not reachable')));
           }
         },
@@ -242,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   NotificationService.instance.stopAutoRefresh();
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification settings saved')));
                 }
               },
@@ -316,10 +316,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await ApiClient.instance.updateUser(username: AuthService.instance.currentUsername, password: p1);
       if (ctx.mounted) Navigator.pop(ctx);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
     } catch (e) {
       setStateDialog(() => setSubmitting(false));
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
@@ -417,7 +417,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () async {
                 await prefs.setBool('staff_show_pending_only', onlyPending);
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Work preferences saved')));
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Work preferences saved')));
               },
               child: const Text('Save'),
             ),

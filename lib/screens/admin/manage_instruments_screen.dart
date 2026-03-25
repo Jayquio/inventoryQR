@@ -41,7 +41,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
@@ -277,10 +277,10 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
       if (isEdit) {
         await ApiClient.instance.updateInstrument(originalName: originalName!, instrument: item);
-        if (mounted) setState(() => _instruments[index!] = item);
+        if (context.mounted) setState(() => _instruments[index!] = item);
       } else {
         await ApiClient.instance.createInstrument(instrument: item);
-        if (mounted) setState(() => _instruments.add(item));
+        if (context.mounted) setState(() => _instruments.add(item));
       }
 
       if (context.mounted) {
@@ -292,11 +292,12 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        setSubmitting(false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }
+    } finally {
+      if (context.mounted) setSubmitting(false);
     }
   }
 

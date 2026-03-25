@@ -90,7 +90,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _handleUserLogin(String? userId) async {
     if (userId == null) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid User QR')),
         );
@@ -107,7 +107,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       );
 
       if (userRec.isEmpty) {
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('User not found in database')),
           );
@@ -120,7 +120,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       UserRole? parsedRole = _parseUserRole(dbRoleStr);
 
       if (parsedRole == null) {
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Invalid user role')),
           );
@@ -145,11 +145,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       );
 
       final route = _getDashboardRoute(parsedRole);
-      if (mounted) {
+      if (context.mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
         );
@@ -206,7 +206,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       ),
     );
 
-    if (!mounted) return;
+    if (!context.mounted) return;
     _processInventoryScan(instrument, parsed['type'], parsed['course'], parsed['date']);
   }
 
@@ -255,7 +255,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   void _processInventoryScan(Instrument instrument, String? type, String? course, DateTime? date) {
     if (instrument.name.isEmpty) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Instrument not found!')),
         );
@@ -268,7 +268,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     
     // Authorization checks
     if (!_isAuthorized(role, type)) {
-      if (mounted) {
+      if (context.mounted) {
         String msg = type == 'borrow' 
             ? 'Unauthorized: Only Students/Teachers can use BORROW QR codes'
             : 'Unauthorized: Only Admin can use RECEIVE/RETURN QR codes';
@@ -298,7 +298,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   void _handleStudentBorrow(Instrument instrument, String? course, DateTime? date) {
     if (instrument.available <= 0) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Instrument not available')),
         );
@@ -306,13 +306,13 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       }
       return;
     }
-    if (mounted) {
+    if (context.mounted) {
       Navigator.pushNamed(context, '/submit_request', arguments: {
         'instrumentName': instrument.name,
         'course': course,
         'date': date,
       }).then((_) {
-        if (mounted) setState(() => _isScanning = true);
+        if (context.mounted) setState(() => _isScanning = true);
       });
     }
   }

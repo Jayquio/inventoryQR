@@ -43,15 +43,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         user: AuthService.instance.currentUsername,
       );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+      );
       return;
     }
 
-    if (!mounted) return;
+    if (!context.mounted) return;
     setState(() {
       requests[index].status = RequestStatus.returned;
       final instrument = instruments.firstWhere(
@@ -84,7 +83,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         priority: 'low',
       ),
     );
-    if (mounted) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Marked as returned.')),
       );
@@ -170,26 +169,35 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              setState(() {
-                requests.removeAt(index);
-              });
-              NotificationService.instance.add(
-                NotificationItem(
-                  id: 'student_${DateTime.now().microsecondsSinceEpoch}',
-                  title: 'Request Removed',
-                  message: 'Your request for ${req.instrumentName} was removed by Admin.',
-                  type: 'info',
-                  timestamp: DateTime.now().toIso8601String(),
-                  recipient: 'Student',
-                  priority: 'low',
-                ),
-              );
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Request deleted.')),
-                );
+              try {
+                await ApiClient.instance.deleteRequest(id: req.id);
+                if (context.mounted) {
+                  setState(() {
+                    requests.removeAt(index);
+                  });
+                  NotificationService.instance.add(
+                    NotificationItem(
+                      id: 'student_${DateTime.now().microsecondsSinceEpoch}',
+                      title: 'Request Removed',
+                      message: 'Your request for ${req.instrumentName} was removed by Admin.',
+                      type: 'info',
+                      timestamp: DateTime.now().toIso8601String(),
+                      recipient: 'Student',
+                      priority: 'low',
+                    ),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Request deleted.')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+                  );
+                }
               }
             },
             child: const Text('Delete'),

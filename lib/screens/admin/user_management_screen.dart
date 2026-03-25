@@ -39,7 +39,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
@@ -99,7 +99,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setSubmitting(true);
     try {
       final res = await ApiClient.instance.createUser(username: username, password: password, role: role);
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _users.add({
             'id': res['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -107,10 +107,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             'role': (res['role']?.toString() ?? role).toLowerCase(),
           });
         });
-      }
-      if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User created in database')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User added')),
+        );
       }
     } catch (e) {
       if (context.mounted) {
@@ -175,14 +175,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         role: newRole,
         password: newPassword.isEmpty ? null : newPassword,
       );
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _users[index] = {...user, 'role': newRole};
         });
-      }
-      if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User updated in database')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User updated')),
+        );
       }
     } catch (e) {
       if (context.mounted) {
@@ -229,15 +229,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               try {
                 final username = _users[index]['username'];
                 await ApiClient.instance.deleteUser(username: username);
-                if (mounted) {
+                if (context.mounted) {
                   setState(() {
                     _users.removeAt(index);
                   });
-                }
-                if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('User deleted from database')),
+                    const SnackBar(content: Text('User deleted')),
                   );
                 }
               } catch (e) {
@@ -473,7 +471,7 @@ class _UserFormContent extends StatelessWidget {
             const SizedBox(height: 8),
           ],
           DropdownButtonFormField<String>(
-            initialValue: selectedRole,
+            value: selectedRole,
             decoration: const InputDecoration(labelText: 'Role'),
             items: const [
               DropdownMenuItem(value: 'Admin', child: Text('Admin')),

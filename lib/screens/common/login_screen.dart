@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (username == 'admin' && password == 'admin123') {
         AuthService.instance.setUsername(username);
         AuthService.instance.setRole(UserRole.admin);
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Local Maintenance Mode Activated')),
           );
@@ -197,20 +197,20 @@ class _LoginScreenState extends State<LoginScreen> {
         AuthService.instance.setUsername(username);
         AuthService.instance.setRole(role);
         _addLoginNotification(username);
-        if (mounted) {
+        if (context.mounted) {
           Navigator.pushReplacementNamed(context, _getRoute(role));
         }
       } else {
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials')));
         }
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (context.mounted) setState(() => _isLoading = false);
     }
   }
 
