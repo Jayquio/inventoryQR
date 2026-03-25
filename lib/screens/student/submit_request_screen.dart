@@ -154,173 +154,25 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          const NotificationIcon(recipients: ['Student']),
+        actions: const [
+          NotificationIcon(recipients: ['Student']),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isTeacher ? 'Teacher Request' : 'Create a New Request',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Provide details and select an instrument',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildHeader(isTeacher),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
-                    _buildFormCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle(isTeacher ? 'Teacher' : 'Student'),
-                          const SizedBox(height: 12),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: Icon(Icons.person, color: AppTheme.primaryColor),
-                            title: Text(_studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(isTeacher ? 'From your faculty account' : 'From your account'),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildUserCard(isTeacher),
                     const SizedBox(height: 20),
-                    _buildFormCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle('Request Details'),
-                          const SizedBox(height: 16),
-                          if (_loading)
-                            const LinearProgressIndicator(),
-                          if (!_loading)
-                            DropdownButtonFormField<String>(
-                            decoration: _inputDecoration('Select Instrument', Icons.inventory),
-                            isExpanded: true,
-                            initialValue: _selectedInstrument.isNotEmpty &&
-                                    _instruments.any((i) => i.name == _selectedInstrument)
-                                ? _selectedInstrument
-                                : null,
-                            items: _instruments.map((instrument) {
-                              return DropdownMenuItem<String>(
-                                value: instrument.name,
-                                child: Text(instrument.name),
-                              );
-                            }).toList(),
-                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                            onChanged: (value) => setState(() => _selectedInstrument = value ?? ''),
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            decoration: _inputDecoration('Course (CASE)', Icons.school),
-                            isExpanded: true,
-                            value: _selectedCourse,
-                            items: _caseCourses.map((course) {
-                              return DropdownMenuItem<String>(
-                                value: course,
-                                child: Text(course, style: const TextStyle(fontSize: 13)),
-                              );
-                            }).toList(),
-                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                            onChanged: (value) => setState(() => _selectedCourse = value),
-                          ),
-                          const SizedBox(height: 16),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: Icon(Icons.event, color: AppTheme.primaryColor),
-                            title: const Text('Needed Date & Time'),
-                            subtitle: Text(
-                              _neededAt != null
-                                  ? '${_neededAt!.toLocal()}'.split('.').first
-                                  : 'Tap to set when you need the instrument',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                            onTap: () async {
-                              final now = DateTime.now();
-                              final date = await showDatePicker(
-                                context: context,
-                                initialDate: now,
-                                firstDate: now,
-                                lastDate: DateTime(now.year + 1),
-                              );
-                              if (date != null && context.mounted) {
-                                final time = await showTimePicker(
-                                  context: context,
-                                  initialTime: TimeOfDay.now(),
-                                );
-                                if (time != null && mounted) {
-                                  setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
-                                }
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            decoration: _inputDecoration('Purpose', Icons.flag),
-                            maxLines: 3,
-                            validator: (value) => value!.isEmpty ? 'Required' : null,
-                            onSaved: (value) => _purpose = value!,
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildDetailsCard(),
                     const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _submitRequest,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.secondaryColor,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.send),
-                            SizedBox(width: 12),
-                            Text(
-                              'Submit Request',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    _buildSubmitButton(),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -365,22 +217,192 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon, color: AppTheme.primaryColor),
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.grey.shade300),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppTheme.secondaryColor, width: 2),
+        borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
       ),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: Colors.grey.shade50,
+    );
+  }
+
+  Widget _buildHeader(bool isTeacher) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isTeacher ? 'Teacher Request' : 'Create a New Request',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Provide details and select an instrument',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserCard(bool isTeacher) {
+    return _buildFormCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle(isTeacher ? 'Teacher' : 'Student'),
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.person, color: AppTheme.primaryColor),
+            title: Text(_studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(isTeacher ? 'From your faculty account' : 'From your account'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailsCard() {
+    return _buildFormCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Request Details'),
+          const SizedBox(height: 16),
+          if (_loading) const LinearProgressIndicator(),
+          if (!_loading) _buildInstrumentDropdown(),
+          const SizedBox(height: 16),
+          _buildCourseDropdown(),
+          const SizedBox(height: 16),
+          _buildDateTimePicker(),
+          const SizedBox(height: 16),
+          _buildPurposeField(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstrumentDropdown() {
+    return DropdownButtonFormField<String>(
+      decoration: _inputDecoration('Select Instrument', Icons.inventory),
+      isExpanded: true,
+      initialValue: _selectedInstrument.isNotEmpty && _instruments.any((i) => i.name == _selectedInstrument)
+          ? _selectedInstrument
+          : null,
+      items: _instruments.map((instrument) {
+        return DropdownMenuItem<String>(
+          value: instrument.name,
+          child: Text(instrument.name),
+        );
+      }).toList(),
+      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+      onChanged: (value) => setState(() => _selectedInstrument = value ?? ''),
+    );
+  }
+
+  Widget _buildCourseDropdown() {
+    return DropdownButtonFormField<String>(
+      decoration: _inputDecoration('Course (CASE)', Icons.school),
+      isExpanded: true,
+      value: _selectedCourse,
+      items: _caseCourses.map((course) {
+        return DropdownMenuItem<String>(
+          value: course,
+          child: Text(course, style: const TextStyle(fontSize: 13)),
+        );
+      }).toList(),
+      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+      onChanged: (value) => setState(() => _selectedCourse = value),
+    );
+  }
+
+  Widget _buildDateTimePicker() {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(Icons.event, color: AppTheme.primaryColor),
+      title: const Text('Needed Date & Time'),
+      subtitle: Text(
+        _neededAt != null ? '${_neededAt!.toLocal()}'.split('.').first : 'Tap to set when you need the instrument',
+        style: const TextStyle(color: Colors.grey),
+      ),
+      onTap: _pickDateTime,
+    );
+  }
+
+  Future<void> _pickDateTime() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: DateTime(now.year + 1),
+    );
+    if (date != null && context.mounted) {
+      final time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+      if (time != null && mounted) {
+        setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+      }
+    }
+  }
+
+  Widget _buildPurposeField() {
+    return TextFormField(
+      decoration: _inputDecoration('Purpose', Icons.flag),
+      maxLines: 3,
+      validator: (value) => value!.isEmpty ? 'Required' : null,
+      onSaved: (value) => _purpose = value!,
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _submitRequest,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.secondaryColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 4,
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.send),
+            SizedBox(width: 12),
+            Text(
+              'Submit Request',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -139,7 +139,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text("Track Status"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/track_status');
+                Navigator.pushNamed(context, AppRoutes.trackStatus);
               },
             ),
             ListTile(

@@ -202,7 +202,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               pending.toString(),
               Icons.pending,
               AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/track_status'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
@@ -211,7 +211,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               approved.toString(),
               Icons.check_circle,
               AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, '/track_status'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
@@ -220,7 +220,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               total.toString(),
               Icons.assignment,
               AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/track_status'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
@@ -282,7 +282,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               title: 'Track',
               icon: Icons.track_changes,
               color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/track_status'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildActionCard(
               context,

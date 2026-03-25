@@ -147,7 +147,7 @@ class MyApp extends StatelessWidget {
             },
             '/handle_returns': (context) => const HandleReturnsScreen(),
             '/generate_reports': (context) => const GenerateReportsScreen(),
-            '/track_status': (context) => const TrackStatusScreen(),
+            AppRoutes.trackStatus: (context) => const TrackStatusScreen(),
             '/layout_preview': (context) => const LayoutPreviewScreen(),
             '/qr_scanner': (context) {
               final args = ModalRoute.of(context)!.settings.arguments as String?;

@@ -199,7 +199,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               pending.toString(),
               Icons.pending_actions,
               AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/track_status'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
@@ -208,7 +208,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               active.toString(),
               Icons.inventory_2,
               AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, '/track_status'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
@@ -217,7 +217,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               returned.toString(),
               Icons.assignment_return,
               AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/track_status'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
@@ -258,7 +258,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               title: 'Track Status',
               icon: Icons.timeline,
               color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/track_status'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildActionCard(
               context,

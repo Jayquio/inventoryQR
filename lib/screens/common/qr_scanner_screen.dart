@@ -71,8 +71,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     for (final p in parts) {
       final kv = p.split('=');
       if (kv.length == 2) {
-        if (kv[0] == 'id') userId = kv[1];
-        if (kv[0] == 'role') role = kv[1];
+        if (kv[0] == 'id') {
+          userId = kv[1];
+        }
+        if (kv[0] == 'role') {
+          role = kv[1];
+        }
       }
     }
 
@@ -223,10 +227,15 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       if (kv.length == 2) {
         final key = kv[0];
         final val = kv[1];
-        if (key == 'type') result['type'] = val;
-        else if (key == 'name') result['name'] = val;
-        else if (key == 'course') result['course'] = val;
-        else if (key == 'date') result['date'] = DateTime.tryParse(val);
+        if (key == 'type') {
+          result['type'] = val;
+        } else if (key == 'name') {
+          result['name'] = val;
+        } else if (key == 'course') {
+          result['course'] = val;
+        } else if (key == 'date') {
+          result['date'] = DateTime.tryParse(val);
+        }
       }
     }
     return result;
@@ -278,8 +287,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   bool _isAuthorized(UserRole role, String? type) {
-    if (type == 'borrow' && !(role == UserRole.student || role == UserRole.staff)) return false;
-    if ((type == 'receive' || type == 'return') && role != UserRole.admin) return false;
+    if (type == 'borrow' && !(role == UserRole.student || role == UserRole.staff)) {
+      return false;
+    }
+    if ((type == 'receive' || type == 'return') && role != UserRole.admin) {
+      return false;
+    }
     return true;
   }
 

@@ -56,7 +56,7 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
       ModuleSearchItem(title: 'Log Maintenance', description: 'Record maintenance activities', route: '/log_maintenance', icon: Icons.build),
       ModuleSearchItem(title: 'Handle Returns', description: 'Process item returns', route: '/handle_returns', icon: Icons.assignment_return),
       ModuleSearchItem(title: 'Submit Request', description: 'Request an instrument', route: '/submit_request', icon: Icons.add_circle),
-      ModuleSearchItem(title: 'Track Status', description: 'Track your requests', route: '/track_status', icon: Icons.track_changes),
+      ModuleSearchItem(title: 'Track Status', description: 'Track your requests', route: AppRoutes.trackStatus, icon: Icons.track_changes),
       ModuleSearchItem(title: 'Dashboard', description: 'Go to home dashboard', route: '/', icon: Icons.dashboard),
     ];
     _filtered = _modules;

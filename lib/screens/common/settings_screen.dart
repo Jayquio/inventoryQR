@@ -276,44 +276,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setStateDialog) => AlertDialog(
           title: const Text('Change Password'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: newPwController, obscureText: true, decoration: const InputDecoration(labelText: 'New Password')),
-              const SizedBox(height: 8),
-              TextField(controller: confirmPwController, obscureText: true, decoration: const InputDecoration(labelText: 'Confirm Password')),
-            ],
-          ),
+          content: _buildPasswordDialogContent(newPwController, confirmPwController),
           actions: [
             TextButton(onPressed: submitting ? null : () => Navigator.pop(ctx), child: const Text('Cancel')),
             TextButton(
-              onPressed: submitting ? null : () async {
-                final p1 = newPwController.text.trim();
-                final p2 = confirmPwController.text.trim();
-                if (p1.isEmpty || p2.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter both fields')));
-                  return;
-                }
-                if (p1 != p2) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
-                  return;
-                }
-                setStateDialog(() => submitting = true);
-                try {
-                  await ApiClient.instance.updateUser(username: AuthService.instance.currentUsername, password: p1);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
-                } catch (e) {
-                  setStateDialog(() => submitting = false);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
-                }
-              },
+              onPressed: submitting ? null : () => _handleChangePassword(ctx, setStateDialog, newPwController, confirmPwController, (val) => submitting = val),
               child: const Text('Save'),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildPasswordDialogContent(TextEditingController p1, TextEditingController p2) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(controller: p1, obscureText: true, decoration: const InputDecoration(labelText: 'New Password')),
+        const SizedBox(height: 8),
+        TextField(controller: p2, obscureText: true, decoration: const InputDecoration(labelText: 'Confirm Password')),
+      ],
+    );
+  }
+
+  Future<void> _handleChangePassword(
+    BuildContext ctx,
+    StateSetter setStateDialog,
+    TextEditingController p1Controller,
+    TextEditingController p2Controller,
+    ValueChanged<bool> setSubmitting,
+  ) async {
+    final p1 = p1Controller.text.trim();
+    final p2 = p2Controller.text.trim();
+
+    if (!_validatePasswords(p1, p2)) return;
+
+    setStateDialog(() => setSubmitting(true));
+    try {
+      await ApiClient.instance.updateUser(username: AuthService.instance.currentUsername, password: p1);
+      if (ctx.mounted) Navigator.pop(ctx);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+    } catch (e) {
+      setStateDialog(() => setSubmitting(false));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
+  bool _validatePasswords(String p1, String p2) {
+    if (p1.isEmpty || p2.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter both fields')));
+      return false;
+    }
+    if (p1 != p2) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      return false;
+    }
+    return true;
   }
 
   Widget _buildAdminToolsCard() {
@@ -425,7 +448,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildBottomSheetItem(ctx, Icons.inventory, 'View Instruments', AppRoutes.viewInstruments),
           _buildBottomSheetItem(ctx, Icons.add, 'Submit Request', '/submit_request'),
-          _buildBottomSheetItem(ctx, Icons.track_changes, 'Track Status', '/track_status'),
+          _buildBottomSheetItem(ctx, Icons.track_changes, 'Track Status', AppRoutes.trackStatus),
         ],
       ),
     );
