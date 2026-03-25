@@ -27,8 +27,9 @@ class AdminDashboard extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
+              final navigator = Navigator.of(context);
               ModuleSearchController.instance.setQuery('');
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              navigator.pushNamedAndRemoveUntil('/login', (route) => false);
             },
             tooltip: 'Logout',
           ),
@@ -280,42 +281,60 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
               title: 'Manage Instruments',
               icon: Icons.inventory,
               color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/manage_instruments'),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pushNamed('/manage_instruments');
+              },
             ),
             _buildActionCard(
               context,
               title: 'Generate QR',
               icon: Icons.qr_code_2,
               color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/qr_generator', arguments: 'Admin'),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pushNamed('/qr_generator', arguments: 'Admin');
+              },
             ),
             _buildActionCard(
               context,
               title: 'Scan QR Code',
               icon: Icons.qr_code_scanner,
               color: AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Admin'),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pushNamed('/qr_scanner', arguments: 'Admin');
+              },
             ),
             _buildActionCard(
               context,
               title: 'My QR',
               icon: Icons.qr_code_2,
               color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/user_qr'),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pushNamed('/user_qr');
+              },
             ),
             _buildActionCard(
               context,
               title: 'Requests',
               icon: Icons.assignment,
               color: AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.manageRequests),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pushNamed(AppRoutes.manageRequests);
+              },
             ),
             _buildActionCard(
               context,
               title: 'Reports',
               icon: Icons.report,
               color: AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, '/generate_reports'),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pushNamed('/generate_reports');
+              },
             ),
             _buildActionCard(
               context,
@@ -403,10 +422,13 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: TextButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/notification_center'),
-              icon: const Icon(Icons.open_in_new),
-              label: const Text('Open Center'),
-            ),
+            onPressed: () {
+              final navigator = Navigator.of(context);
+              navigator.pushNamed('/notification_center');
+            },
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('Open Center'),
+          ),
           ),
         ),
       ],
@@ -429,7 +451,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         if (unread > 0) _buildUnreadPill(unread),
         const Spacer(),
         TextButton.icon(
-          onPressed: () => Navigator.pushNamed(context, '/notification_center'),
+          onPressed: () {
+            final navigator = Navigator.of(context);
+            navigator.pushNamed('/notification_center');
+          },
           icon: const Icon(Icons.open_in_new),
           label: const Text('Open Center'),
         ),
@@ -688,7 +713,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
  
   Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color, String route) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, route),
+      onTap: () {
+        final navigator = Navigator.of(context);
+        navigator.pushNamed(route);
+      },
       child: Container(
         width: 100,
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -738,8 +766,6 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       builder: (context) => AlertDialog(
         title: const Text('System Overview'),
         content: Builder(builder: (context) {
-          final ts = TimeOfDay.now();
-          final tsText = ts.format(context);
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -785,7 +811,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         }),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pushNamed(context, '/generate_reports'),
+            onPressed: () {
+              final navigator = Navigator.of(context);
+              navigator.pushNamed('/generate_reports');
+            },
             child: const Text('Reports'),
           ),
           TextButton(

@@ -89,9 +89,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Future<void> _handleUserLogin(String? userId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     if (userId == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Invalid User QR')),
         );
         setState(() => _isScanning = true);
@@ -108,7 +111,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       if (userRec.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(content: Text('User not found in database')),
           );
           setState(() => _isScanning = true);
@@ -121,7 +124,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       if (parsedRole == null) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(content: Text('Invalid user role')),
           );
           setState(() => _isScanning = true);
@@ -146,11 +149,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       final route = _getDashboardRoute(parsedRole);
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
+        navigator.pushNamedAndRemoveUntil(route, (r) => false);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text('Login error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
         );
         setState(() => _isScanning = true);

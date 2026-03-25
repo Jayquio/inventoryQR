@@ -171,6 +171,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     setState(() => _isLoading = true);
     try {
       final username = _usernameController.text.trim();
@@ -181,10 +184,10 @@ class _LoginScreenState extends State<LoginScreen> {
         AuthService.instance.setUsername(username);
         AuthService.instance.setRole(UserRole.admin);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(content: Text('Local Maintenance Mode Activated')),
           );
-          Navigator.pushReplacementNamed(context, '/admin_dashboard');
+          navigator.pushReplacementNamed('/admin_dashboard');
         }
         return;
       }
@@ -198,16 +201,16 @@ class _LoginScreenState extends State<LoginScreen> {
         AuthService.instance.setRole(role);
         _addLoginNotification(username);
         if (context.mounted) {
-          Navigator.pushReplacementNamed(context, _getRoute(role));
+          navigator.pushReplacementNamed(_getRoute(role));
         }
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials')));
+          messenger.showSnackBar(const SnackBar(content: Text('Invalid credentials')));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+        messenger.showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
       }
     } finally {
       if (context.mounted) setState(() => _isLoading = false);

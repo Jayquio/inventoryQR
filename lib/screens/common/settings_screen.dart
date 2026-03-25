@@ -307,6 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     TextEditingController p2Controller,
     ValueChanged<bool> setSubmitting,
   ) async {
+    final messenger = ScaffoldMessenger.of(context);
     final p1 = p1Controller.text.trim();
     final p2 = p2Controller.text.trim();
 
@@ -316,11 +317,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await ApiClient.instance.updateUser(username: AuthService.instance.currentUsername, password: p1);
       if (ctx.mounted) Navigator.pop(ctx);
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+      if (context.mounted) messenger.showSnackBar(const SnackBar(content: Text('Password updated')));
     } catch (e) {
       setStateDialog(() => setSubmitting(false));
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }

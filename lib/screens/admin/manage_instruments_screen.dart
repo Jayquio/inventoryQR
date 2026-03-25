@@ -271,6 +271,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
     if (!_validateForm(context, controllers.name.text, qty, avail)) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     setSubmitting(true);
     try {
       final item = _createInstrumentFromControllers(typeValue, controllers, qty, avail);
@@ -284,21 +285,29 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       }
 
       if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
-        );
-        if (!isEdit) _showQrDialog(context, item.name);
+        _onSuccess(context, isEdit, item, messenger);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
-        );
+        _onError(messenger, e);
       }
     } finally {
       if (context.mounted) setSubmitting(false);
     }
+  }
+
+  void _onSuccess(BuildContext context, bool isEdit, Instrument item, ScaffoldMessengerState messenger) {
+    Navigator.pop(context);
+    messenger.showSnackBar(
+      SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
+    );
+    if (!isEdit) _showQrDialog(context, item.name);
+  }
+
+  void _onError(ScaffoldMessengerState messenger, Object e) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+    );
   }
 
   bool _validateForm(BuildContext context, String name, int qty, int avail) {

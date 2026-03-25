@@ -92,8 +92,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     required String role,
     required Function(bool) setSubmitting,
   }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter username and password')));
+      messenger.showSnackBar(const SnackBar(content: Text('Enter username and password')));
       return;
     }
     setSubmitting(true);
@@ -107,15 +110,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             'role': (res['role']?.toString() ?? role).toLowerCase(),
           });
         });
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        navigator.pop();
+        messenger.showSnackBar(
           const SnackBar(content: Text('User added')),
         );
       }
     } catch (e) {
       if (context.mounted) {
         setSubmitting(false);
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }
@@ -168,6 +171,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     required String newPassword,
     required Function(bool) setSubmitting,
   }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     setSubmitting(true);
     try {
       await ApiClient.instance.updateUser(
@@ -179,15 +185,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         setState(() {
           _users[index] = {...user, 'role': newRole};
         });
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        navigator.pop();
+        messenger.showSnackBar(
           const SnackBar(content: Text('User updated')),
         );
       }
     } catch (e) {
       if (context.mounted) {
         setSubmitting(false);
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }
@@ -226,6 +232,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
           TextButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
               try {
                 final username = _users[index]['username'];
                 await ApiClient.instance.deleteUser(username: username);
@@ -233,14 +241,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   setState(() {
                     _users.removeAt(index);
                   });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  navigator.pop();
+                  messenger.showSnackBar(
                     const SnackBar(content: Text('User deleted')),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                   );
                 }
