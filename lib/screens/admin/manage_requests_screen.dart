@@ -28,7 +28,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   Future<void> _markReturned(int index) async {
     final req = requests[index];
     if (req.id.isEmpty) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cannot sync return: request id is missing.')),
         );
@@ -481,57 +481,61 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
               if (request.neededAt != null && request.neededAt!.isNotEmpty) Text('Needed At: ${request.neededAt}', textAlign: TextAlign.center),
               Text('Status: ${request.status.name}', textAlign: TextAlign.center),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
-                  ),
-                  const SizedBox(width: 8),
-                  if (request.status == RequestStatus.pending) ...[
-                    ElevatedButton(
-                      onPressed: () {
-                        _approveRequest(idx);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                      child: const Text('Approve'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        _rejectRequest(idx);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      child: const Text('Reject'),
-                    ),
-                    const SizedBox(width: 8),
-                  ] else if (request.status == RequestStatus.approved) ...[
-                    ElevatedButton(
-                      onPressed: () {
-                        _markReturned(idx);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                      child: const Text('Returned'),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _deleteRequest(idx);
-                    },
-                    child: const Text('Delete'),
-                  ),
-                ],
-              ),
+              _buildDetailsActions(request, idx),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailsActions(Request request, int idx) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+        const SizedBox(width: 8),
+        if (request.status == RequestStatus.pending) ...[
+          ElevatedButton(
+            onPressed: () {
+              _approveRequest(idx);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Approve'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () {
+              _rejectRequest(idx);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Reject'),
+          ),
+          const SizedBox(width: 8),
+        ] else if (request.status == RequestStatus.approved) ...[
+          ElevatedButton(
+            onPressed: () {
+              _markReturned(idx);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            child: const Text('Returned'),
+          ),
+          const SizedBox(width: 8),
+        ],
+        OutlinedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            _deleteRequest(idx);
+          },
+          child: const Text('Delete'),
+        ),
+      ],
     );
   }
 

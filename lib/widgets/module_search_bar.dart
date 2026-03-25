@@ -99,7 +99,8 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
  
   void _updateOverlay() {
     _overlay?.remove();
-    if (!mounted) return;
+    _overlay = null;
+    if (!context.mounted) return;
     _overlay = OverlayEntry(
       builder: (context) {
         return Positioned.fill(
@@ -223,7 +224,7 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
   void _scheduleAutoClose() {
     _autoCloseTimer?.cancel();
     _autoCloseTimer = Timer(const Duration(seconds: 4), () {
-      if (!mounted) return;
+      if (!context.mounted) return;
       if (_overlay != null) {
         _overlay!.remove();
         _overlay = null;

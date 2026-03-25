@@ -27,7 +27,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future<void> _loadUsers() async {
     try {
       final data = await ApiClient.instance.fetchUsers();
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _users = data
             .map((e) => {

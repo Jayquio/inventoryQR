@@ -40,14 +40,14 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
       final rows = await ApiClient.instance.fetchRequests();
       final reqs = rows.map((e) => Request.fromJson(e)).toList();
       final insts = await ApiClient.instance.fetchInstruments();
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _requests = reqs;
         _instruments = insts;
         _loading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() => _loading = false);
     }
   }

@@ -35,7 +35,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   Future<void> _load() async {
     try {
       final items = await ApiClient.instance.fetchInstruments();
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _instruments = items;
         _loading = false;
