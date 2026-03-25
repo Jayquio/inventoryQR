@@ -91,6 +91,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   }
 
   void _approveRequest(int index) {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       requests[index].status = RequestStatus.approved;
       // Update instrument availability
@@ -123,12 +124,15 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         priority: 'medium',
       ),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Request approved!')),
-    );
+    if (context.mounted) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Request approved!')),
+      );
+    }
   }
 
   void _rejectRequest(int index) {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       requests[index].status = RequestStatus.rejected;
     });
@@ -154,9 +158,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         priority: 'high',
       ),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Request rejected!')),
-    );
+    if (context.mounted) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Request rejected!')),
+      );
+    }
   }
 
   void _deleteRequest(int index) {

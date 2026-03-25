@@ -64,6 +64,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       RequestStatus.returned => 'returned',
       RequestStatus.pending => 'pending',
     };
+    final messenger = ScaffoldMessenger.of(context);
     ApiClient.instance
         .updateRequestStatus(id: req.id, status: newStatusStr, user: AuthService.instance.currentUsername)
         .then((_) {
@@ -78,7 +79,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       });
     }).catchError((e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }

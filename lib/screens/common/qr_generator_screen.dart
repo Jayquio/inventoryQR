@@ -272,7 +272,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
                 context: context,
                 initialTime: TimeOfDay.fromDateTime(_neededAt ?? now),
               );
-              if (time != null && mounted) {
+              if (time != null && context.mounted) {
                 setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
               }
             }
