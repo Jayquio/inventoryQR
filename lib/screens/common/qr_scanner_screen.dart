@@ -207,34 +207,41 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Map<String, dynamic> _parseInventoryCode(String code) {
-    String? type;
-    String? name;
-    String? course;
-    DateTime? date;
-
     if (code.startsWith('QR|')) {
-      final parts = code.substring(3).split(';');
-      for (final p in parts) {
-        final kv = p.split('=');
-        if (kv.length == 2) {
-          if (kv[0] == 'type') type = kv[1];
-          if (kv[0] == 'name') name = kv[1];
-          if (kv[0] == 'course') course = kv[1];
-          if (kv[0] == 'date') date = DateTime.tryParse(kv[1]);
-        }
-      }
+      return _parseQrProtocol(code.substring(3));
     } else if (code.startsWith('INSTR|')) {
-      final parts = code.substring(6).split(';');
-      for (final p in parts) {
-        final kv = p.split('=');
-        if (kv.length == 2) {
-          if (kv[0] == 'name') name = kv[1];
-        }
-      }
-    } else {
-      name = code;
+      return _parseInstrProtocol(code.substring(6));
     }
-    return {'type': type, 'name': name, 'course': course, 'date': date};
+    return {'name': code};
+  }
+
+  Map<String, dynamic> _parseQrProtocol(String content) {
+    final result = <String, dynamic>{};
+    final parts = content.split(';');
+    for (final p in parts) {
+      final kv = p.split('=');
+      if (kv.length == 2) {
+        final key = kv[0];
+        final val = kv[1];
+        if (key == 'type') result['type'] = val;
+        else if (key == 'name') result['name'] = val;
+        else if (key == 'course') result['course'] = val;
+        else if (key == 'date') result['date'] = DateTime.tryParse(val);
+      }
+    }
+    return result;
+  }
+
+  Map<String, dynamic> _parseInstrProtocol(String content) {
+    final result = <String, dynamic>{};
+    final parts = content.split(';');
+    for (final p in parts) {
+      final kv = p.split('=');
+      if (kv.length == 2 && kv[0] == 'name') {
+        result['name'] = kv[1];
+      }
+    }
+    return result;
   }
 
   void _processInventoryScan(Instrument instrument, String? type, String? course, DateTime? date) {

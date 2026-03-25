@@ -220,18 +220,28 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   List<Request> _getFilteredRequests() {
     final searchTerm = _searchController.text.toLowerCase();
     return requests.where((req) {
-      final bySearch = searchTerm.isEmpty ||
-          req.studentName.toLowerCase().contains(searchTerm) ||
-          req.instrumentName.toLowerCase().contains(searchTerm) ||
-          req.purpose.toLowerCase().contains(searchTerm) ||
-          req.status.name.toLowerCase().contains(searchTerm);
-      final byStatus = _statusFilter == 'All' ||
-          (_statusFilter == 'Pending' && req.status == RequestStatus.pending) ||
-          (_statusFilter == 'Approved' && req.status == RequestStatus.approved) ||
-          (_statusFilter == 'Rejected' && req.status == RequestStatus.rejected) ||
-          (_statusFilter == 'Returned' && req.status == RequestStatus.returned);
-      return bySearch && byStatus;
+      return _filterBySearch(req, searchTerm) && _filterByStatus(req, _statusFilter);
     }).toList();
+  }
+
+  bool _filterBySearch(Request req, String term) {
+    if (term.isEmpty) return true;
+    return req.studentName.toLowerCase().contains(term) ||
+        req.instrumentName.toLowerCase().contains(term) ||
+        req.purpose.toLowerCase().contains(term) ||
+        req.status.name.toLowerCase().contains(term);
+  }
+
+  bool _filterByStatus(Request req, String filter) {
+    if (filter == 'All') return true;
+    final s = req.status;
+    return switch (filter) {
+      'Pending' => s == RequestStatus.pending,
+      'Approved' => s == RequestStatus.approved,
+      'Rejected' => s == RequestStatus.rejected,
+      'Returned' => s == RequestStatus.returned,
+      _ => true,
+    };
   }
 
   List<Request> _getPageItems(List<Request> filteredRequests) {

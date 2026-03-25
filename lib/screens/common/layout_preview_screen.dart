@@ -18,7 +18,7 @@ class LayoutPreviewScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF5F2FA), Colors.white],
+            colors: [const Color(0xFFF5F2FA), Colors.white],
           ),
         ),
         child: LayoutBuilder(
@@ -72,11 +72,11 @@ class _ReferenceCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.close, color: Colors.white70),
-                      const Spacer(),
-                      const Icon(Icons.more_vert, color: Colors.white70),
+                      Icon(Icons.close, color: Colors.white70),
+                      Spacer(),
+                      Icon(Icons.more_vert, color: Colors.white70),
                     ],
                   ),
                   const SizedBox(height: 8),
