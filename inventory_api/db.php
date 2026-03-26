@@ -8,9 +8,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 // Ensure all server-side timestamps use Philippine time
 @date_default_timezone_set('Asia/Manila');
 
-$dsn = 'mysql:host=127.0.0.1;dbname=medlab_inventory;charset=utf8mb4';
+$dsn = 'mysql:host=db;dbname=medlab_inventory;charset=utf8mb4';
 $user = 'root';
-$pass = '';
+$pass = 'root';
 
 try {
   $pdo = new PDO($dsn, $user, $pass, [

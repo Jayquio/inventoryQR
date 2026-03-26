@@ -1,0 +1,37 @@
+services:
+  # Database Service
+  db:
+    image: mariadb:10.11
+    container_name: inventory_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: medlab_inventory
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./medlab_inventory.sql:/docker-entrypoint-initdb.d/medlab_inventory.sql
+
+  # PHP API Service
+  api:
+    build:
+      context: ./inventory_api
+      dockerfile: Dockerfile
+    container_name: inventory_api
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+  # Flutter Web Frontend
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: inventory_web
+    restart: always
+    ports:
+      - "8000:80"
+    depends_on:
+      - api
