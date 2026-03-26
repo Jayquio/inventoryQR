@@ -115,10 +115,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (newUrl != null && newUrl.trim().isNotEmpty) {
+      final messenger = ScaffoldMessenger.of(context);
       await AppConfigService.instance.setBaseUrl(newUrl);
       ApiClient.setBaseUrl(AppConfigService.instance.baseUrl);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('API set to ${AppConfigService.instance.baseUrl}')));
+        messenger.showSnackBar(SnackBar(content: Text('API set to ${AppConfigService.instance.baseUrl}')));
       }
     }
   }
@@ -131,9 +132,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Detect API Server'),
         subtitle: const Text('Auto-detect and prefill LAN URL'),
         onTap: () async {
+          final messenger = ScaffoldMessenger.of(context);
           final ok = await AppConfigService.instance.detectAndApply();
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            messenger.showSnackBar(
               SnackBar(content: Text(ok ? 'Detected: ${AppConfigService.instance.baseUrl}' : 'No server detected; set URL manually')),
             );
           }
@@ -150,9 +152,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Test API Connection'),
         subtitle: const Text('Call ping.php and show status'),
         onTap: () async {
+          final messenger = ScaffoldMessenger.of(context);
           final ok = await ApiClient.instance.ping();
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'API reachable' : 'API not reachable')));
+            messenger.showSnackBar(SnackBar(content: Text(ok ? 'API reachable' : 'API not reachable')));
           }
         },
       ),
@@ -234,6 +237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             TextButton(
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 await prefs.setBool('notifications_enabled', enabled);
                 await prefs.setBool('notifications_auto_refresh', autoRefresh);
                 if (autoRefresh) {
@@ -243,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification settings saved')));
+                  messenger.showSnackBar(const SnackBar(content: Text('Notification settings saved')));
                 }
               },
               child: const Text('Save'),
@@ -416,9 +420,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             TextButton(
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 await prefs.setBool('staff_show_pending_only', onlyPending);
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Work preferences saved')));
+                if (context.mounted) messenger.showSnackBar(const SnackBar(content: Text('Work preferences saved')));
               },
               child: const Text('Save'),
             ),

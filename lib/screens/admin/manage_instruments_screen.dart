@@ -42,8 +42,9 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       });
     } catch (e) {
       if (!context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
     }

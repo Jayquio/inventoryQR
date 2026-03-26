@@ -367,7 +367,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         context: context,
         initialTime: TimeOfDay.now(),
       );
-      if (time != null && mounted) {
+      if (time != null && context.mounted) {
         setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
       }
     }

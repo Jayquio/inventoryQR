@@ -27,9 +27,10 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
 
   Future<void> _markReturned(int index) async {
     final req = requests[index];
+    final messenger = ScaffoldMessenger.of(context);
     if (req.id.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Cannot sync return: request id is missing.')),
         );
       }
@@ -44,7 +45,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
       return;
@@ -84,7 +85,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       ),
     );
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Marked as returned.')),
       );
     }
@@ -176,6 +177,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(ctx);
               try {
                 await ApiClient.instance.deleteRequest(id: req.id);
@@ -194,13 +196,13 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                       priority: 'low',
                     ),
                   );
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(content: Text('Request deleted.')),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                   );
                 }

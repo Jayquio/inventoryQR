@@ -364,6 +364,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Future<void> _processTransaction(BuildContext context, Instrument instrument, String txType) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     try {
       final updatedAvail = await ApiClient.instance.processTransaction(
         type: txType,
@@ -374,14 +376,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         instrument.available = updatedAvail;
       }
       if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        navigator.pop();
+        messenger.showSnackBar(
           SnackBar(content: Text(txType == 'receive' ? 'Received (borrow processed) via QR' : 'Returned via QR')),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }

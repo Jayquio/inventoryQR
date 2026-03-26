@@ -267,14 +267,14 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
               firstDate: now,
               lastDate: DateTime(now.year + 1),
             );
-            if (date != null && context.mounted) {
-              final time = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay.fromDateTime(_neededAt ?? now),
-              );
-              if (time != null && context.mounted) {
-                setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
-              }
+            if (!context.mounted || date == null) return;
+            
+            final time = await showTimePicker(
+              context: context,
+              initialTime: TimeOfDay.fromDateTime(_neededAt ?? now),
+            );
+            if (time != null && context.mounted) {
+              setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
             }
           },
           icon: const Icon(Icons.calendar_today),
