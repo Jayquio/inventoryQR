@@ -70,8 +70,8 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
         elevation: 0,
       ),
       body: RoleGuard(
-        allowed: const {UserRole.admin},
-        unauthorizedMessage: 'Only Admin can access maintenance',
+        allowed: const {UserRole.admin, UserRole.superadmin},
+        unauthorizedMessage: 'Only Admin/Superadmin can access maintenance',
         child: SingleChildScrollView(
         child: Column(
           children: [

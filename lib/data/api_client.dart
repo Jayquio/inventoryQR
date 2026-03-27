@@ -17,7 +17,7 @@ class ApiClient {
 
   static String _baseUrl() {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
-    if (kIsWeb) return 'http://localhost/inventory_api';
+    if (kIsWeb) return 'http://localhost:8080';
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2/inventory_api';
     }

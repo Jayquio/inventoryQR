@@ -394,6 +394,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     switch (roleStr) {
       case 'admin':
         return UserRole.admin;
+      case 'superadmin':
+        return UserRole.superadmin;
       case 'staff':
       case 'teacher':
         return UserRole.staff;
@@ -407,6 +409,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   String _getDashboardRoute(UserRole role) {
     switch (role) {
       case UserRole.admin:
+      case UserRole.superadmin:
         return '/admin_dashboard';
       case UserRole.staff:
         return '/staff_dashboard';

@@ -1,7 +1,10 @@
 FROM php:8.2-apache
 
-# Install mysqli for database connection
-RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
+# Install dependencies and mysqli for database connection
+RUN apt-get update && apt-get install -y \
+    curl \
+    && docker-php-ext-install mysqli pdo pdo_mysql \
+    && docker-php-ext-enable mysqli
 
 # Enable Apache mod_rewrite if needed
 RUN a2enmod rewrite

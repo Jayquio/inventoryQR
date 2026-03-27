@@ -8,9 +8,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 // Ensure all server-side timestamps use Philippine time
 @date_default_timezone_set('Asia/Manila');
 
-$dsn = 'mysql:host=db;dbname=medlab_inventory;charset=utf8mb4';
-$user = 'root';
-$pass = 'root';
+// Use environment variables for flexible configuration (Docker or local)
+$host = getenv('DB_HOST') ?: 'localhost';
+$dbname = getenv('DB_NAME') ?: 'medlab_inventory';
+$dbuser = getenv('DB_USER') ?: 'root';
+$dbpass = getenv('DB_PASS') ?: ''; // XAMPP default is empty
+
+$dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
+$user = $dbuser;
+$pass = $dbpass;
 
 try {
   $pdo = new PDO($dsn, $user, $pass, [

@@ -1,6 +1,7 @@
 // lib/screens/common/login_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Add this for kIsWeb
 import '../../core/theme.dart';
 import '../../data/auth_service.dart';
 import '../../data/notification_service.dart';
@@ -100,6 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildUsernameField() {
     return TextFormField(
       controller: _usernameController,
+      onChanged: (v) => setState(() {}), // Refresh to show superadmin settings
       decoration: InputDecoration(
         labelText: 'Username',
         prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryColor),
@@ -157,13 +159,30 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildQrLoginOption() {
-    return TextButton.icon(
-      onPressed: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'login'),
-      icon: const Icon(Icons.qr_code_scanner, color: AppTheme.secondaryColor),
-      label: const Text(
-        'Login via QR Code',
-        style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.w600),
-      ),
+    return Column(
+      children: [
+        TextButton.icon(
+          onPressed: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'login'),
+          icon: const Icon(Icons.qr_code_scanner, color: AppTheme.secondaryColor),
+          label: const Text(
+            'Login via QR Code',
+            style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.w600),
+          ),
+        ),
+        // Superadmin API Config Access
+        if (_usernameController.text.trim().toLowerCase() == 'superadmin')
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: TextButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/settings', arguments: 'Admin'),
+              icon: const Icon(Icons.settings, color: Colors.orange, size: 16),
+              label: const Text(
+                'Configure API (Superadmin)',
+                style: TextStyle(color: Colors.orange, fontSize: 12),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -178,13 +197,39 @@ class _LoginScreenState extends State<LoginScreen> {
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
 
-      // Local Admin Bypass (Works without XAMPP for maintenance)
+      // 1. Superadmin Offline Bypass (Works even if XAMPP is off)
+      if (username == 'superadmin' && password == 'superadmin123') {
+        AuthService.instance.setUsername(username);
+        AuthService.instance.setRole(UserRole.superadmin);
+        if (context.mounted) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Superadmin Bypass Mode Activated (Offline)')),
+          );
+          // Superadmin uses admin dashboard for now
+          navigator.pushReplacementNamed('/admin_dashboard');
+        }
+        return;
+      }
+
+      // 2. Local Admin Bypass (Maintenance - Web Only)
       if (username == 'admin' && password == 'admin123') {
+        if (!kIsWeb) {
+          if (context.mounted) {
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Admin access is restricted to Web browsers only.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          setState(() => _isLoading = false);
+          return;
+        }
         AuthService.instance.setUsername(username);
         AuthService.instance.setRole(UserRole.admin);
         if (context.mounted) {
           messenger.showSnackBar(
-            const SnackBar(content: Text('Local Maintenance Mode Activated')),
+            const SnackBar(content: Text('Local Admin Maintenance Mode Activated')),
           );
           navigator.pushReplacementNamed('/admin_dashboard');
         }
@@ -196,6 +241,20 @@ class _LoginScreenState extends State<LoginScreen> {
       UserRole? role = _parseRole(roleStr);
 
       if (role != null) {
+        // 3. API Role Check - Restrict Admin to Web
+        if (role == UserRole.admin && !kIsWeb) {
+          if (context.mounted) {
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Admin Dashboard is restricted to Web browsers only.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          setState(() => _isLoading = false);
+          return;
+        }
+
         AuthService.instance.setUsername(username);
         AuthService.instance.setRole(role);
         _addLoginNotification(username);

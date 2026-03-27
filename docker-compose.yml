@@ -1,31 +1,35 @@
 services:
-  # Database Service
-  db:
-    image: mariadb:10.11
-    container_name: inventory_db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: medlab_inventory
-    ports:
-      - "3306:3306"
-    volumes:
-      - ./medlab_inventory.sql:/docker-entrypoint-initdb.d/medlab_inventory.sql
 
-  # PHP API Service
+  # ── PHP API (Connects to XAMPP MySQL) ──────────────────────────────────────
   api:
+    image: inventory_api:latest
     build:
       context: ./inventory_api
       dockerfile: Dockerfile
     container_name: inventory_api
     restart: always
+    environment:
+      # Use host.docker.internal to connect to XAMPP on Windows host
+      DB_HOST: host.docker.internal
+      DB_NAME: medlab_inventory
+      DB_USER: root
+      DB_PASS: ""
     ports:
       - "8080:80"
-    depends_on:
-      - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - inventory_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/ping.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-  # Flutter Web Frontend
+  # ── Flutter Web ───────────────────────────────────────────────────────────────
   web:
+    image: inventory_web:latest
     build:
       context: .
       dockerfile: Dockerfile.web
@@ -33,5 +37,12 @@ services:
     restart: always
     ports:
       - "8000:80"
+    networks:
+      - inventory_net
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+networks:
+  inventory_net:
+    driver: bridge

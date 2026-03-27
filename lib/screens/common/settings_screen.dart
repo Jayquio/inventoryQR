@@ -18,13 +18,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _showAdvanced = false;
-  void _unlockAdvanced() {
-    if (widget.userRole != 'Admin') return;
-    if (_showAdvanced) return;
-    setState(() => _showAdvanced = true);
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Advanced settings unlocked')));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
-          onLongPress: _unlockAdvanced,
-          child: const Text('Settings'),
-        ),
+        title: const Text('Settings'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -47,7 +37,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (role == 'Admin' && _showAdvanced) ...[
+          // API settings are now always visible for Admin/Superadmin
+          if (role == 'Admin') ...[
             _buildApiServerCard(),
             const SizedBox(height: 8),
             _buildDetectApiCard(),

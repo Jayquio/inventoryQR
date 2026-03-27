@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_inventorymanagement/data/api_client.dart';
 import 'package:flutter_application_inventorymanagement/models/instrument.dart';
+import '../../widgets/role_guard.dart';
+import '../../data/auth_service.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/instrument_card.dart';
 import '../../core/constants.dart';
@@ -369,32 +371,36 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     final searchTerm = _searchController.text.toLowerCase();
     final filteredInstruments = _getFilteredInstruments(searchTerm);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Manage Instruments"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            onPressed: () {
-              Navigator.pushNamed(context, '/qr_scanner', arguments: 'Teacher');
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: LinearProgressIndicator(),
+    return RoleGuard(
+      allowed: const {UserRole.admin, UserRole.superadmin},
+      webOnly: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Manage Instruments"),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner),
+              onPressed: () {
+                Navigator.pushNamed(context, '/qr_scanner', arguments: 'Teacher');
+              },
             ),
-          _buildStatsRow(),
-          _buildSearchFilterBar(),
-          Expanded(
-            child: _buildInstrumentList(filteredInstruments),
-          ),
-        ],
+          ],
+        ),
+        body: Column(
+          children: [
+            const SizedBox(height: 12),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: LinearProgressIndicator(),
+              ),
+            _buildStatsRow(),
+            _buildSearchFilterBar(),
+            Expanded(
+              child: _buildInstrumentList(filteredInstruments),
+            ),
+          ],
+        ),
       ),
     );
   }

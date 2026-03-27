@@ -1,6 +1,8 @@
 // lib/screens/admin/user_management_screen.dart
 
 import 'package:flutter/material.dart';
+import '../../widgets/role_guard.dart';
+import '../../data/auth_service.dart';
 import '../../widgets/search_bar.dart';
 import '../../data/api_client.dart';
 
@@ -265,6 +267,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   Color _getRoleColor(String role) {
     switch (_formatRole(role)) {
+      case 'Superadmin':
+        return Colors.purple;
       case 'Admin':
         return Colors.red;
       case 'Teacher':
@@ -278,6 +282,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   String _formatRole(String role) {
     final r = role.toLowerCase();
+    if (r == 'superadmin') return 'Superadmin';
     if (r == 'admin') return 'Admin';
     if (r == 'teacher' || r == 'staff') return 'Teacher';
     if (r == 'student') return 'Student';
@@ -293,42 +298,46 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           (user['role'] as String).toLowerCase().contains(searchTerm);
     }).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('User Management'),
-        actions: [
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))),
+    return RoleGuard(
+      allowed: const {UserRole.admin, UserRole.superadmin},
+      webOnly: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('User Management'),
+          actions: [
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))),
+              ),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: _addUser,
+              tooltip: 'Add User',
             ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _addUser,
-            tooltip: 'Add User',
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadUsers,
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: DebouncedSearchBar(
-              controller: _searchController,
-              hintText: 'Search users...',
-              onChanged: (value) => setState(() {}),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadUsers,
+              tooltip: 'Refresh',
             ),
-          ),
-          _buildSummaryCards(),
-          Expanded(
-            child: _buildUserList(filteredUsers),
-          ),
-        ],
+          ],
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: DebouncedSearchBar(
+                controller: _searchController,
+                hintText: 'Search users...',
+                onChanged: (value) => setState(() {}),
+              ),
+            ),
+            _buildSummaryCards(),
+            Expanded(
+              child: _buildUserList(filteredUsers),
+            ),
+          ],
+        ),
       ),
     );
   }

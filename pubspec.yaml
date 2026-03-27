@@ -65,7 +65,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "logo.jfif"
+  image_path: "icon.jfif"
   min_sdk_android: 21 # android min sdk min:16, default 21
   
 

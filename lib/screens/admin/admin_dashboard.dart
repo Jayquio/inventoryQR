@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../widgets/app_drawer.dart';
+import '../../widgets/role_guard.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/hover_scale_card.dart';
 import '../../widgets/module_search_bar.dart';
@@ -18,25 +19,29 @@ class AdminDashboard extends StatelessWidget {
  
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Admin Dashboard"),
-        backgroundColor: AppTheme.primaryColor,
-        actions: [
-          const NotificationIcon(recipients: ['Admin'], types: ['login', 'request']),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              final navigator = Navigator.of(context);
-              ModuleSearchController.instance.setQuery('');
-              navigator.pushNamedAndRemoveUntil('/login', (route) => false);
-            },
-            tooltip: 'Logout',
-          ),
-        ],
+    return RoleGuard(
+      allowed: const {UserRole.admin, UserRole.superadmin},
+      webOnly: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Admin Dashboard"),
+          backgroundColor: AppTheme.primaryColor,
+          actions: [
+            const NotificationIcon(recipients: ['Admin'], types: ['login', 'request']),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () {
+                final navigator = Navigator.of(context);
+                ModuleSearchController.instance.setQuery('');
+                navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+              },
+              tooltip: 'Logout',
+            ),
+          ],
+        ),
+        drawer: const AppDrawer(userRole: 'Admin'),
+        body: const _AdminDashboardBody(),
       ),
-      drawer: const AppDrawer(userRole: 'Admin'),
-      body: const _AdminDashboardBody(),
     );
   }
 

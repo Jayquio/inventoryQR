@@ -26,6 +26,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     final role = AuthService.instance.currentRole;
     switch (role) {
       case UserRole.admin:
+      case UserRole.superadmin:
         _recipientFilter = 'Admin';
         break;
       case UserRole.staff:

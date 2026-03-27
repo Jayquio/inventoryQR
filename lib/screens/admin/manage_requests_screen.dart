@@ -1,6 +1,7 @@
 // lib/screens/admin/manage_requests_screen.dart
 
 import 'package:flutter/material.dart';
+import '../../widgets/role_guard.dart';
 import '../../data/dummy_data.dart';
 import '../../models/request.dart';
 import '../../widgets/search_bar.dart';
@@ -221,14 +222,18 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     final totalPages = (filteredRequests.length / _perPage).ceil();
     final pageItems = _getPageItems(filteredRequests);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Manage Requests')),
-      body: Column(
-        children: [
-          _buildFilters(),
-          _buildRequestList(filteredRequests, pageItems),
-          _buildPagination(totalPages),
-        ],
+    return RoleGuard(
+      allowed: const {UserRole.admin, UserRole.superadmin},
+      webOnly: true,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Manage Requests')),
+        body: Column(
+          children: [
+            _buildFilters(),
+            _buildRequestList(filteredRequests, pageItems),
+            _buildPagination(totalPages),
+          ],
+        ),
       ),
     );
   }

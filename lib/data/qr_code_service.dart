@@ -31,8 +31,8 @@ class QrCodeService {
         break;
       case QrType.receive:
       case QrType.returnItem:
-        if (AuthService.instance.currentRole != UserRole.admin) {
-          throw QrPermissionException('Only Admin can generate RECEIVE/RETURN QR codes');
+        if (AuthService.instance.currentRole != UserRole.admin && AuthService.instance.currentRole != UserRole.superadmin) {
+          throw QrPermissionException('Only Admin/Superadmin can generate RECEIVE/RETURN QR codes');
         }
         break;
     }
