@@ -343,27 +343,40 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Widget _buildSummaryCards() {
+    final totalCount = _users.length.toString();
+    final adminCount = _users
+        .where((u) {
+          final r = (u['role'] as String).toLowerCase();
+          return r == 'admin' || r == 'superadmin';
+        })
+        .length
+        .toString();
+    final teacherCount = _users
+        .where((u) {
+          final r = (u['role'] as String).toLowerCase();
+          return r == 'teacher' || r == 'staff';
+        })
+        .length
+        .toString();
+    final studentCount = _users
+        .where((u) {
+          final r = (u['role'] as String).toLowerCase();
+          return r == 'student';
+        })
+        .length
+        .toString();
+
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Row(
         children: [
-          Expanded(
-            child: _summaryCard(_users.length.toString(), 'Total Users'),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _summaryCard(
-              _users
-                  .where((u) {
-                    final r = (u['role'] as String).toLowerCase();
-                    return r == 'teacher' || r == 'staff';
-                  })
-                  .length
-                  .toString(),
-              'Teacher Users',
-              color: Colors.blue,
-            ),
-          ),
+          Expanded(child: _summaryCard(totalCount, 'Total Users')),
+          const SizedBox(width: 10),
+          Expanded(child: _summaryCard(adminCount, 'Admins', color: Colors.red)),
+          const SizedBox(width: 10),
+          Expanded(child: _summaryCard(teacherCount, 'Teachers', color: Colors.blue)),
+          const SizedBox(width: 10),
+          Expanded(child: _summaryCard(studentCount, 'Students', color: Colors.green)),
         ],
       ),
     );

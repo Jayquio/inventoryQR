@@ -8,8 +8,11 @@ class ApiClient {
   static final ApiClient instance = ApiClient._();
   static String _overrideBaseUrl = '';
 
-  // Fix: constant to avoid duplicating 'Content-Type' header
-  static const Map<String, String> _jsonHeaders = {'Content-Type': 'application/json'};
+  static const Map<String, String> _jsonHeaders = {
+    'Content-Type': 'application/json',
+  };
+
+  static const Map<String, String> _authHeaders = {};
 
   static void setBaseUrl(String url) {
     _overrideBaseUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
@@ -109,7 +112,7 @@ class ApiClient {
 
   Future<List<Map<String, dynamic>>> fetchUsers() async {
     final uri = Uri.parse('${_baseUrl()}/users_list.php');
-    final res = await http.get(uri).timeout(const Duration(seconds: 15));
+    final res = await http.get(uri, headers: _authHeaders).timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
@@ -121,7 +124,7 @@ class ApiClient {
 
   Future<bool> ping() async {
     final uri = Uri.parse('${_baseUrl()}/ping.php');
-    final res = await http.get(uri).timeout(const Duration(seconds: 5));
+    final res = await http.get(uri, headers: _authHeaders).timeout(const Duration(seconds: 5));
     if (res.statusCode == 200) {
       final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
       return body is Map && body['ok'] == true;
@@ -131,7 +134,7 @@ class ApiClient {
 
   Future<List<Instrument>> fetchInstruments() async {
     final uri = Uri.parse('${_baseUrl()}/instruments_list.php');
-    final res = await http.get(uri).timeout(const Duration(seconds: 15));
+    final res = await http.get(uri, headers: _authHeaders).timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
@@ -177,9 +180,12 @@ class ApiClient {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchRequests() async {
-    final uri = Uri.parse('${_baseUrl()}/requests_list.php');
-    final res = await http.get(uri).timeout(const Duration(seconds: 15));
+  Future<List<Map<String, dynamic>>> fetchRequests({String? studentName}) async {
+    final url = studentName != null && studentName.isNotEmpty
+        ? '${_baseUrl()}/requests_list.php?student_name=${Uri.encodeQueryComponent(studentName)}'
+        : '${_baseUrl()}/requests_list.php';
+    final uri = Uri.parse(url);
+    final res = await http.get(uri, headers: _authHeaders).timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
@@ -239,13 +245,23 @@ class ApiClient {
     }
   }
 
-  Future<int?> processTransaction({required String type, required String instrumentName, required String processedBy}) async {
+  Future<int?> processTransaction({
+    required String type,
+    required String instrumentName,
+    required String processedBy,
+    String? requestId,
+  }) async {
     final uri = Uri.parse('${_baseUrl()}/transaction_process.php');
     final res = await http
         .post(
           uri,
           headers: _jsonHeaders,
-          body: jsonEncode({'type': type, 'instrument_name': instrumentName, 'processed_by': processedBy}),
+          body: jsonEncode({
+            'type': type,
+            'instrument_name': instrumentName,
+            'processed_by': processedBy,
+            if (requestId != null) 'request_id': requestId,
+          }),
         )
         .timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};

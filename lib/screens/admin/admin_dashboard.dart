@@ -6,8 +6,8 @@ import '../../widgets/role_guard.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/hover_scale_card.dart';
 import '../../widgets/module_search_bar.dart';
-import '../../data/dummy_data.dart';
-import '../../models/request.dart';
+import '../../data/api_client.dart';
+import '../../models/instrument.dart';
 import '../../data/notification_service.dart';
 import '../../core/constants.dart';
 import '../../widgets/notification_icon.dart';
@@ -106,6 +106,12 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   final TextEditingController _searchController = TextEditingController();
   bool _recentExpanded = true;
   int _notifPage = 0;
+
+  // Real data from API
+  List<Instrument> _instruments = [];
+  List<Map<String, dynamic>> _requests = [];
+  bool _isLoading = true;
+  String? _error;
  
   @override
   void initState() {
@@ -113,6 +119,31 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     NotificationService.instance.loadFromStorage();
     NotificationService.instance.connectWebSocket();
     NotificationService.instance.startAutoRefresh();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final results = await Future.wait([
+        ApiClient.instance.fetchInstruments(),
+        ApiClient.instance.fetchRequests(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _instruments = results[0] as List<Instrument>;
+          _requests = results[1] as List<Map<String, dynamic>>;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
  
   @override
@@ -143,13 +174,37 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    final totalInstruments = instruments.length;
-    final availableInstruments = instruments.where((inst) => inst.available > 0).length;
-    final pendingRequests = requests.where((req) => req.status == RequestStatus.pending).length;
-    final approvedRequests = requests.where((req) => req.status == RequestStatus.approved).length;
-    final outOfStockInstruments = instruments.where((inst) => inst.available == 0).length;
+
+    // Compute stats from real API data
+    final totalInstruments = _instruments.length;
+    final availableInstruments = _instruments.where((inst) => inst.available > 0).length;
+    final pendingRequests = _requests.where((req) => (req['status'] ?? '') == 'pending').length;
+    final approvedRequests = _requests.where((req) => (req['status'] ?? '') == 'approved').length;
+    final outOfStockInstruments = _instruments.where((inst) => inst.available == 0).length;
     final searchTerm = _searchController.text.toLowerCase();
  
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            const SizedBox(height: 12),
+            Text('Failed to load dashboard', style: TextStyle(color: Colors.red.shade700, fontSize: 16)),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: _loadDashboardData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -160,33 +215,38 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const ModuleSearchBar(),
-            const SizedBox(height: 12),
-            _buildWelcomeCard(),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Quick Overview', w),
-            const SizedBox(height: 16),
-            _buildOverviewSection(context, totalInstruments, availableInstruments, pendingRequests, approvedRequests, outOfStockInstruments),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Quick Actions', w),
-            const SizedBox(height: 16),
-            _buildQuickActionsGrid(context),
-            const SizedBox(height: 24),
-            DebouncedSearchBar(
-              controller: _searchController,
-              hintText: 'Search notifications...',
-              onChanged: (value) => setState(() {}),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ModuleSearchBar(),
+                const SizedBox(height: 12),
+                _buildWelcomeCard(),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Quick Overview', w),
+                const SizedBox(height: 12),
+                _buildOverviewSection(context, totalInstruments, availableInstruments, pendingRequests, approvedRequests, outOfStockInstruments),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Quick Actions', w),
+                const SizedBox(height: 12),
+                _buildQuickActionsCard(context),
+                const SizedBox(height: 24),
+                DebouncedSearchBar(
+                  controller: _searchController,
+                  hintText: 'Search notifications...',
+                  onChanged: (value) => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+                _buildSectionTitle('Transaction Notifications', w),
+                const SizedBox(height: 16),
+                _buildTransactionNotificationsCard(context, searchTerm),
+                const SizedBox(height: 24),
+                _buildRecentActivityCard(),
+              ],
             ),
-            const SizedBox(height: 12),
-            _buildSectionTitle('Transaction Notifications', w),
-            const SizedBox(height: 16),
-            _buildTransactionNotificationsCard(context, searchTerm),
-            const SizedBox(height: 24),
-            _buildRecentActivityCard(),
-          ],
+          ),
         ),
       ),
     );
@@ -241,30 +301,92 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   }
 
   Widget _buildOverviewSection(BuildContext context, int total, int available, int pending, int approved, int outOfStock) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildStatItem(context, 'Total', total.toString(), Icons.inventory, AppTheme.primaryColor, AppRoutes.viewInstruments),
-            _buildStatDivider(),
-            _buildStatItem(context, 'Available', available.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.viewInstruments),
-            _buildStatDivider(),
-            _buildStatItem(context, 'Pending', pending.toString(), Icons.pending, AppTheme.primaryColor, AppRoutes.manageRequests),
-            _buildStatDivider(),
-            _buildStatItem(context, 'Approved', approved.toString(), Icons.check_circle, AppTheme.secondaryColor, AppRoutes.manageRequests),
-            _buildStatDivider(),
-            _buildStatItem(context, 'Out of Stock', outOfStock.toString(), Icons.error_outline, Colors.red, AppRoutes.viewInstruments),
+            _buildStatCard(context, 'Total', total.toString(), Icons.inventory_2, AppTheme.primaryColor, AppRoutes.viewInstruments),
+            _buildStatCard(context, 'Available', available.toString(), Icons.check_circle_outline, Colors.green, AppRoutes.viewInstruments),
+            _buildStatCard(context, 'Pending', pending.toString(), Icons.hourglass_top, Colors.orange, AppRoutes.manageRequests),
+            _buildStatCard(context, 'Approved', approved.toString(), Icons.assignment_turned_in, AppTheme.secondaryColor, AppRoutes.manageRequests, 'Return Queue'),
+            _buildStatCard(context, 'Out of Stock', outOfStock.toString(), Icons.remove_shopping_cart, Colors.red, AppRoutes.viewInstruments),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color, String route, [Object? routeArguments]) {
+    return GestureDetector(
+      onTap: () {
+        final navigator = Navigator.of(context);
+        if (routeArguments != null) {
+          navigator.pushNamed(route, arguments: routeArguments);
+        } else {
+          navigator.pushNamed(route);
+        }
+      },
+      child: Tooltip(
+        message: 'Tap to view',
+        child: Container(
+          width: 120,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.8),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsCard(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: _buildQuickActionsGrid(context),
       ),
     );
   }
@@ -303,22 +425,13 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
             ),
             _buildActionCard(
               context,
-              title: 'Scan QR Code',
-              icon: Icons.qr_code_scanner,
+              title: 'Returns',
+              icon: Icons.keyboard_return,
               color: AppTheme.secondaryColor,
               onTap: () {
                 final navigator = Navigator.of(context);
-                navigator.pushNamed('/qr_scanner', arguments: 'Admin');
-              },
-            ),
-            _buildActionCard(
-              context,
-              title: 'My QR',
-              icon: Icons.qr_code_2,
-              color: AppTheme.primaryColor,
-              onTap: () {
-                final navigator = Navigator.of(context);
-                navigator.pushNamed('/user_qr');
+                // Navigate to requests with Return Queue filter
+                navigator.pushNamed(AppRoutes.manageRequests, arguments: 'Return Queue');
               },
             ),
             _buildActionCard(
@@ -716,55 +829,6 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     );
   }
  
-  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color, String route) {
-    return GestureDetector(
-      onTap: () {
-        final navigator = Navigator.of(context);
-        navigator.pushNamed(route);
-      },
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatDivider() {
-    return Container(
-      height: 40,
-      width: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      color: Colors.grey.withValues(alpha: 0.2),
-    );
-  }
- 
   void _showAllDataDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -783,20 +847,20 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                     _overviewStatTile(
                       color: Colors.blue,
                       icon: Icons.inventory,
-                      value: instruments.length.toString(),
+                      value: _instruments.length.toString(),
                       label: 'Total Instruments',
                     ),
                     _overviewStatTile(
                       color: Colors.orange,
                       icon: Icons.pending_actions,
-                      value: requests.where((req) => req.status == RequestStatus.pending).length.toString(),
+                      value: _requests.where((req) => (req['status'] ?? '') == 'pending').length.toString(),
                       label: 'Active Requests',
                     ),
                     _overviewStatTile(
-                      color: Colors.purple,
-                      icon: Icons.build,
-                      value: maintenanceRecords.length.toString(),
-                      label: 'Maintenance Records',
+                      color: Colors.green,
+                      icon: Icons.check_circle,
+                      value: _requests.where((req) => (req['status'] ?? '') == 'approved').length.toString(),
+                      label: 'Approved Requests',
                     ),
                   ],
                 ),

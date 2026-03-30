@@ -37,7 +37,8 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
 
   Future<void> _load() async {
     try {
-      final rows = await ApiClient.instance.fetchRequests();
+      final current = AuthService.instance.currentUsername;
+      final rows = await ApiClient.instance.fetchRequests(studentName: current);
       final reqs = rows.map((e) => Request.fromJson(e)).toList();
       final insts = await ApiClient.instance.fetchInstruments();
       if (!context.mounted) return;
@@ -61,12 +62,12 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    final myName = AuthService.instance.currentUsername;
-    final pendingRequests = _requests.where((req) => req.status == RequestStatus.pending).length;
-    final approvedRequests = _requests.where((req) => req.status == RequestStatus.approved).length;
-    final returnedRequests = _requests.where((req) => req.status == RequestStatus.returned).length;
-    final lowStockInstruments = _instruments.where((inst) => inst.available <= 1).length;
-    final myRequests = _requests.where((req) => req.studentName == myName).toList();
+    
+    // Filter for individual user data only
+    final myRequests = _requests;
+    final pendingRequests = myRequests.where((req) => req.status == RequestStatus.pending).length;
+    final approvedRequests = myRequests.where((req) => req.status == RequestStatus.approved).length;
+    final availableInstruments = _instruments.where((inst) => inst.available > 0).length;
 
     return Scaffold(
       appBar: _buildAppBar(),
@@ -88,24 +89,28 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               const SizedBox(height: 12),
               if (_loading)
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  padding: EdgeInsets.symmetric(horizontal: 8),
                   child: LinearProgressIndicator(),
                 ),
               _buildWelcomeCard(),
               const SizedBox(height: 24),
-              _buildSectionTitle('Current Status', w),
+              _buildSectionTitle('Overview', w),
               const SizedBox(height: 16),
-              _buildOverviewSection(context, pendingRequests, approvedRequests, returnedRequests, lowStockInstruments),
+              _buildOverviewSection(context, myRequests.length, pendingRequests, approvedRequests, availableInstruments),
               const SizedBox(height: 32),
-              _buildSectionTitle('Daily Tasks', w),
+              _buildSectionTitle('Quick Actions', w),
               const SizedBox(height: 16),
-              _buildQuickActionsGrid(myRequests),
+              _buildQuickActionsGrid(myRequests.length, pendingRequests, approvedRequests, availableInstruments),
               const SizedBox(height: 24),
-              _buildSectionTitle('My Borrow History', w),
-              const SizedBox(height: 12),
-              _buildBorrowHistoryCard(myRequests),
+              if (myRequests.isNotEmpty) ...[
+                _buildSectionTitle('Recent Requests', w),
+                const SizedBox(height: 16),
+                ...myRequests.take(3).map((request) => _buildRecentRequestCard(request)),
+              ],
               const SizedBox(height: 24),
-              _buildInfoCard(),
+              _buildSectionTitle('Important Notices', w),
+              const SizedBox(height: 16),
+              _buildLabGuidelines(),
             ],
           ),
         ),
@@ -118,7 +123,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
       title: const Text("Teacher Dashboard"),
       backgroundColor: AppTheme.primaryColor,
       actions: [
-        const NotificationIcon(recipients: ['Teacher', 'Staff'], types: ['request', 'info', 'success']),
+        const NotificationIcon(recipients: ['Teacher'], types: ['request', 'info', 'success']),
         IconButton(
           icon: const Icon(Icons.logout),
           onPressed: () {
@@ -179,7 +184,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     );
   }
 
-  Widget _buildOverviewSection(BuildContext context, int pending, int active, int returned, int lowStock) {
+  Widget _buildOverviewSection(BuildContext context, int total, int pending, int approved, int available) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
@@ -197,35 +202,35 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               context,
               'Pending',
               pending.toString(),
-              Icons.pending_actions,
+              Icons.pending,
               AppTheme.primaryColor,
               onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
               context,
-              'Active',
-              active.toString(),
-              Icons.inventory_2,
+              'Approved',
+              approved.toString(),
+              Icons.check_circle,
               AppTheme.secondaryColor,
               onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
               context,
-              'Returns',
-              returned.toString(),
-              Icons.assignment_return,
+              'Total',
+              total.toString(),
+              Icons.assignment,
               AppTheme.primaryColor,
               onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildStatDivider(),
             _buildStatItem(
               context,
-              'Low Stock',
-              lowStock.toString(),
-              Icons.warning,
-              Colors.red,
+              'Available',
+              available.toString(),
+              Icons.inventory,
+              AppTheme.secondaryColor,
               onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
             ),
           ],
@@ -234,7 +239,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     );
   }
 
-  Widget _buildQuickActionsGrid(List<Request> myRequests) {
+  Widget _buildQuickActionsGrid(int total, int pending, int approved, int available) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
@@ -252,13 +257,6 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               icon: Icons.add_circle,
               color: AppTheme.secondaryColor,
               onTap: () => Navigator.pushNamed(context, '/submit_request'),
-            ),
-            _buildActionCard(
-              context,
-              title: 'Track Status',
-              icon: Icons.timeline,
-              color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
             ),
             _buildActionCard(
               context,
@@ -283,10 +281,17 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
             ),
             _buildActionCard(
               context,
+              title: 'Track',
+              icon: Icons.track_changes,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
+            ),
+            _buildActionCard(
+              context,
               title: 'Overview',
               icon: Icons.dashboard,
               color: AppTheme.primaryColor,
-              onTap: () => _showOverviewDialog(context, myRequests),
+              onTap: () => _showOverviewDialog(context, total, pending, approved, available),
             ),
           ],
         );
@@ -294,67 +299,10 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     );
   }
 
-  Widget _buildBorrowHistoryCard(List<Request> myRequests) {
+  Widget _buildRecentRequestCard(Request request) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: myRequests.isEmpty
-            ? const Text('No borrow history yet.')
-            : Column(
-                children: [
-                  ...myRequests.take(5).map((req) => _buildHistoryRow(req)),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => Navigator.pushNamed(context, '/track_status'),
-                      icon: const Icon(Icons.open_in_new),
-                      label: const Text('View All'),
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-
-  Widget _buildHistoryRow(Request req) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Icon(
-            _getStatusIcon(req.status),
-            color: _getStatusColor(req.status),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              req.instrumentName,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-          ),
-          Text(
-            _getStatusText(req.status),
-            style: TextStyle(
-              color: _getStatusColor(req.status),
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard() {
-    return const SizedBox(height: 8);
-    /* 
-    return Card(
-      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -362,25 +310,76 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            const Icon(Icons.info, color: AppTheme.primaryColor),
+            Icon(
+              _getStatusIcon(request.status),
+              color: _getStatusColor(request.status),
+              size: 24,
+            ),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'As a Teacher, you can submit requests, scan equipment labels, and track your status.',
-                style: TextStyle(fontSize: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    request.instrumentName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    'Status: ${_getStatusText(request.status)}',
+                    style: TextStyle(
+                      color: _getStatusColor(request.status),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
-    */
   }
 
-  void _showOverviewDialog(BuildContext context, List<Request> myRequests) {
-    final myPending = myRequests.where((r) => r.status == RequestStatus.pending).length;
-    final myActive = myRequests.where((r) => r.status == RequestStatus.approved).length;
-    final myReturned = myRequests.where((r) => r.status == RequestStatus.returned).length;
+  Widget _buildLabGuidelines() {
+    return Card(
+      elevation: 4,
+      color: AppTheme.wisteriaLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.announcement, color: AppTheme.primaryColor),
+                SizedBox(width: 8),
+                Text(
+                  'Lab Usage Guidelines',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Return instruments promptly after use\n• Handle equipment with care\n• Report any damage immediately\n• Follow safety protocols at all times',
+              style: TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showOverviewDialog(BuildContext context, int total, int pending, int approved, int available) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -390,10 +389,10 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _overviewStatTile(color: AppTheme.primaryColor, icon: Icons.pending_actions, value: '$myPending', label: 'My Pending'),
-              _overviewStatTile(color: AppTheme.secondaryColor, icon: Icons.inventory_2, value: '$myActive', label: 'My Active'),
-              _overviewStatTile(color: Colors.blue, icon: Icons.assignment_return, value: '$myReturned', label: 'My Returns'),
-              _overviewStatTile(color: Colors.red, icon: Icons.warning, value: '${_instruments.where((i) => i.available <= 1).length}', label: 'Low Stock'),
+              _overviewStatTile(color: AppTheme.primaryColor, icon: Icons.pending, value: '$pending', label: 'My Pending'),
+              _overviewStatTile(color: AppTheme.secondaryColor, icon: Icons.check_circle, value: '$approved', label: 'My Approved'),
+              _overviewStatTile(color: Colors.blue, icon: Icons.assignment, value: '$total', label: 'My Total'),
+              _overviewStatTile(color: AppTheme.secondaryColor, icon: Icons.inventory, value: '$available', label: 'Available'),
             ],
           ),
         ),
@@ -447,18 +446,18 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 90,
+        width: 100,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 22),
+            Icon(icon, color: color, size: 24),
             const SizedBox(height: 6),
             Text(
               value,
               style: TextStyle(
                 color: color,
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -482,10 +481,10 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
 
   Widget _buildStatDivider() {
     return Container(
-      height: 30,
+      height: 40,
       width: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: Colors.grey.withValues(alpha: 0.1),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      color: Colors.grey.withValues(alpha: 0.2),
     );
   }
 
@@ -548,20 +547,20 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
   Color _getStatusColor(RequestStatus status) {
     switch (status) {
       case RequestStatus.pending:
-        return AppTheme.primaryColor;
+        return Colors.orange;
       case RequestStatus.approved:
-        return AppTheme.secondaryColor;
+        return Colors.green;
       case RequestStatus.rejected:
         return Colors.red;
       case RequestStatus.returned:
-        return AppTheme.primaryColor;
+        return Colors.blue;
     }
   }
 
   String _getStatusText(RequestStatus status) {
     switch (status) {
       case RequestStatus.pending:
-        return 'Pending';
+        return 'Pending Approval';
       case RequestStatus.approved:
         return 'Approved';
       case RequestStatus.rejected:

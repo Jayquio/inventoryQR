@@ -3,6 +3,7 @@ import '../../data/qr_code_service.dart';
 import '../../data/auth_service.dart';
 import '../../data/api_client.dart';
 import '../../models/instrument.dart';
+import '../../core/utils/qr_downloader.dart';
 
 class QrGeneratorScreen extends StatefulWidget {
   final String userRole;
@@ -28,6 +29,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
     'BS Biology',
     'BS Radiologic Technology',
     'BS Medical Technology/Medical Laboratory Science',
+    'BS Nursing',
   ];
 
   @override
@@ -55,6 +57,31 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
       if (!context.mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  String _formatNeededAt(DateTime dt) {
+    final months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final local = dt.toLocal();
+    var hour = local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final suffix = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    if (hour == 0) hour = 12;
+    final hh = hour.toString().padLeft(2, '0');
+    return '${months[local.month - 1]} ${local.day}, ${local.year} • $hh:$minute $suffix';
   }
 
   bool get _canGenerateBorrow => true;
@@ -278,7 +305,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
             }
           },
           icon: const Icon(Icons.calendar_today),
-          label: Text(_neededAt == null ? 'Set Schedule' : _neededAt!.toString().split('.').first),
+          label: Text(_neededAt == null ? 'Set Schedule' : _formatNeededAt(_neededAt!)),
         ),
       ],
     );
@@ -294,12 +321,39 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
 
   Widget _buildQrResult() {
     if (_payload == null) return const SizedBox.shrink();
+    final instName = (_selectedInstrument ?? 'qr').replaceAll(RegExp(r'\s+'), '_').toLowerCase();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Generated QR', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Center(child: QrCodeService.instance.buildQrWidget(_payload!, size: 220)),
+        const SizedBox(height: 12),
+        Center(
+          child: ElevatedButton.icon(
+            onPressed: () {
+              try {
+                downloadQrFile(_payload!, 'qr_$instName.png');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('QR downloaded!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Download failed: $e'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            icon: const Icon(Icons.download),
+            label: const Text('Download QR as PNG'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
         const SizedBox(height: 12),
         SelectableText(_payload!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
@@ -346,15 +400,12 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
           );
           return;
         }
-        final role = AuthService.instance.currentRole;
-        payload = (_selectedType == QrType.borrow && !(role == UserRole.student || role == UserRole.staff))
-            ? QrCodeService.instance.buildPayloadForPrint(type: _selectedType!, instrumentName: _selectedInstrument!)
-            : QrCodeService.instance.buildPayload(
-                type: _selectedType!,
-                instrumentName: _selectedInstrument!,
-                course: _selectedCourse,
-                neededAt: _neededAt,
-              );
+        payload = QrCodeService.instance.buildPayload(
+          type: _selectedType!,
+          instrumentName: _selectedInstrument!,
+          course: _selectedCourse,
+          neededAt: _neededAt,
+        );
       }
       setState(() => _payload = payload);
     } on QrPermissionException catch (e) {

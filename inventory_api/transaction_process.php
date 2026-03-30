@@ -7,6 +7,15 @@ $processedBy = trim($in['processed_by'] ?? '');
 
 if (!in_array($type, ['receive','return'], true) || $instrument === '' || $processedBy === '') json_out(['error' => 'invalid_input'], 400);
 
+// Authorization: only admin/superadmin can execute stock-changing QR transactions.
+$roleQ = $pdo->prepare('SELECT role FROM users WHERE username = ? LIMIT 1');
+$roleQ->execute([$processedBy]);
+$roleRow = $roleQ->fetch();
+$role = strtolower(trim((string)($roleRow['role'] ?? '')));
+if (!in_array($role, ['admin', 'superadmin'], true) && strtolower($processedBy) !== 'superadmin') {
+  json_out(['error' => 'forbidden'], 403);
+}
+
 $pdo->beginTransaction();
 try {
   $sel = $pdo->prepare('SELECT quantity, available FROM instruments WHERE name = ? FOR UPDATE');

@@ -37,7 +37,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Future<void> _load() async {
     try {
-      final rows = await ApiClient.instance.fetchRequests();
+      final current = AuthService.instance.currentUsername;
+      final rows = await ApiClient.instance.fetchRequests(studentName: current);
       final items = rows.map((e) => Request.fromJson(e)).toList();
       final insts = await ApiClient.instance.fetchInstruments();
       if (!context.mounted) return;
@@ -61,8 +62,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    final current = AuthService.instance.currentUsername.toLowerCase();
-    final myRequests = _requests.where((req) => req.studentName.toLowerCase() == current).toList();
+    final myRequests = _requests;
     final pendingRequests = myRequests.where((req) => req.status == RequestStatus.pending).length;
     final approvedRequests = myRequests.where((req) => req.status == RequestStatus.approved).length;
     final availableInstruments = _instruments.where((inst) => inst.available > 0).length;
@@ -272,6 +272,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
             _buildActionCard(
               context,
+              title: 'My QR',
+              icon: Icons.qr_code_2,
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.pushNamed(context, '/user_qr'),
+            ),
+            _buildActionCard(
+              context,
               title: 'Instruments',
               icon: Icons.inventory,
               color: AppTheme.primaryColor,
@@ -283,13 +290,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
               icon: Icons.track_changes,
               color: AppTheme.primaryColor,
               onTap: () => Navigator.pushNamed(context, AppRoutes.trackStatus),
-            ),
-            _buildActionCard(
-              context,
-              title: 'Notifications',
-              icon: Icons.notifications,
-              color: AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, '/notification_center'),
             ),
             _buildActionCard(
               context,

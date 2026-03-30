@@ -38,6 +38,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     'BS Biology',
     'BS Radiologic Technology',
     'BS Medical Technology/Medical Laboratory Science',
+    'BS Nursing',
   ];
 
   @override
@@ -62,6 +63,31 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       if (!context.mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  String _formatNeededAt(DateTime dt) {
+    final months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final local = dt.toLocal();
+    var hour = local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final suffix = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    if (hour == 0) hour = 12;
+    final hh = hour.toString().padLeft(2, '0');
+    return '${months[local.month - 1]} ${local.day}, ${local.year} • $hh:$minute $suffix';
   }
 
   void _submitRequest() async {
@@ -149,7 +175,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isTeacher = AuthService.instance.currentRole == UserRole.staff;
+    final isTeacher = AuthService.instance.currentRole == UserRole.teacher;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -347,7 +373,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       leading: Icon(Icons.event, color: AppTheme.primaryColor),
       title: const Text('Needed Date & Time'),
       subtitle: Text(
-        _neededAt != null ? '${_neededAt!.toLocal()}'.split('.').first : 'Tap to set when you need the instrument',
+        _neededAt != null ? _formatNeededAt(_neededAt!) : 'Tap to set when you need the instrument',
         style: const TextStyle(color: Colors.grey),
       ),
       onTap: _pickDateTime,

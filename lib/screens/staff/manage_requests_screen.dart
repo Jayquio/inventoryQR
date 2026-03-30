@@ -6,8 +6,10 @@ import '../../models/request.dart';
 import '../../widgets/search_bar.dart';
 import '../../data/notification_service.dart';
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 import '../../data/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../widgets/role_guard.dart';
 
 class ManageRequestsScreen extends StatefulWidget {
   const ManageRequestsScreen({super.key});
@@ -22,6 +24,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Request> _requests = [];
   bool _loading = true;
+  bool _initialized = false;
+  /// From dashboard "Returns" / Approved stat — show approved (out) items only.
+  bool _returnQueueFocus = false;
 
   @override
   void initState() {
@@ -30,11 +35,23 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     _loadPrefs();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args == 'Return Queue') {
+        setState(() => _returnQueueFocus = true);
+      }
+      _initialized = true;
+    }
+  }
+
   bool _onlyPending = false;
 
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    _onlyPending = prefs.getBool('staff_show_pending_only') ?? false;
+    _onlyPending = prefs.getBool('teacher_show_pending_only') ?? prefs.getBool('staff_show_pending_only') ?? false;
     if (context.mounted) setState(() {});
   }
 
@@ -49,11 +66,10 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       });
     } catch (e) {
       if (!context.mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
       setState(() => _loading = false);
-      messenger.showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
-      );
+      if (!context.mounted) return;
+      final err = e.toString().replaceFirst(_exceptionPrefix, '');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
@@ -163,6 +179,45 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     );
   }
 
+  Future<void> _markReturned(Request req) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (req.id.isEmpty) {
+      messenger.showSnackBar(const SnackBar(content: Text('Cannot mark return: missing request id.')));
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await ApiClient.instance.updateRequestStatus(
+        id: req.id,
+        status: 'returned',
+        user: AuthService.instance.currentUsername,
+      );
+      if (!mounted) return;
+      await _load();
+      if (!mounted) return;
+      messenger.showSnackBar(const SnackBar(content: Text('Marked as returned.')));
+      NotificationService.instance.add(
+        NotificationItem(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          title: 'Instrument returned',
+          message: '${req.studentName} returned ${req.instrumentName}.',
+          type: 'success',
+          timestamp: DateTime.now().toIso8601String(),
+          recipient: 'Admin',
+          priority: 'low',
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Color _getStatusColor(RequestStatus status) {
     switch (status) {
       case RequestStatus.approved:
@@ -185,22 +240,31 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           req.instrumentName.toLowerCase().contains(searchTerm) ||
           req.purpose.toLowerCase().contains(searchTerm) ||
           req.status.name.toLowerCase().contains(searchTerm);
-    }).where((req) => _onlyPending ? req.status == RequestStatus.pending : true).toList();
+    }).where((req) {
+      if (_returnQueueFocus) return req.status == RequestStatus.approved;
+      if (_onlyPending) return req.status == RequestStatus.pending;
+      return true;
+    }).toList();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Manage Requests")),
-      body: Column(
-        children: [
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: LinearProgressIndicator(),
+    return RoleGuard(
+      allowed: const {UserRole.superadmin, UserRole.admin},
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_returnQueueFocus ? 'Awaiting return' : 'Manage Requests'),
+        ),
+        body: Column(
+          children: [
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: LinearProgressIndicator(),
+              ),
+            _buildSearchBar(),
+            Expanded(
+              child: _buildRequestList(filteredRequests),
             ),
-          _buildSearchBar(),
-          Expanded(
-            child: _buildRequestList(filteredRequests),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -208,15 +272,46 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: DebouncedSearchBar(
-        controller: _searchController,
-        hintText: 'Search requests...',
-        onChanged: (value) => setState(() {}),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_returnQueueFocus)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: InputChip(
+                  label: const Text('Approved / out — mark returned when items are back'),
+                  deleteIcon: const Icon(Icons.close, size: 18),
+                  onDeleted: () => setState(() => _returnQueueFocus = false),
+                ),
+              ),
+            ),
+          DebouncedSearchBar(
+            controller: _searchController,
+            hintText: 'Search requests...',
+            onChanged: (value) => setState(() {}),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildRequestList(List<Request> filteredRequests) {
+    if (filteredRequests.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            _returnQueueFocus
+                ? 'No instruments awaiting return.'
+                : 'No requests match your search.',
+            style: const TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: ListView.builder(
@@ -262,48 +357,135 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   }
 
   Widget _buildActionButtons(Request request, int originalIndex) {
+    if (originalIndex < 0) return const SizedBox.shrink();
     if (request.status == RequestStatus.pending) {
-      return Row(
-        children: [
-          ElevatedButton(
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < 480;
+          final approve = ElevatedButton(
             onPressed: () => _updateRequestStatus(originalIndex, RequestStatus.approved),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text("Approve"),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            child: const Text('Approve'),
+          );
+          final reject = ElevatedButton(
             onPressed: () => _updateRequestStatus(originalIndex, RequestStatus.rejected),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text("Reject"),
-          ),
-        ],
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Reject'),
+          );
+          final delete = OutlinedButton.icon(
+            onPressed: () => _deleteRequest(originalIndex),
+            icon: const Icon(Icons.delete_outline, size: 20),
+            label: const Text('Delete'),
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+          );
+          if (narrow) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: approve),
+                    const SizedBox(width: 8),
+                    Expanded(child: reject),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                delete,
+              ],
+            );
+          }
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              SizedBox(width: 140, child: approve),
+              const SizedBox(width: 8),
+              SizedBox(width: 140, child: reject),
+              const SizedBox(width: 8),
+              SizedBox(width: 120, child: delete),
+            ],
+          );
+        },
       );
     }
-    return OutlinedButton(
+    if (request.status == RequestStatus.approved) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < 360;
+          final returned = ElevatedButton.icon(
+            onPressed: _loading ? null : () => _markReturned(request),
+            icon: const Icon(Icons.assignment_return),
+            label: const Text('Returned'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.secondaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          );
+          final delete = OutlinedButton.icon(
+            onPressed: () => _deleteRequest(originalIndex),
+            icon: const Icon(Icons.delete_outline, size: 20),
+            label: const Text('Delete'),
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+          );
+          if (narrow) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                returned,
+                const SizedBox(height: 8),
+                delete,
+              ],
+            );
+          }
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              SizedBox(width: 200, child: returned),
+              const SizedBox(width: 8),
+              SizedBox(width: 120, child: delete),
+            ],
+          );
+        },
+      );
+    }
+    return OutlinedButton.icon(
       onPressed: () => _deleteRequest(originalIndex),
-      child: const Text("Delete"),
+      icon: const Icon(Icons.delete_outline, size: 20),
+      label: const Text('Delete'),
+      style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
     );
   }
 
   void _showRequestDetails(Request request) {
+    final originalIndex = _requests.indexOf(request);
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              request.instrumentName,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      isScrollControlled: true,
+      builder: (context) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 24 + MediaQuery.of(context).viewInsets.bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  request.instrumentName,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text('Student: ${request.studentName}'),
+                Text('Purpose: ${request.purpose}'),
+                Text('Status: ${request.status.name}'),
+                if (originalIndex >= 0) ...[
+                  const SizedBox(height: 16),
+                  _buildActionButtons(request, originalIndex),
+                ],
+              ],
             ),
-            const SizedBox(height: 8),
-            Text('Student: ${request.studentName}'),
-            Text('Purpose: ${request.purpose}'),
-            Text('Status: ${request.status.name}'),
-          ],
+          ),
         ),
       ),
     );

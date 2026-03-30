@@ -277,14 +277,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   UserRole? _parseRole(String roleStr) {
     if (roleStr == 'admin') return UserRole.admin;
-    if (roleStr == 'teacher' || roleStr == 'staff') return UserRole.staff;
+    if (roleStr == 'teacher' || roleStr == 'staff') return UserRole.teacher;
     if (roleStr == 'student') return UserRole.student;
     return null;
   }
 
   String _getRoute(UserRole role) {
     if (role == UserRole.admin) return '/admin_dashboard';
-    if (role == UserRole.staff) return '/staff_dashboard';
+    if (role == UserRole.teacher) return '/teacher_dashboard';
     return '/student_dashboard';
   }
 

@@ -5,7 +5,7 @@ import 'screens/common/qr_scanner_screen.dart';
 import 'screens/common/qr_generator_screen.dart';
 import 'screens/common/settings_screen.dart';
 import 'screens/common/user_qr_screen.dart';
-import 'screens/staff/manage_requests_screen.dart';
+import 'screens/admin/manage_requests_screen.dart';
 import 'screens/admin/manage_instruments_screen.dart';
 import 'screens/admin/user_management_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
@@ -112,6 +112,7 @@ class MyApp extends StatelessWidget {
           routes: {
             '/login': (context) => const LoginScreen(),
             '/admin_dashboard': (context) => const AdminDashboard(),
+            '/teacher_dashboard': (context) => const StaffDashboard(),
             '/staff_dashboard': (context) => const StaffDashboard(),
             '/student_dashboard': (context) => const StudentDashboard(),
             AppRoutes.manageRequests: (context) => const ManageRequestsScreen(),

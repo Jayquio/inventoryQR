@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../data/qr_code_service.dart';
 import '../../data/auth_service.dart';
 import '../../data/api_client.dart';
+import '../../core/theme.dart';
+import '../../core/utils/qr_downloader.dart';
 
 class UserQrScreen extends StatefulWidget {
   const UserQrScreen({super.key});
@@ -65,7 +67,7 @@ class _UserQrScreenState extends State<UserQrScreen> {
   Widget _buildMyProfileSection() {
     final username = AuthService.instance.currentUsername;
     final roleEnum = AuthService.instance.currentRole;
-    final roleLabel = roleEnum == UserRole.staff ? 'Teacher' : roleEnum.name[0].toUpperCase() + roleEnum.name.substring(1);
+    final roleLabel = roleEnum.name[0].toUpperCase() + roleEnum.name.substring(1);
     final myPayload = QrCodeService.instance.buildUserPayload();
 
     return Column(
@@ -76,10 +78,44 @@ class _UserQrScreenState extends State<UserQrScreen> {
         Text('Role: $roleLabel', style: const TextStyle(color: Colors.grey)),
         const SizedBox(height: 16),
         Center(child: QrCodeService.instance.buildQrWidget(myPayload, size: 220)),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _downloadQr(myPayload, 'my_qr_$username.png'),
+              icon: const Icon(Icons.download),
+              label: const Text('Download QR'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.secondaryColor,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
-        const Text('Show this QR to identify your account', textAlign: TextAlign.center),
+        const Text('Show this QR to identify your account', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
+  }
+
+  void _downloadQr(String payload, String fileName) {
+    try {
+      downloadQrFile(payload, fileName);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Downloading $fileName...'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Download failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildAdminGeneratorSection() {
@@ -166,7 +202,7 @@ class _UserQrScreenState extends State<UserQrScreen> {
     if (r == 'admin') {
       userRole = UserRole.admin;
     } else if (r == 'teacher' || r == 'staff') {
-      userRole = UserRole.staff;
+      userRole = UserRole.teacher;
     } else {
       userRole = UserRole.student;
     }
@@ -179,6 +215,12 @@ class _UserQrScreenState extends State<UserQrScreen> {
       children: [
         const SizedBox(height: 12),
         Center(child: QrCodeService.instance.buildQrWidget(_generatedPayload!, size: 220)),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: () => _downloadQr(_generatedPayload!, 'user_qr_${_selectedUsername ?? "generated"}.png'),
+          icon: const Icon(Icons.download),
+          label: const Text('Download Generated QR'),
+        ),
         const SizedBox(height: 8),
         SelectableText(_generatedPayload!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],

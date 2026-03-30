@@ -56,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildAdminToolsCard(),
             const SizedBox(height: 16),
           ],
-          if (role == 'Teacher' || role == 'Staff') ...[
+          if (role == 'Teacher') ...[
             _buildStaffToolsCard(),
             const SizedBox(height: 16),
           ],
@@ -390,7 +390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _showStaffPreferencesDialog() async {
     final prefs = await SharedPreferences.getInstance();
-    bool onlyPending = prefs.getBool('staff_show_pending_only') ?? true;
+    bool onlyPending = prefs.getBool('teacher_show_pending_only') ?? prefs.getBool('staff_show_pending_only') ?? true;
     if (!context.mounted) return;
     showDialog(
       context: context,
@@ -412,7 +412,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
-                await prefs.setBool('staff_show_pending_only', onlyPending);
+                await prefs.setBool('teacher_show_pending_only', onlyPending);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (context.mounted) messenger.showSnackBar(const SnackBar(content: Text('Work preferences saved')));
               },

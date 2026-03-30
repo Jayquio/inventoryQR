@@ -282,7 +282,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     }
 
     // Process logic
-    if ((role == UserRole.student || role == UserRole.staff) && (type == null || type == 'borrow')) {
+    if ((role == UserRole.student || role == UserRole.teacher) && (type == null || type == 'borrow')) {
       _handleStudentBorrow(instrument, course, date);
     } else {
       _showInstrumentDetailsDialog(context, instrument, type);
@@ -290,10 +290,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   bool _isAuthorized(UserRole role, String? type) {
-    if (type == 'borrow' && !(role == UserRole.student || role == UserRole.staff)) {
+    if (type == 'borrow' && !(role == UserRole.student || role == UserRole.teacher)) {
       return false;
     }
-    if ((type == 'receive' || type == 'return') && role != UserRole.admin) {
+    if ((type == 'receive' || type == 'return') &&
+        role != UserRole.admin &&
+        role != UserRole.superadmin) {
       return false;
     }
     return true;
@@ -321,6 +323,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   void _showInstrumentDetailsDialog(BuildContext context, Instrument instrument, String? type) {
+    final role = AuthService.instance.currentRole;
+    final canProcessStock = role == UserRole.admin || role == UserRole.superadmin;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -346,12 +350,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             },
             child: const Text('Close'),
           ),
-          if (instrument.available > 0 && (type == null || type == 'receive'))
+          if (canProcessStock && instrument.available > 0 && (type == null || type == 'receive'))
             ElevatedButton(
               onPressed: () => _processTransaction(context, instrument, 'receive'),
               child: const Text('Receive (Borrow)'),
             ),
-          if (instrument.available < instrument.quantity && (type == null || type == 'return'))
+          if (canProcessStock &&
+              instrument.available < instrument.quantity &&
+              (type == null || type == 'return'))
             OutlinedButton(
               onPressed: () => _processTransaction(context, instrument, 'return'),
               child: const Text('Return'),
@@ -398,7 +404,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         return UserRole.superadmin;
       case 'staff':
       case 'teacher':
-        return UserRole.staff;
+        return UserRole.teacher;
       case 'student':
         return UserRole.student;
       default:
@@ -411,8 +417,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       case UserRole.admin:
       case UserRole.superadmin:
         return '/admin_dashboard';
-      case UserRole.staff:
-        return '/staff_dashboard';
+      case UserRole.teacher:
+        return '/teacher_dashboard';
       case UserRole.student:
         return '/student_dashboard';
     }

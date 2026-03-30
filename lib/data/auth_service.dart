@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum UserRole { admin, staff, student, superadmin }
+enum UserRole { admin, teacher, student, superadmin }
 
 class AuthService extends ChangeNotifier {
   AuthService._();
@@ -22,6 +22,6 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isAllowedBorrow() => _currentRole == UserRole.student || _currentRole == UserRole.staff || _currentRole == UserRole.superadmin;
-  bool isAllowedReceiveReturn() => _currentRole == UserRole.admin || _currentRole == UserRole.staff || _currentRole == UserRole.superadmin;
+  bool isAllowedBorrow() => _currentRole == UserRole.student || _currentRole == UserRole.teacher || _currentRole == UserRole.superadmin;
+  bool isAllowedReceiveReturn() => _currentRole == UserRole.admin || _currentRole == UserRole.superadmin;
 }

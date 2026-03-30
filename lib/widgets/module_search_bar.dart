@@ -5,11 +5,12 @@ import '../widgets/search_bar.dart';
 import '../core/constants.dart';
  
 class ModuleSearchItem {
-  ModuleSearchItem({required this.title, required this.description, required this.route, required this.icon});
+  ModuleSearchItem({required this.title, required this.description, required this.route, required this.icon, this.arguments});
   final String title;
   final String description;
   final String route;
   final IconData icon;
+  final Object? arguments;
 }
  
 class ModuleSearchController extends ChangeNotifier {
@@ -54,7 +55,7 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
       ModuleSearchItem(title: 'Settings', description: 'Configure preferences', route: AppRoutes.settings, icon: Icons.settings),
       ModuleSearchItem(title: 'View Instruments', description: 'Browse available instruments', route: AppRoutes.viewInstruments, icon: Icons.inventory_2),
       ModuleSearchItem(title: 'Log Maintenance', description: 'Record maintenance activities', route: '/log_maintenance', icon: Icons.build),
-      ModuleSearchItem(title: 'Handle Returns', description: 'Process item returns', route: '/handle_returns', icon: Icons.assignment_return),
+      ModuleSearchItem(title: 'Handle Returns', description: 'Mark items returned when borrowers bring them back', route: AppRoutes.manageRequests, icon: Icons.assignment_return, arguments: 'Return Queue'),
       ModuleSearchItem(title: 'Submit Request', description: 'Request an instrument', route: '/submit_request', icon: Icons.add_circle),
       ModuleSearchItem(title: 'Track Status', description: 'Track your requests', route: AppRoutes.trackStatus, icon: Icons.track_changes),
       ModuleSearchItem(title: 'Dashboard', description: 'Go to home dashboard', route: '/', icon: Icons.dashboard),
@@ -180,7 +181,11 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
     _overlay?.remove();
     _overlay = null;
     _autoCloseTimer?.cancel();
-    Navigator.pushNamed(context, m.route);
+    if (m.arguments != null) {
+      Navigator.pushNamed(context, m.route, arguments: m.arguments);
+    } else {
+      Navigator.pushNamed(context, m.route);
+    }
   }
  
   void _onKeyEvent(KeyEvent e) {

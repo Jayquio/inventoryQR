@@ -20,12 +20,16 @@ class AppConfigService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _baseUrl = prefs.getString('api_base_url') ?? '';
     if (_baseUrl.isNotEmpty) {
-      ApiClient.setBaseUrl(_baseUrl);
-    } else {
-      final detected = await _detectBaseUrl();
-      if (detected != null && detected.isNotEmpty) {
-        await setBaseUrl(detected);
+      final ok = await _probe('$_baseUrl/ping.php');
+      if (ok) {
+        ApiClient.setBaseUrl(_baseUrl);
+        return;
       }
+    }
+
+    final detected = await _detectBaseUrl();
+    if (detected != null && detected.isNotEmpty) {
+      await setBaseUrl(detected);
     }
   }
 
@@ -81,7 +85,30 @@ class AppConfigService extends ChangeNotifier {
   }
 
   Future<String?> _detectBaseUrl() async {
-    if (kIsWeb) return _localApiBase;
+    // On Flutter Web, `dart:io` network interface probing isn't reliable.
+    // Instead, try a small set of likely API URLs (local Docker default included)
+    // and pick the first one that answers `/ping.php`.
+    if (kIsWeb) {
+      final List<String> candidates = [
+        // Docker Compose default (api:8080 -> container:80)
+        'http://localhost:8080',
+        // Some local setups may still expose the API under `/inventory_api`
+        'http://localhost:8080/inventory_api',
+        // Older/local assumption kept for backward compatibility
+        _localApiBase,
+        // If running inside the Docker network (e.g., server-to-server)
+        'http://api',
+        'http://api:80',
+      ];
+
+      for (final base in candidates.toSet()) {
+        final ok = await _probe('$base/ping.php');
+        if (ok) return base;
+      }
+
+      // Fallback to Docker port (most likely for your current setup)
+      return 'http://localhost:8080';
+    }
 
     final List<String> candidates = [
       _localApiBase,

@@ -85,7 +85,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: (widget.userRole == 'Student' || widget.userRole == 'Teacher' || widget.userRole == 'Staff')
+                    onPressed: (widget.userRole == 'Student' || widget.userRole == 'Teacher')
                         ? (instrument.available > 0
                             ? () {
                                 Navigator.pop(context);
@@ -108,7 +108,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
                             : null),
                     icon: const Icon(Icons.assignment),
                     label: Text(
-                      (widget.userRole == 'Student' || widget.userRole == 'Teacher' || widget.userRole == 'Staff')
+                      (widget.userRole == 'Student' || widget.userRole == 'Teacher')
                           ? 'Request This'
                           : (widget.userRole == 'Admin' ? 'Log Maintenance' : 'Update'),
                     ),

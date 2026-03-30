@@ -29,7 +29,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       case UserRole.superadmin:
         _recipientFilter = 'Admin';
         break;
-      case UserRole.staff:
+      case UserRole.teacher:
         _recipientFilter = 'Teacher';
         break;
       case UserRole.student:
@@ -53,7 +53,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   List<NotificationItem> _filterByRole(List<NotificationItem> items) {
     final role = AuthService.instance.currentRole;
-    if (role == UserRole.staff) {
+    if (role == UserRole.teacher) {
       return items.where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff').toList();
     } else if (role == UserRole.student) {
       return items.where((n) => n.recipient == 'Student').toList();

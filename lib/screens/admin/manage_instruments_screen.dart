@@ -8,6 +8,7 @@ import '../../data/auth_service.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/instrument_card.dart';
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 
 class ManageInstrumentsScreen extends StatefulWidget {
   const ManageInstrumentsScreen({super.key});
@@ -147,14 +148,39 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          backgroundColor: AppTheme.secondaryColor,
+                          foregroundColor: Colors.white,
                         ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/qr_scanner', arguments: 'Teacher');
-                        },
-                        icon: const Icon(Icons.qr_code_scanner),
+                        onPressed: instrument.available < instrument.quantity
+                            ? () async {
+                                final navigator = Navigator.of(context);
+                                final messenger = ScaffoldMessenger.of(context);
+                                try {
+                                  // Manual return logic for web admin
+                                  final newAvail = await ApiClient.instance.processTransaction(
+                                    type: 'return',
+                                    instrumentName: instrument.name,
+                                    processedBy: AuthService.instance.currentUsername,
+                                  );
+                                  if (newAvail != null) {
+                                    setState(() {
+                                      _instruments[index].available = newAvail;
+                                    });
+                                    navigator.pop();
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text('Successfully returned 1 unit of ${instrument.name}')),
+                                    );
+                                  }
+                                } catch (e) {
+                                  messenger.showSnackBar(
+                                    SnackBar(content: Text('Error: ${e.toString()}')),
+                                  );
+                                }
+                              }
+                            : null,
+                        icon: const Icon(Icons.keyboard_return),
                         label: const Text(
-                          'Return QR',
+                          'Manual Return',
                           softWrap: false,
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,

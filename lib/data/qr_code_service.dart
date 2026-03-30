@@ -100,7 +100,7 @@ class QrCodeService {
   String buildUserPayload() {
     final role = AuthService.instance.currentRole;
     final username = AuthService.instance.currentUsername;
-    final roleStr = role == UserRole.staff ? 'teacher' : role.name;
+    final roleStr = role == UserRole.teacher ? 'teacher' : role.name;
     final payload = 'USR|id=$username;role=$roleStr';
     AuditLogService.instance.addEntry(
       AuditLogEntry(
@@ -115,7 +115,7 @@ class QrCodeService {
   }
 
   String buildUserPayloadFor({required String id, required UserRole role}) {
-    final roleStr = role == UserRole.staff ? 'teacher' : role.name;
+    final roleStr = role == UserRole.teacher ? 'teacher' : role.name;
     final payload = 'USR|id=$id;role=$roleStr';
     final currentRole = AuthService.instance.currentRole;
     AuditLogService.instance.addEntry(

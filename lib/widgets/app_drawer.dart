@@ -59,6 +59,14 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.assignment_return),
+              title: const Text("Confirm returns"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.manageRequests, arguments: 'Return Queue');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.report),
               title: const Text("Generate Reports"),
               onTap: () {
@@ -91,7 +99,7 @@ class AppDrawer extends StatelessWidget {
               },
             ),
           ],
-          if (userRole == 'Teacher' || userRole == 'Staff') ...[
+          if (userRole == 'Teacher') ...[
             ListTile(
               leading: const Icon(Icons.inventory),
               title: const Text("Monitor Inventory"),
