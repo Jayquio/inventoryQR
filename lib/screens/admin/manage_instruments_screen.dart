@@ -295,7 +295,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
               ),
               ElevatedButton(
                 onPressed: submitting ? null : () => _submitForm(
-                  context: dialogContext,
+                  dialogContext: dialogContext,
                   isEdit: isEdit,
                   index: index,
                   originalName: instrument?.name,
@@ -313,7 +313,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   }
 
   Future<void> _submitForm({
-    required BuildContext context,
+    required BuildContext dialogContext,
     required bool isEdit,
     int? index,
     String? originalName,
@@ -329,52 +329,73 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     setSubmitting(true);
     try {
       final item = _createInstrumentFromControllers(typeValue, controllers, qty, avail);
-
-      if (isEdit) {
-        await ApiClient.instance.updateInstrument(originalName: originalName!, instrument: item);
-        if (context.mounted) setState(() => _instruments[index!] = item);
-      } else {
-        await ApiClient.instance.createInstrument(instrument: item);
-        if (context.mounted) setState(() => _instruments.add(item));
-      }
-
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
-        );
-        if (!isEdit) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Generate QR?'),
-              content: Text('Create QR labels for "${item.name}" now?'),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.pushNamed(context, '/qr_generator', arguments: {
-                      'userRole': 'Teacher',
-                      'preSelectedInstrument': item.name
-                    });
-                  },
-                  child: const Text('Generate'),
-                ),
-              ],
-            ),
-          );
-        }
-      }
+      await _persistInstrument(item: item, isEdit: isEdit, index: index, originalName: originalName);
+      if (!mounted) return;
+      _handleSubmitSuccess(item: item, isEdit: isEdit, dialogContext: dialogContext);
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+      );
     } finally {
-      if (context.mounted) setSubmitting(false);
+      if (dialogContext.mounted) setSubmitting(false);
     }
+  }
+
+  Future<void> _persistInstrument({
+    required Instrument item,
+    required bool isEdit,
+    required int? index,
+    required String? originalName,
+  }) async {
+    if (isEdit) {
+      await ApiClient.instance.updateInstrument(originalName: originalName!, instrument: item);
+      if (!mounted) return;
+      setState(() => _instruments[index!] = item);
+      return;
+    }
+
+    await ApiClient.instance.createInstrument(instrument: item);
+    if (!mounted) return;
+    setState(() => _instruments.add(item));
+  }
+
+  void _handleSubmitSuccess({
+    required Instrument item,
+    required bool isEdit,
+    required BuildContext dialogContext,
+  }) {
+    if (dialogContext.mounted) {
+      Navigator.pop(dialogContext);
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
+    );
+    if (isEdit) return;
+    _showGenerateQrPrompt(item.name);
+  }
+
+  void _showGenerateQrPrompt(String instrumentName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Generate QR?'),
+        content: Text('Create QR labels for "$instrumentName" now?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushNamed(context, '/qr_generator', arguments: {
+                'userRole': 'Teacher',
+                'preSelectedInstrument': instrumentName
+              });
+            },
+            child: const Text('Generate'),
+          ),
+        ],
+      ),
+    );
   }
 
   bool _validateForm(BuildContext context, String name, int qty, int avail) {

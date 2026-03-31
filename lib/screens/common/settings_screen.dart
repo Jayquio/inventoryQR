@@ -230,9 +230,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   NotificationService.instance.stopAutoRefresh();
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification settings saved')));
-                }
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification settings saved')));
               },
               child: const Text('Save'),
             ),
