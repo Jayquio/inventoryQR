@@ -81,10 +81,10 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       RequestStatus.returned => 'returned',
       RequestStatus.pending => 'pending',
     };
-    final messenger = ScaffoldMessenger.of(context);
     ApiClient.instance
         .updateRequestStatus(id: req.id, status: newStatusStr, user: AuthService.instance.currentUsername)
         .then((_) {
+      if (!context.mounted) return;
       setState(() {
         _requests[index] = Request(
           id: req.id,
@@ -96,7 +96,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       });
     }).catchError((e) {
       if (context.mounted) {
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }
@@ -136,7 +136,6 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(ctx);
               setState(() => _loading = true);
               try {
@@ -159,14 +158,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   ),
                 );
                 if (context.mounted) {
-                  messenger.showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Request deleted.')),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   setState(() => _loading = false);
-                  messenger.showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                   );
                 }
@@ -180,9 +179,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   }
 
   Future<void> _markReturned(Request req) async {
-    final messenger = ScaffoldMessenger.of(context);
     if (req.id.isEmpty) {
-      messenger.showSnackBar(const SnackBar(content: Text('Cannot mark return: missing request id.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot mark return: missing request id.')));
       return;
     }
     setState(() => _loading = true);
@@ -195,7 +193,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       if (!mounted) return;
       await _load();
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Marked as returned.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked as returned.')));
       NotificationService.instance.add(
         NotificationItem(
           id: DateTime.now().microsecondsSinceEpoch.toString(),

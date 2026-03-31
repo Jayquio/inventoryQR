@@ -58,68 +58,93 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.teal.shade100,
-                  child: const Icon(Icons.science, color: Colors.teal),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    instrument.name,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
+            _buildInstrumentHeader(instrument),
             const SizedBox(height: 12),
-            _buildDetailRow('Category', instrument.category),
-            _buildDetailRow('Available', '${instrument.available}/${instrument.quantity}'),
-            _buildDetailRow('Status', instrument.status),
-            _buildDetailRow('Condition', instrument.condition),
-            _buildDetailRow('Location', instrument.location),
-            _buildDetailRow('Last Maintenance', instrument.lastMaintenance),
+            _buildInstrumentDetailsList(instrument),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: (widget.userRole == 'Student' || widget.userRole == 'Teacher')
-                        ? (instrument.available > 0
-                            ? () {
-                                Navigator.pop(context);
-                                Navigator.pushNamed(
-                                  context,
-                                  '/submit_request',
-                                  arguments: instrument.name,
-                                );
-                              }
-                            : null)
-                        : (widget.userRole == 'Admin'
-                            ? () {
-                                Navigator.pop(context);
-                                Navigator.pushNamed(
-                                  context,
-                                  '/log_maintenance',
-                                  arguments: instrument.name,
-                                );
-                              }
-                            : null),
-                    icon: const Icon(Icons.assignment),
-                    label: Text(
-                      (widget.userRole == 'Student' || widget.userRole == 'Teacher')
-                          ? 'Request This'
-                          : (widget.userRole == 'Admin' ? 'Log Maintenance' : 'Update'),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildActionButtons(context, instrument),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildInstrumentHeader(instrument) {
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: Colors.teal.shade100,
+          child: const Icon(Icons.science, color: Colors.teal),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            instrument.name,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInstrumentDetailsList(instrument) {
+    return Column(
+      children: [
+        _buildDetailRow('Category', instrument.category),
+        _buildDetailRow('Available', '${instrument.available}/${instrument.quantity}'),
+        _buildDetailRow('Status', instrument.status),
+        _buildDetailRow('Condition', instrument.condition),
+        _buildDetailRow('Location', instrument.location),
+        _buildDetailRow('Last Maintenance', instrument.lastMaintenance),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, instrument) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _getOnPressedAction(context, instrument),
+            icon: const Icon(Icons.assignment),
+            label: Text(_getActionButtonLabel()),
+          ),
+        ),
+      ],
+    );
+  }
+
+  VoidCallback? _getOnPressedAction(BuildContext context, instrument) {
+    final bool isUser = widget.userRole == 'Student' || widget.userRole == 'Teacher';
+    final bool isAdmin = widget.userRole == 'Admin';
+
+    if (isUser) {
+      if (instrument.available > 0) {
+        return () {
+          Navigator.pop(context);
+          Navigator.pushNamed(context, '/submit_request', arguments: instrument.name);
+        };
+      }
+      return null;
+    }
+
+    if (isAdmin) {
+      return () {
+        Navigator.pop(context);
+        Navigator.pushNamed(context, '/log_maintenance', arguments: instrument.name);
+      };
+    }
+
+    return null;
+  }
+
+  String _getActionButtonLabel() {
+    final bool isUser = widget.userRole == 'Student' || widget.userRole == 'Teacher';
+    final bool isAdmin = widget.userRole == 'Admin';
+
+    if (isUser) return 'Request This';
+    if (isAdmin) return 'Log Maintenance';
+    return 'Update';
   }
 
   Widget _buildDetailRow(String label, String value) {

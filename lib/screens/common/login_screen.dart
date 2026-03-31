@@ -189,9 +189,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-
     setState(() => _isLoading = true);
     try {
       final username = _usernameController.text.trim();
@@ -202,11 +199,11 @@ class _LoginScreenState extends State<LoginScreen> {
         AuthService.instance.setUsername(username);
         AuthService.instance.setRole(UserRole.superadmin);
         if (context.mounted) {
-          messenger.showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Superadmin Bypass Mode Activated (Offline)')),
           );
           // Superadmin uses admin dashboard for now
-          navigator.pushReplacementNamed('/admin_dashboard');
+          Navigator.of(context).pushReplacementNamed('/admin_dashboard');
         }
         return;
       }
@@ -215,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (username == 'admin' && password == 'admin123') {
         if (!kIsWeb) {
           if (context.mounted) {
-            messenger.showSnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Admin access is restricted to Web browsers only.'),
                 backgroundColor: Colors.red,
@@ -228,10 +225,10 @@ class _LoginScreenState extends State<LoginScreen> {
         AuthService.instance.setUsername(username);
         AuthService.instance.setRole(UserRole.admin);
         if (context.mounted) {
-          messenger.showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Local Admin Maintenance Mode Activated')),
           );
-          navigator.pushReplacementNamed('/admin_dashboard');
+          Navigator.of(context).pushReplacementNamed('/admin_dashboard');
         }
         return;
       }
@@ -244,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // 3. API Role Check - Restrict Admin to Web
         if (role == UserRole.admin && !kIsWeb) {
           if (context.mounted) {
-            messenger.showSnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Admin Dashboard is restricted to Web browsers only.'),
                 backgroundColor: Colors.red,
@@ -257,21 +254,41 @@ class _LoginScreenState extends State<LoginScreen> {
 
         AuthService.instance.setUsername(username);
         AuthService.instance.setRole(role);
-        _addLoginNotification(username);
+
+        NotificationService.instance.add(
+          NotificationItem(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            title: 'User Login',
+            message: '$username logged in',
+            type: 'login',
+            timestamp: DateTime.now().toIso8601String(),
+            recipient: 'Admin',
+            priority: 'low',
+          ),
+        );
+
+        final route = _getRoute(role);
         if (context.mounted) {
-          navigator.pushReplacementNamed(_getRoute(role));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Logged in as $username')),
+          );
+          Navigator.of(context).pushReplacementNamed(route);
         }
       } else {
         if (context.mounted) {
-          messenger.showSnackBar(const SnackBar(content: Text('Invalid credentials')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invalid user role')),
+          );
         }
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       if (context.mounted) {
-        messenger.showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
       }
-    } finally {
-      if (context.mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 

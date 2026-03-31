@@ -89,12 +89,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Future<void> _handleUserLogin(String? userId) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-
     if (userId == null) {
       if (context.mounted) {
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid User QR')),
         );
         setState(() => _isScanning = true);
@@ -111,7 +108,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       if (userRec.isEmpty) {
         if (context.mounted) {
-          messenger.showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('User not found in database')),
           );
           setState(() => _isScanning = true);
@@ -124,7 +121,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       if (parsedRole == null) {
         if (context.mounted) {
-          messenger.showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Invalid user role')),
           );
           setState(() => _isScanning = true);
@@ -149,11 +146,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       final route = _getDashboardRoute(parsedRole);
       if (context.mounted) {
-        navigator.pushNamedAndRemoveUntil(route, (r) => false);
+        Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
       }
     } catch (e) {
       if (context.mounted) {
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
         );
         setState(() => _isScanning = true);
@@ -370,8 +367,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Future<void> _processTransaction(BuildContext context, Instrument instrument, String txType) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
     try {
       final updatedAvail = await ApiClient.instance.processTransaction(
         type: txType,
@@ -382,14 +377,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         instrument.available = updatedAvail;
       }
       if (context.mounted) {
-        navigator.pop();
-        messenger.showSnackBar(
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(txType == 'receive' ? 'Received (borrow processed) via QR' : 'Returned via QR')),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }

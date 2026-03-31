@@ -45,9 +45,8 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       });
     } catch (e) {
       if (!context.mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
       setState(() => _loading = false);
-      messenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
     }
@@ -63,135 +62,162 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.teal.shade100,
-                  child: const Icon(Icons.science, color: Colors.teal),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    instrument.name,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
+            _buildInstrumentHeader(instrument),
             const SizedBox(height: 16),
-            _buildDetailRow('Category', instrument.category),
-            _buildDetailRow('Quantity', instrument.quantity.toString()),
-            _buildDetailRow('Available', instrument.available.toString()),
-            _buildDetailRow('Borrowed', (instrument.quantity - instrument.available).toString()),
-            _buildDetailRow('Status', instrument.status),
-            _buildDetailRow('Condition', instrument.condition),
-            _buildDetailRow('Location', instrument.location),
-            _buildDetailRow(_lastMaintenanceLabel, instrument.lastMaintenance),
+            _buildInstrumentDetailsList(instrument),
             const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (ctx, constraints) {
-                const spacing = 8.0;
-                final w = constraints.maxWidth;
-                final cols = w < 480 ? 2 : 3;
-                final bw = ((w - (spacing * (cols - 1))) / cols).clamp(160.0, w);
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: bw,
-                      child: TextButton(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _editInstrument(index);
-                        },
-                        child: const Text(
-                          'Update',
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: bw,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(
-                            context,
-                            '/qr_generator',
-                            arguments: {'userRole': 'Teacher', 'preSelectedInstrument': instrument.name},
-                          );
-                        },
-                        icon: const Icon(Icons.qr_code_2),
-                        label: const Text(
-                          'Generate QR',
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: bw,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                          backgroundColor: AppTheme.secondaryColor,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: instrument.available < instrument.quantity
-                            ? () async {
-                                final navigator = Navigator.of(context);
-                                final messenger = ScaffoldMessenger.of(context);
-                                try {
-                                  // Manual return logic for web admin
-                                  final newAvail = await ApiClient.instance.processTransaction(
-                                    type: 'return',
-                                    instrumentName: instrument.name,
-                                    processedBy: AuthService.instance.currentUsername,
-                                  );
-                                  if (newAvail != null) {
-                                    setState(() {
-                                      _instruments[index].available = newAvail;
-                                    });
-                                    navigator.pop();
-                                    messenger.showSnackBar(
-                                      SnackBar(content: Text('Successfully returned 1 unit of ${instrument.name}')),
-                                    );
-                                  }
-                                } catch (e) {
-                                  messenger.showSnackBar(
-                                    SnackBar(content: Text('Error: ${e.toString()}')),
-                                  );
-                                }
-                              }
-                            : null,
-                        icon: const Icon(Icons.keyboard_return),
-                        label: const Text(
-                          'Manual Return',
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+            _buildActionButtons(context, instrument, index),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstrumentHeader(Instrument instrument) {
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: Colors.teal.shade100,
+          child: const Icon(Icons.science, color: Colors.teal),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            instrument.name,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInstrumentDetailsList(Instrument instrument) {
+    return Column(
+      children: [
+        _buildDetailRow('Category', instrument.category),
+        _buildDetailRow('Quantity', instrument.quantity.toString()),
+        _buildDetailRow('Available', instrument.available.toString()),
+        _buildDetailRow('Borrowed', (instrument.quantity - instrument.available).toString()),
+        _buildDetailRow('Status', instrument.status),
+        _buildDetailRow('Condition', instrument.condition),
+        _buildDetailRow('Location', instrument.location),
+        _buildDetailRow(_lastMaintenanceLabel, instrument.lastMaintenance),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, Instrument instrument, int index) {
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        const spacing = 8.0;
+        final w = constraints.maxWidth;
+        final cols = w < 480 ? 2 : 3;
+        final bw = ((w - (spacing * (cols - 1))) / cols).clamp(160.0, w);
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          alignment: WrapAlignment.center,
+          children: [
+            _buildUpdateButton(context, index, bw),
+            _buildQrButton(context, instrument, bw),
+            _buildReturnButton(context, instrument, index, bw),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildUpdateButton(BuildContext context, int index, double width) {
+    return SizedBox(
+      width: width,
+      child: TextButton(
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        onPressed: () {
+          Navigator.pop(context);
+          _editInstrument(index);
+        },
+        child: const Text(
+          'Update',
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQrButton(BuildContext context, Instrument instrument, double width) {
+    return SizedBox(
+      width: width,
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        onPressed: () {
+          Navigator.pop(context);
+          Navigator.pushNamed(
+            context,
+            '/qr_generator',
+            arguments: {'userRole': 'Teacher', 'preSelectedInstrument': instrument.name},
+          );
+        },
+        icon: const Icon(Icons.qr_code_2),
+        label: const Text(
+          'Generate QR',
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReturnButton(BuildContext context, Instrument instrument, int index, double width) {
+    return SizedBox(
+      width: width,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          backgroundColor: AppTheme.secondaryColor,
+          foregroundColor: Colors.white,
+        ),
+        onPressed: instrument.available < instrument.quantity
+            ? () async {
+                try {
+                  final newAvail = await ApiClient.instance.processTransaction(
+                    type: 'return',
+                    instrumentName: instrument.name,
+                    processedBy: AuthService.instance.currentUsername,
+                  );
+                  if (!context.mounted) return;
+                  if (newAvail != null) {
+                    setState(() {
+                      _instruments[index].available = newAvail;
+                    });
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Successfully returned 1 unit of ${instrument.name}')),
+                    );
+                  }
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString()}')),
+                  );
+                }
+              }
+            : null,
+        icon: const Icon(Icons.keyboard_return),
+        label: const Text(
+          'Manual Return',
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ),
     );
@@ -300,7 +326,6 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
     if (!_validateForm(context, controllers.name.text, qty, avail)) return;
 
-    final messenger = ScaffoldMessenger.of(context);
     setSubmitting(true);
     try {
       final item = _createInstrumentFromControllers(typeValue, controllers, qty, avail);
@@ -314,27 +339,27 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       }
 
       if (context.mounted) {
-        _onSuccess(context, isEdit, item, messenger);
+        _onSuccess(context, isEdit, item);
       }
     } catch (e) {
       if (context.mounted) {
-        _onError(messenger, e);
+        _onError(context, e);
       }
     } finally {
       if (context.mounted) setSubmitting(false);
     }
   }
 
-  void _onSuccess(BuildContext context, bool isEdit, Instrument item, ScaffoldMessengerState messenger) {
+  void _onSuccess(BuildContext context, bool isEdit, Instrument item) {
     Navigator.pop(context);
-    messenger.showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
     );
     if (!isEdit) _showQrDialog(context, item.name);
   }
 
-  void _onError(ScaffoldMessengerState messenger, Object e) {
-    messenger.showSnackBar(
+  void _onError(BuildContext context, Object e) {
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
     );
   }

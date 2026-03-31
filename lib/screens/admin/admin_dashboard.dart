@@ -129,7 +129,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         ApiClient.instance.fetchInstruments(),
         ApiClient.instance.fetchRequests(),
       ]);
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _instruments = results[0] as List<Instrument>;
           _requests = results[1] as List<Map<String, dynamic>>;
@@ -137,7 +137,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _error = e.toString();
           _isLoading = false;

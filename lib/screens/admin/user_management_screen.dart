@@ -42,9 +42,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       });
     } catch (e) {
       if (!context.mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
       setState(() => _loading = false);
-      messenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
     }
@@ -95,36 +94,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     required String role,
     required Function(bool) setSubmitting,
   }) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-
     if (username.isEmpty || password.isEmpty) {
-      messenger.showSnackBar(const SnackBar(content: Text('Enter username and password')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All fields are required')));
       return;
     }
+
     setSubmitting(true);
     try {
-      final res = await ApiClient.instance.createUser(username: username, password: password, role: role);
+      await ApiClient.instance.createUser(username: username, password: password, role: role);
       if (context.mounted) {
-        setState(() {
-          _users.add({
-            'id': res['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-            'username': res['username']?.toString() ?? username,
-            'role': (res['role']?.toString() ?? role).toLowerCase(),
-          });
-        });
-        navigator.pop();
-        messenger.showSnackBar(
-          const SnackBar(content: Text('User added')),
-        );
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User created')));
+        _loadUsers();
       }
     } catch (e) {
       if (context.mounted) {
-        setSubmitting(false);
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -152,10 +142,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               onCancel: () => Navigator.pop(context),
               onSubmit: () => _submitEditUser(
                 context: context,
-                index: index,
-                user: user,
-                newRole: selectedRole.toLowerCase(),
-                newPassword: passwordController.text.trim(),
+                username: user['username'],
+                role: selectedRole.toLowerCase(),
+                password: passwordController.text.trim().isEmpty ? null : passwordController.text.trim(),
                 setSubmitting: (v) => setStateDialog(() => submitting = v),
               ),
               submitLabel: 'Save',
@@ -168,38 +157,32 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   Future<void> _submitEditUser({
     required BuildContext context,
-    required int index,
-    required Map<String, dynamic> user,
-    required String newRole,
-    required String newPassword,
+    required String username,
+    String? password,
+    required String role,
     required Function(bool) setSubmitting,
   }) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
+    if (username.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Username is required')));
+      return;
+    }
 
     setSubmitting(true);
     try {
-      await ApiClient.instance.updateUser(
-        username: user['username'],
-        role: newRole,
-        password: newPassword.isEmpty ? null : newPassword,
-      );
+      await ApiClient.instance.updateUser(username: username, password: password, role: role);
       if (context.mounted) {
-        setState(() {
-          _users[index] = {...user, 'role': newRole};
-        });
-        navigator.pop();
-        messenger.showSnackBar(
-          const SnackBar(content: Text('User updated')),
-        );
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User updated')));
+        _loadUsers();
       }
     } catch (e) {
       if (context.mounted) {
-        setSubmitting(false);
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -235,8 +218,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
           TextButton(
             onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              final navigator = Navigator.of(context);
               try {
                 final username = _users[index]['username'];
                 await ApiClient.instance.deleteUser(username: username);
@@ -244,14 +225,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   setState(() {
                     _users.removeAt(index);
                   });
-                  navigator.pop();
-                  messenger.showSnackBar(
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('User deleted')),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
-                  messenger.showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
                   );
                 }

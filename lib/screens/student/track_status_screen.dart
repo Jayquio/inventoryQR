@@ -21,17 +21,17 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   Future<void> _searchRequests() async {
     final name = _nameController.text.trim();
     if (name.isNotEmpty) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() => _loading = true);
       try {
         final rows = await ApiClient.instance.fetchRequests(studentName: name);
-        if (!mounted) return;
+        if (!context.mounted) return;
         setState(() {
           _filteredRequests = rows.map((e) => Request.fromJson(e)).toList();
           _loading = false;
         });
       } catch (e) {
-        if (!mounted) return;
+        if (!context.mounted) return;
         setState(() {
            _filteredRequests = [];
            _loading = false;
@@ -39,7 +39,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } else {
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _filteredRequests = [];
         });

@@ -72,11 +72,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
   }
 
   Future<void> _markReturned(Request req) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    
     if (req.id.isEmpty) {
-      messenger.showSnackBar(const SnackBar(content: Text('Cannot sync return: request id is missing.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot sync return: request id is missing.')));
       return;
     }
     
@@ -91,26 +88,22 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
       // Refresh both requests and instruments to ensure stock is correct
       await _loadData();
 
-      // If called from the bottom sheet details, close it
-      if (navigator.canPop()) {
-        navigator.pop();
+      if (context.mounted) {
+        // If called from the bottom sheet details, close it
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Item marked as returned.')),
+        );
       }
-
-      NotificationService.instance.add(
-        NotificationItem(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          title: 'Instrument Returned',
-          message: '${req.studentName} returned ${req.instrumentName}.',
-          type: 'info',
-          timestamp: DateTime.now().toIso8601String(),
-          recipient: 'Teacher',
-          priority: 'low',
-        ),
-      );
-
-      messenger.showSnackBar(const SnackBar(content: Text('Successfully marked as returned.')));
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+        );
+      }
     }
   }
 
@@ -122,11 +115,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
         user: AuthService.instance.currentUsername,
       );
       await _loadData();
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request approved!')));
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
@@ -140,11 +133,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
         user: AuthService.instance.currentUsername,
       );
       await _loadData();
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request rejected.')));
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
@@ -170,11 +163,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
               try {
                 await ApiClient.instance.deleteRequest(id: req.id);
                 await _loadData();
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request deleted.')));
                 }
               } catch (e) {
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting: $e')));
                 }
               }

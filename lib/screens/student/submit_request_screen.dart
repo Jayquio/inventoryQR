@@ -94,11 +94,8 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-
     if (_neededAt == null) {
-      messenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please set when you need the instrument')),
       );
       return;
@@ -116,14 +113,14 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       _addRequestNotifications();
 
       if (context.mounted) {
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Request submitted successfully!')),
         );
-        navigator.pop();
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (context.mounted) {
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }
