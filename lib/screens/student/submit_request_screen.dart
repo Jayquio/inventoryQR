@@ -54,13 +54,13 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   Future<void> _load() async {
     try {
       final items = await ApiClient.instance.fetchInstruments();
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _instruments = items;
         _loading = false;
       });
     } catch (_) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }

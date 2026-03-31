@@ -37,14 +37,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
     try {
       final reqRows = await ApiClient.instance.fetchRequests();
       
-      if (!context.mounted) return;
+      if (!mounted) return;
       
       setState(() {
         _requests = reqRows.map((e) => Request.fromJson(e)).toList();
         _loading = false;
       });
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading data: ${e.toString()}')),

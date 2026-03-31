@@ -206,7 +206,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       ),
     );
 
-    if (!context.mounted) return;
+    if (!mounted) return;
     _processInventoryScan(instrument, parsed['type'], parsed['course'], parsed['date']);
   }
 

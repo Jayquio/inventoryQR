@@ -29,7 +29,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future<void> _loadUsers() async {
     try {
       final data = await ApiClient.instance.fetchUsers();
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _users = data
             .map((e) => {
@@ -41,7 +41,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         _loading = false;
       });
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),

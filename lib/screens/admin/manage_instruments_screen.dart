@@ -38,13 +38,13 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   Future<void> _load() async {
     try {
       final items = await ApiClient.instance.fetchInstruments();
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _instruments = items;
         _loading = false;
       });
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),

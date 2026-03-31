@@ -59,15 +59,15 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     try {
       final rows = await ApiClient.instance.fetchRequests();
       final items = rows.map((e) => Request.fromJson(e)).toList();
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _requests = items;
         _loading = false;
       });
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => _loading = false);
-      if (!context.mounted) return;
+      if (!mounted) return;
       final err = e.toString().replaceFirst(_exceptionPrefix, '');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
@@ -84,7 +84,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     ApiClient.instance
         .updateRequestStatus(id: req.id, status: newStatusStr, user: AuthService.instance.currentUsername)
         .then((_) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _requests[index] = Request(
           id: req.id,
@@ -190,9 +190,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         status: 'returned',
         user: AuthService.instance.currentUsername,
       );
-      if (!context.mounted) return;
+      if (!mounted) return;
       await _load();
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked as returned.')));
       NotificationService.instance.add(
         NotificationItem(

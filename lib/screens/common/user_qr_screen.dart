@@ -25,13 +25,13 @@ class _UserQrScreenState extends State<UserQrScreen> {
     if (AuthService.instance.currentRole == UserRole.admin) {
       _loadingUsers = true;
       ApiClient.instance.fetchUsers().then((data) {
-        if (!context.mounted) return;
+        if (!mounted) return;
         setState(() {
           _users = data;
           _loadingUsers = false;
         });
       }).catchError((_) {
-        if (!context.mounted) return;
+        if (!mounted) return;
         setState(() => _loadingUsers = false);
       });
     }

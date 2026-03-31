@@ -200,7 +200,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     bool enabled = prefs.getBool('notifications_enabled') ?? true;
     bool autoRefresh = prefs.getBool('notifications_auto_refresh') ?? true;
-    if (!context.mounted) return;
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -386,7 +386,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _showStaffPreferencesDialog() async {
     final prefs = await SharedPreferences.getInstance();
     bool onlyPending = prefs.getBool('teacher_show_pending_only') ?? prefs.getBool('staff_show_pending_only') ?? true;
-    if (!context.mounted) return;
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(

@@ -48,13 +48,13 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
   Future<void> _load() async {
     try {
       final List<Instrument> items = await ApiClient.instance.fetchInstruments();
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _instrumentNames = items.map((e) => e.name).toList();
         _loading = false;
       });
     } catch (_) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }

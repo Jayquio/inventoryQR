@@ -41,14 +41,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final rows = await ApiClient.instance.fetchRequests(studentName: current);
       final items = rows.map((e) => Request.fromJson(e)).toList();
       final insts = await ApiClient.instance.fetchInstruments();
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _requests = items;
         _instruments = insts;
         _loading = false;
       });
     } catch (_) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
