@@ -214,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       _showError(e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (context.mounted) setState(() => _isLoading = false);
     }
   }
 

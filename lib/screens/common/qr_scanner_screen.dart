@@ -175,7 +175,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           TextButton(
             onPressed: () {
               if (context.mounted) Navigator.pop(context);
-              if (mounted) setState(() => _isScanning = true);
+              if (context.mounted) setState(() => _isScanning = true);
             },
             child: const Text('OK'),
           ),
@@ -362,7 +362,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         ],
       ),
     ).then((_) {
-      if (mounted) setState(() => _isScanning = true);
+      if (context.mounted) setState(() => _isScanning = true);
     });
   }
 

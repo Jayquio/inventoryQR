@@ -65,7 +65,7 @@ class _DebouncedSearchBarState extends State<DebouncedSearchBar> {
             setState(() => _loading = true);
             _debouncer(() {
               widget.onChanged(value);
-              if (mounted) setState(() => _loading = false);
+              if (context.mounted) setState(() => _loading = false);
             });
           },
         ),

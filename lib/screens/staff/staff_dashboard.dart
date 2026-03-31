@@ -31,7 +31,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     super.initState();
     _load();
     _poller = Timer.periodic(const Duration(seconds: 20), (_) {
-      if (mounted) _load();
+      if (context.mounted) _load();
     });
   }
 

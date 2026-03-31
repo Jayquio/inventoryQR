@@ -190,9 +190,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         status: 'returned',
         user: AuthService.instance.currentUsername,
       );
-      if (!mounted) return;
+      if (!context.mounted) return;
       await _load();
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked as returned.')));
       NotificationService.instance.add(
         NotificationItem(
@@ -206,13 +206,13 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         ),
       );
     } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (context.mounted) setState(() => _loading = false);
     }
   }
 

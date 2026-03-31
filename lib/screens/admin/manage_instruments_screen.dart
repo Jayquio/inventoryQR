@@ -278,7 +278,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         bool submitting = false;
         return StatefulBuilder(
           builder: (context, setStateDialog) => AlertDialog(
@@ -290,12 +290,12 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: submitting ? null : () => Navigator.pop(context),
+                onPressed: submitting ? null : () => Navigator.pop(dialogContext),
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: submitting ? null : () => _submitForm(
-                  context: context,
+                  context: dialogContext,
                   isEdit: isEdit,
                   index: index,
                   originalName: instrument?.name,
