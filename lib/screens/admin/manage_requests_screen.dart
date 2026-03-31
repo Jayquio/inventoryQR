@@ -88,22 +88,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
       // Refresh both requests and instruments to ensure stock is correct
       await _loadData();
 
-      if (context.mounted) {
-        // If called from the bottom sheet details, close it
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Item marked as returned.')),
-        );
-      }
+      if (!mounted) return;
+      _closeCurrentRouteIfPossible();
+      _showMessage(const SnackBar(content: Text('Item marked as returned.')));
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
-        );
-      }
+      if (!mounted) return;
+      _showMessage(
+        SnackBar(content: Text('Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+      );
     }
   }
 
@@ -163,19 +155,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
               try {
                 await ApiClient.instance.deleteRequest(id: req.id);
                 await _loadData();
-                if (context.mounted) {
-                  // If called from the bottom sheet details, close it
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request deleted.')));
-                }
+                if (!mounted) return;
+                _closeCurrentRouteIfPossible();
+                _showMessage(const SnackBar(content: Text('Request deleted.')));
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error deleting: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
-                  );
-                }
+                if (!mounted) return;
+                _showMessage(
+                  SnackBar(content: Text('Error deleting: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
@@ -351,104 +338,127 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
 
   Widget _buildActions(Request request) {
     if (request.status == RequestStatus.pending) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final narrow = constraints.maxWidth < 480;
-          final approve = ElevatedButton(
-            onPressed: () => _approveRequest(request),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-            child: const Text('Approve'),
-          );
-          final reject = ElevatedButton(
-            onPressed: () => _rejectRequest(request),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            child: const Text('Reject'),
-          );
-          final delete = OutlinedButton.icon(
-            onPressed: () => _confirmDelete(request),
-            icon: const Icon(Icons.delete_outline, size: 20),
-            label: const Text('Delete'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-          );
-          if (narrow) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: approve),
-                    const SizedBox(width: 8),
-                    Expanded(child: reject),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                delete,
-              ],
-            );
-          }
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              SizedBox(width: 140, child: approve),
-              const SizedBox(width: 8),
-              SizedBox(width: 140, child: reject),
-              const SizedBox(width: 8),
-              SizedBox(width: 120, child: delete),
-            ],
-          );
-        },
-      );
-    } else if (request.status == RequestStatus.approved) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final narrow = constraints.maxWidth < 360;
-          final returned = ElevatedButton.icon(
-            onPressed: () => _markReturned(request),
-            icon: const Icon(Icons.assignment_return),
-            label: const Text('Returned'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.secondaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          );
-          final delete = OutlinedButton.icon(
-            onPressed: () => _confirmDelete(request),
-            icon: const Icon(Icons.delete_outline, size: 20),
-            label: const Text('Delete'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-          );
-          if (narrow) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                returned,
-                const SizedBox(height: 8),
-                delete,
-              ],
-            );
-          }
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              SizedBox(width: 200, child: returned),
-              const SizedBox(width: 8),
-              SizedBox(width: 120, child: delete),
-            ],
-          );
-        },
-      );
-    } else {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: OutlinedButton.icon(
+      return _buildPendingActions(request);
+    }
+    if (request.status == RequestStatus.approved) {
+      return _buildApprovedActions(request);
+    }
+    return _buildDeleteOnlyAction(request);
+  }
+
+  Widget _buildPendingActions(Request request) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 480;
+        final approve = ElevatedButton(
+          onPressed: () => _approveRequest(request),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+          child: const Text('Approve'),
+        );
+        final reject = ElevatedButton(
+          onPressed: () => _rejectRequest(request),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+          child: const Text('Reject'),
+        );
+        final delete = OutlinedButton.icon(
           onPressed: () => _confirmDelete(request),
-          icon: const Icon(Icons.delete_outline, size: 18),
+          icon: const Icon(Icons.delete_outline, size: 20),
           label: const Text('Delete'),
           style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-        ),
-      );
+        );
+        if (narrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: approve),
+                  const SizedBox(width: 8),
+                  Expanded(child: reject),
+                ],
+              ),
+              const SizedBox(height: 8),
+              delete,
+            ],
+          );
+        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            SizedBox(width: 140, child: approve),
+            const SizedBox(width: 8),
+            SizedBox(width: 140, child: reject),
+            const SizedBox(width: 8),
+            SizedBox(width: 120, child: delete),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildApprovedActions(Request request) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 360;
+        final returned = ElevatedButton.icon(
+          onPressed: () => _markReturned(request),
+          icon: const Icon(Icons.assignment_return),
+          label: const Text('Returned'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.secondaryColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        );
+        final delete = OutlinedButton.icon(
+          onPressed: () => _confirmDelete(request),
+          icon: const Icon(Icons.delete_outline, size: 20),
+          label: const Text('Delete'),
+          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+        );
+        if (narrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              returned,
+              const SizedBox(height: 8),
+              delete,
+            ],
+          );
+        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            SizedBox(width: 200, child: returned),
+            const SizedBox(width: 8),
+            SizedBox(width: 120, child: delete),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDeleteOnlyAction(Request request) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: OutlinedButton.icon(
+        onPressed: () => _confirmDelete(request),
+        icon: const Icon(Icons.delete_outline, size: 18),
+        label: const Text('Delete'),
+        style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+      ),
+    );
+  }
+
+  void _closeCurrentRouteIfPossible() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
     }
+  }
+
+  void _showMessage(SnackBar snackBar) {
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   Color _getStatusColor(RequestStatus status) {

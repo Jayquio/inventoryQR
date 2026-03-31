@@ -112,18 +112,16 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       
       _addRequestNotifications();
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Request submitted successfully!')),
-        );
-        Navigator.of(context).pop();
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request submitted successfully!')),
+      );
+      Navigator.of(context).pop();
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
     }
   }
 
