@@ -1,0 +1,13 @@
+.dart_tool/
+.git/
+.github/
+.idea/
+.vscode/
+build/
+ios/
+android/
+windows/
+linux/
+macos/
+*.jfif
+*.sql
