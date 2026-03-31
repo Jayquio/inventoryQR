@@ -95,7 +95,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     required Function(bool) setSubmitting,
   }) async {
     if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All fields are required')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All fields are required')));
+      }
       return;
     }
 
@@ -163,7 +165,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     required Function(bool) setSubmitting,
   }) async {
     if (username.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Username is required')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Username is required')));
+      }
       return;
     }
 

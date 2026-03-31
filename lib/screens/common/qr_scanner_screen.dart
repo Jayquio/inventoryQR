@@ -298,7 +298,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     return true;
   }
 
-  void _handleStudentBorrow(Instrument instrument, String? course, DateTime? date) {
+  Future<void> _handleStudentBorrow(Instrument instrument, String? course, DateTime? date) async {
     if (instrument.available <= 0) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -309,13 +309,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       return;
     }
     if (context.mounted) {
-      Navigator.pushNamed(context, '/submit_request', arguments: {
+      await Navigator.pushNamed(context, '/submit_request', arguments: {
         'instrumentName': instrument.name,
         'course': course,
         'date': date,
-      }).then((_) {
-        if (context.mounted) setState(() => _isScanning = true);
       });
+      if (context.mounted) setState(() => _isScanning = true);
     }
   }
 

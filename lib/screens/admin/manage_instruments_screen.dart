@@ -339,29 +339,42 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       }
 
       if (context.mounted) {
-        _onSuccess(context, isEdit, item);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
+        );
+        if (!isEdit) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Generate QR?'),
+              content: Text('Create QR labels for "${item.name}" now?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.pushNamed(context, '/qr_generator', arguments: {
+                      'userRole': 'Teacher',
+                      'preSelectedInstrument': item.name
+                    });
+                  },
+                  child: const Text('Generate'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     } catch (e) {
       if (context.mounted) {
-        _onError(context, e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        );
       }
     } finally {
       if (context.mounted) setSubmitting(false);
     }
-  }
-
-  void _onSuccess(BuildContext context, bool isEdit, Instrument item) {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
-    );
-    if (!isEdit) _showQrDialog(context, item.name);
-  }
-
-  void _onError(BuildContext context, Object e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
-    );
   }
 
   bool _validateForm(BuildContext context, String name, int qty, int avail) {
@@ -394,28 +407,6 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  void _showQrDialog(BuildContext context, String name) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Generate QR?'),
-        content: Text('Create QR labels for "$name" now?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pushNamed(context, '/qr_generator', arguments: {
-                'userRole': 'Teacher',
-                'preSelectedInstrument': name
-              });
-            },
-            child: const Text('Generate'),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

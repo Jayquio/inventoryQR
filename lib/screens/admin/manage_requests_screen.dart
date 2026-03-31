@@ -164,11 +164,17 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
                 await ApiClient.instance.deleteRequest(id: req.id);
                 await _loadData();
                 if (context.mounted) {
+                  // If called from the bottom sheet details, close it
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request deleted.')));
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting: $e')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+                  );
                 }
               }
             },
