@@ -208,8 +208,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
     } finally {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 

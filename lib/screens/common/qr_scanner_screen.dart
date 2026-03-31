@@ -90,12 +90,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _handleUserLogin(String? userId) async {
     if (userId == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid User QR')),
-        );
-        setState(() => _isScanning = true);
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid User QR')),
+      );
+      setState(() => _isScanning = true);
       return;
     }
 
@@ -107,12 +106,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       );
 
       if (userRec.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('User not found in database')),
-          );
-          setState(() => _isScanning = true);
-        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not found in database')),
+        );
+        setState(() => _isScanning = true);
         return;
       }
 
@@ -120,12 +118,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       UserRole? parsedRole = _parseUserRole(dbRoleStr);
 
       if (parsedRole == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invalid user role')),
-          );
-          setState(() => _isScanning = true);
-        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid user role')),
+        );
+        setState(() => _isScanning = true);
         return;
       }
 
@@ -145,16 +142,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       );
 
       final route = _getDashboardRoute(parsedRole);
-      if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
-      }
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
-        );
-        setState(() => _isScanning = true);
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+      );
+      setState(() => _isScanning = true);
     }
   }
 
@@ -308,14 +303,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       }
       return;
     }
-    if (context.mounted) {
-      await Navigator.pushNamed(context, '/submit_request', arguments: {
-        'instrumentName': instrument.name,
-        'course': course,
-        'date': date,
-      });
-      if (context.mounted) setState(() => _isScanning = true);
-    }
+    if (!mounted) return;
+    await Navigator.pushNamed(context, '/submit_request', arguments: {
+      'instrumentName': instrument.name,
+      'course': course,
+      'date': date,
+    });
+    if (!mounted) return;
+    setState(() => _isScanning = true);
   }
 
   void _showInstrumentDetailsDialog(BuildContext context, Instrument instrument, String? type) {

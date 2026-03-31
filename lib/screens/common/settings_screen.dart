@@ -108,9 +108,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (newUrl != null && newUrl.trim().isNotEmpty) {
       await AppConfigService.instance.setBaseUrl(newUrl);
       ApiClient.setBaseUrl(AppConfigService.instance.baseUrl);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('API set to ${AppConfigService.instance.baseUrl}')));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('API set to ${AppConfigService.instance.baseUrl}')));
     }
   }
 
@@ -123,11 +122,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: const Text('Auto-detect and prefill LAN URL'),
         onTap: () async {
           final ok = await AppConfigService.instance.detectAndApply();
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(ok ? 'Detected: ${AppConfigService.instance.baseUrl}' : 'No server detected; set URL manually')),
-            );
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ok ? 'Detected: ${AppConfigService.instance.baseUrl}' : 'No server detected; set URL manually')),
+          );
         },
       ),
     );
@@ -142,9 +140,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: const Text('Call ping.php and show status'),
         onTap: () async {
           final ok = await ApiClient.instance.ping();
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'API reachable' : 'API not reachable')));
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'API reachable' : 'API not reachable')));
         },
       ),
     );

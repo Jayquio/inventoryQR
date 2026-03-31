@@ -383,15 +383,13 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       firstDate: now,
       lastDate: DateTime(now.year + 1),
     );
-    if (date != null && context.mounted) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (time != null && context.mounted) {
-        setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
-      }
-    }
+    if (!mounted || date == null) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (!mounted || time == null) return;
+    setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
   }
 
   Widget _buildPurposeField() {
