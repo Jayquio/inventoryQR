@@ -108,19 +108,18 @@ class MyApp extends StatelessWidget {
           ),
           themeMode: ThemeService.instance.mode,
           debugShowCheckedModeBanner: false,
-          initialRoute: '/login',
+          initialRoute: AppRoutes.login,
           routes: {
-            '/login': (context) => const LoginScreen(),
-            '/admin_dashboard': (context) => const AdminDashboard(),
-            '/teacher_dashboard': (context) => const StaffDashboard(),
-            '/staff_dashboard': (context) => const StaffDashboard(),
-            '/student_dashboard': (context) => const StudentDashboard(),
+            AppRoutes.login: (context) => const LoginScreen(),
+            AppRoutes.adminDashboard: (context) => const AdminDashboard(),
+            AppRoutes.teacherDashboard: (context) => const StaffDashboard(),
+            AppRoutes.studentDashboard: (context) => const StudentDashboard(),
             AppRoutes.manageRequests: (context) => const ManageRequestsScreen(),
-            '/manage_instruments': (context) => const ManageInstrumentsScreen(),
-            '/user_management': (context) => const UserManagementScreen(),
-            '/transaction_logs': (context) => const TransactionLogsScreen(),
-            '/notification_center': (context) => const NotificationCenterScreen(),
-            '/submit_request': (context) {
+            AppRoutes.manageInstruments: (context) => const ManageInstrumentsScreen(),
+            AppRoutes.userManagement: (context) => const UserManagementScreen(),
+            AppRoutes.transactionLogs: (context) => const TransactionLogsScreen(),
+            AppRoutes.notificationCenter: (context) => const NotificationCenterScreen(),
+            AppRoutes.submitRequest: (context) {
               final args = ModalRoute.of(context)!.settings.arguments;
               String? instrument;
               String? course;
@@ -142,19 +141,19 @@ class MyApp extends StatelessWidget {
               final args = ModalRoute.of(context)!.settings.arguments as String?;
               return ViewInstrumentsScreen(userRole: args ?? 'Student');
             },
-            '/log_maintenance': (context) {
+            AppRoutes.logMaintenance: (context) {
               final args = ModalRoute.of(context)!.settings.arguments as String?;
               return LogMaintenanceScreen(preSelectedInstrument: args);
             },
-            '/handle_returns': (context) => const HandleReturnsScreen(),
-            '/generate_reports': (context) => const GenerateReportsScreen(),
+            AppRoutes.handleReturns: (context) => const HandleReturnsScreen(),
+            AppRoutes.generateReports: (context) => const GenerateReportsScreen(),
             AppRoutes.trackStatus: (context) => const TrackStatusScreen(),
-            '/layout_preview': (context) => const LayoutPreviewScreen(),
-            '/qr_scanner': (context) {
+            AppRoutes.layoutPreview: (context) => const LayoutPreviewScreen(),
+            AppRoutes.qrScanner: (context) {
               final args = ModalRoute.of(context)!.settings.arguments as String?;
               return QrScannerScreen(userRole: args ?? 'Student');
             },
-            '/qr_generator': (context) {
+            AppRoutes.qrGenerator: (context) {
               final args = ModalRoute.of(context)!.settings.arguments;
               String role = 'Student';
               String? pre;
@@ -166,13 +165,8 @@ class MyApp extends StatelessWidget {
               }
               return QrGeneratorScreen(userRole: role, preSelectedInstrument: pre);
             },
-            '/user_qr': (context) {
-              return const UserQrScreen();
-            },
-            AppRoutes.settings: (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as String?;
-              return SettingsScreen(userRole: args ?? 'Student');
-            },
+            AppRoutes.userQr: (context) => const UserQrScreen(),
+            AppRoutes.settings: (context) => const SettingsScreen(),
           },
         );
       },

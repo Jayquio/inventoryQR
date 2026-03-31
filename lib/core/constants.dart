@@ -8,10 +8,26 @@ class UIConstants {
 }
 
 class AppRoutes {
+  static const String login = '/login';
+  static const String adminDashboard = '/admin_dashboard';
+  static const String teacherDashboard = '/teacher_dashboard';
+  static const String studentDashboard = '/student_dashboard';
+  static const String manageInstruments = '/manage_instruments';
+  static const String userManagement = '/user_management';
+  static const String transactionLogs = '/transaction_logs';
+  static const String notificationCenter = '/notification_center';
+  static const String submitRequest = '/submit_request';
   static const String viewInstruments = '/view_instruments';
   static const String manageRequests = '/manage_requests';
-  static const String settings = '/settings';
+  static const String logMaintenance = '/log_maintenance';
+  static const String handleReturns = '/handle_returns';
+  static const String generateReports = '/generate_reports';
   static const String trackStatus = '/track_status';
+  static const String layoutPreview = '/layout_preview';
+  static const String qrScanner = '/qr_scanner';
+  static const String qrGenerator = '/qr_generator';
+  static const String userQr = '/user_qr';
+  static const String settings = '/settings';
 }
 
 class Breakpoints {

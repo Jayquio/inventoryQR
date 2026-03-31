@@ -194,102 +194,87 @@ class _LoginScreenState extends State<LoginScreen> {
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
 
-      // 1. Superadmin Offline Bypass (Works even if XAMPP is off)
-      if (username == 'superadmin' && password == 'superadmin123') {
-        AuthService.instance.setUsername(username);
-        AuthService.instance.setRole(UserRole.superadmin);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Superadmin Bypass Mode Activated (Offline)')),
-          );
-          // Superadmin uses admin dashboard for now
-          Navigator.of(context).pushReplacementNamed('/admin_dashboard');
-        }
-        return;
-      }
-
-      // 2. Local Admin Bypass (Maintenance - Web Only)
-      if (username == 'admin' && password == 'admin123') {
-        if (!kIsWeb) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Admin access is restricted to Web browsers only.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          setState(() => _isLoading = false);
-          return;
-        }
-        AuthService.instance.setUsername(username);
-        AuthService.instance.setRole(UserRole.admin);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Local Admin Maintenance Mode Activated')),
-          );
-          Navigator.of(context).pushReplacementNamed('/admin_dashboard');
-        }
-        return;
-      }
+      if (await _handleBypassLogin(username, password)) return;
 
       final res = await ApiClient.instance.login(username: username, password: password);
       final roleStr = (res['role']?.toString() ?? '').toLowerCase();
       UserRole? role = _parseRole(roleStr);
 
-      if (role != null) {
-        // 3. API Role Check - Restrict Admin to Web
-        if (role == UserRole.admin && !kIsWeb) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Admin Dashboard is restricted to Web browsers only.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          setState(() => _isLoading = false);
-          return;
-        }
-
-        AuthService.instance.setUsername(username);
-        AuthService.instance.setRole(role);
-
-        NotificationService.instance.add(
-          NotificationItem(
-            id: DateTime.now().microsecondsSinceEpoch.toString(),
-            title: 'User Login',
-            message: '$username logged in',
-            type: 'login',
-            timestamp: DateTime.now().toIso8601String(),
-            recipient: 'Admin',
-            priority: 'low',
-          ),
-        );
-
-        final route = _getRoute(role);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Logged in as $username')),
-          );
-          Navigator.of(context).pushReplacementNamed(route);
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invalid user role')),
-          );
-        }
-        setState(() => _isLoading = false);
+      if (role == null) {
+        _showError('Invalid user role');
+        return;
       }
+
+      if (role == UserRole.admin && !kIsWeb) {
+        _showError('Admin Dashboard is restricted to Web browsers only.');
+        return;
+      }
+
+      await _completeLogin(username, role);
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-        );
-      }
-      setState(() => _isLoading = false);
+      _showError(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<bool> _handleBypassLogin(String username, String password) async {
+    // 1. Superadmin Offline Bypass
+    if (username == 'superadmin' && password == 'superadmin123') {
+      await _performBypass(username, UserRole.superadmin, 'Superadmin Bypass Mode Activated (Offline)');
+      return true;
+    }
+
+    // 2. Local Admin Bypass
+    if (username == 'admin' && password == 'admin123') {
+      if (!kIsWeb) {
+        _showError('Admin access is restricted to Web browsers only.');
+        return true;
+      }
+      await _performBypass(username, UserRole.admin, 'Local Admin Maintenance Mode Activated');
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _performBypass(String username, UserRole role, String message) async {
+    AuthService.instance.setUsername(username);
+    AuthService.instance.setRole(role);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
+    }
+  }
+
+  Future<void> _completeLogin(String username, UserRole role) async {
+    AuthService.instance.setUsername(username);
+    AuthService.instance.setRole(role);
+
+    NotificationService.instance.add(
+      NotificationItem(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        title: 'User Login',
+        message: '$username logged in',
+        type: 'login',
+        timestamp: DateTime.now().toIso8601String(),
+        recipient: 'Admin',
+        priority: 'low',
+      ),
+    );
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Logged in as $username')));
+      Navigator.of(context).pushReplacementNamed(_getRoute(role));
+    }
+  }
+
+  void _showError(String message) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+    setState(() => _isLoading = false);
   }
 
   UserRole? _parseRole(String roleStr) {
@@ -300,9 +285,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String _getRoute(UserRole role) {
-    if (role == UserRole.admin) return '/admin_dashboard';
-    if (role == UserRole.teacher) return '/teacher_dashboard';
-    return '/student_dashboard';
+    if (role == UserRole.admin || role == UserRole.superadmin) return AppRoutes.adminDashboard;
+    if (role == UserRole.teacher) return AppRoutes.teacherDashboard;
+    return AppRoutes.studentDashboard;
   }
 
   void _addLoginNotification(String username) {
