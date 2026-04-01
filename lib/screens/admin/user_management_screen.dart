@@ -487,7 +487,7 @@ class _UserFormContent extends StatelessWidget {
             const SizedBox(height: 8),
           ],
           DropdownButtonFormField<String>(
-            value: selectedRole,
+            initialValue: selectedRole,
             decoration: const InputDecoration(labelText: 'Role'),
             items: const [
               DropdownMenuItem(value: 'Admin', child: Text('Admin')),

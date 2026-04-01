@@ -73,8 +73,8 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
         allowed: const {UserRole.admin, UserRole.superadmin},
         unauthorizedMessage: 'Only Admin/Superadmin can access maintenance',
         child: SingleChildScrollView(
-        child: Column(
-          children: [
+          child: Column(
+            children: [
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -122,7 +122,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
                           DropdownButtonFormField<String>(
                             decoration: _inputDecoration('Select Instrument', Icons.inventory),
                             isExpanded: true,
-                            initialValue: widget.preSelectedInstrument != null && widget.preSelectedInstrument!.isNotEmpty
+                            value: widget.preSelectedInstrument != null && widget.preSelectedInstrument!.isNotEmpty
                                 ? widget.preSelectedInstrument
                                 : null,
                             items: instruments.map((instrument) {
@@ -158,7 +158,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
                             decoration: _inputDecoration('Current Status', Icons.info_outline),
-                            initialValue: _status,
+                            value: _status,
                             items: ['Completed', 'Pending', 'In Progress'].map((status) {
                               return DropdownMenuItem<String>(
                                 value: status,
@@ -210,7 +210,8 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
               ),
             ),
           ],
-        ),),
+        ),
+        ),
       ),
     );
   }

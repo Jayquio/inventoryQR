@@ -281,8 +281,8 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
                 key: ValueKey('${_searchController.text}_$_page'),
                 builder: (context, constraints) {
                   final int crossAxisCount = R.columns(constraints.maxWidth, xs: 2, sm: 3, md: 4, lg: 5);
-                  final double spacing = 6.0;
-                  final double totalPadding = 32.0; // 16 * 2
+                  const double spacing = 6.0;
+                  const double totalPadding = 32.0; // 16 * 2
                   final double itemWidth = (constraints.maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) / crossAxisCount;
                   
                   // Ultra-compact height calculation:

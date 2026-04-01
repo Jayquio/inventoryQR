@@ -260,7 +260,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _typeFilter,
+            initialValue: _typeFilter,
             decoration: _inputDecoration('Item Type', Icons.tune),
             items: const [
               DropdownMenuItem(value: 'All', child: Text('All')),
@@ -276,7 +276,6 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
             itemCount: _requestedItems.length,
             separatorBuilder: (context, index) => const Divider(),
             itemBuilder: (context, index) {
-              final item = _requestedItems[index];
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -531,7 +530,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
+        borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
       ),
       filled: true,
       fillColor: Colors.grey.shade50,

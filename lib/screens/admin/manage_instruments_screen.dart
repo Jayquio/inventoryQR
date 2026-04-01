@@ -334,7 +334,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     try {
       final item = _createInstrumentFromControllers(typeValue, controllers, qty, avail);
       await _persistInstrument(item: item, isEdit: isEdit, index: index, originalName: originalName);
-      if (!mounted) return;
+      if (!mounted || !dialogContext.mounted) return;
       _handleSubmitSuccess(item: item, isEdit: isEdit, dialogContext: dialogContext);
     } catch (e) {
       if (!mounted) return;
@@ -570,60 +570,76 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
+  Widget _buildInstrumentGrid(List<Instrument> pageItems, int crossAxisCount, double spacing, double childAspectRatio) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: spacing,
+        crossAxisSpacing: spacing,
+        childAspectRatio: childAspectRatio,
+      ),
+      itemCount: pageItems.length,
+      itemBuilder: (context, index) {
+        final instrument = pageItems[index];
+        final originalIndex = _instruments.indexOf(instrument);
+        return InstrumentCard(
+          instrument: instrument,
+          highlight: _searchController.text,
+          onTap: () => _showInstrumentDetails(context, instrument, originalIndex),
+        );
+      },
+    );
+  }
+
   Widget _buildInstrumentList(List<Instrument> filteredInstruments) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: LayoutBuilder(
         key: ValueKey('${_searchController.text}_$_page'),
         builder: (context, constraints) {
-          final int crossAxisCount = R.columns(constraints.maxWidth, xs: 2, sm: 3, md: 4, lg: 5);
-          const double spacing = 6.0;
-          const double totalPadding = 32.0;
-          final double itemWidth =
-              (constraints.maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+          final crossAxisCount = R.columns(constraints.maxWidth, xs: 2, sm: 3, md: 4, lg: 5);
+          final layoutData = _calculateGridLayout(constraints.maxWidth, crossAxisCount);
+          final pageData = _getPageData(filteredInstruments);
 
-          const double fixedContentHeight = 64;
-          final double cellHeight = (itemWidth / 1.77) + fixedContentHeight;
-          final double childAspectRatio = (itemWidth / cellHeight).clamp(0.5, 1.0);
-
-          final totalPages = (filteredInstruments.length / _perPage).ceil();
-          final start = (_page * _perPage).clamp(0, filteredInstruments.length);
-          final end = (start + _perPage).clamp(0, filteredInstruments.length);
-          final pageItems = filteredInstruments.sublist(start, end);
-
-          if (pageItems.isEmpty) {
+          if (pageData.items.isEmpty) {
             return const Center(child: Text('No instruments found.'));
           }
 
           return Column(
             children: [
               Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisSpacing: spacing,
-                    crossAxisSpacing: spacing,
-                    childAspectRatio: childAspectRatio,
-                  ),
-                  itemCount: pageItems.length,
-                  itemBuilder: (context, index) {
-                    final instrument = pageItems[index];
-                    final originalIndex = _instruments.indexOf(instrument);
-                    return InstrumentCard(
-                      instrument: instrument,
-                      highlight: _searchController.text,
-                      onTap: () => _showInstrumentDetails(context, instrument, originalIndex),
-                    );
-                  },
+                child: _buildInstrumentGrid(
+                  pageData.items,
+                  crossAxisCount,
+                  layoutData.spacing,
+                  layoutData.childAspectRatio,
                 ),
               ),
-              _buildPagination(totalPages),
+              _buildPagination(pageData.totalPages),
             ],
           );
         },
       ),
     );
+  }
+
+  _GridLayoutData _calculateGridLayout(double maxWidth, int crossAxisCount) {
+    const spacing = 6.0;
+    const totalPadding = 32.0;
+    final itemWidth = (maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+    const fixedContentHeight = 64.0;
+    final cellHeight = (itemWidth / 1.77) + fixedContentHeight;
+    final childAspectRatio = (itemWidth / cellHeight).clamp(0.5, 1.0);
+    return _GridLayoutData(spacing, childAspectRatio);
+  }
+
+  _PageData _getPageData(List<Instrument> filteredInstruments) {
+    final totalPages = (filteredInstruments.length / _perPage).ceil();
+    final start = (_page * _perPage).clamp(0, filteredInstruments.length);
+    final end = (start + _perPage).clamp(0, filteredInstruments.length);
+    final items = filteredInstruments.sublist(start, end);
+    return _PageData(items, totalPages);
   }
 
   Widget _buildPagination(int totalPages) {
@@ -665,6 +681,18 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     _searchController.dispose();
     super.dispose();
   }
+}
+
+class _GridLayoutData {
+  final double spacing;
+  final double childAspectRatio;
+  _GridLayoutData(this.spacing, this.childAspectRatio);
+}
+
+class _PageData {
+  final List<Instrument> items;
+  final int totalPages;
+  _PageData(this.items, this.totalPages);
 }
 
 class _InstrumentFormControllers {

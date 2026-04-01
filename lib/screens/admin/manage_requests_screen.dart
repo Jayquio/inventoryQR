@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../../widgets/role_guard.dart';
 import '../../models/request.dart';
 import '../../widgets/search_bar.dart';
-import '../../data/notification_service.dart';
 import '../../data/api_client.dart';
 import '../../data/auth_service.dart';
 import '../../core/theme.dart';
@@ -323,7 +322,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -415,8 +414,15 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
     if (request.instrumentType == 'reagent') {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
-        children: const [
-          Chip(label: Text('Consumable - no return')),
+        children: [
+          const Chip(label: Text('Consumable - no return')),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: () => _confirmDelete(request),
+            icon: const Icon(Icons.delete_outline, size: 20),
+            label: const Text('Delete'),
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+          ),
         ],
       );
     }

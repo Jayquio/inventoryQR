@@ -16,13 +16,25 @@ class AppDrawer extends StatelessWidget {
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(color: Color(0xFF4B0082)),
-            child: const Text(
-              'MedLab Inventory',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'MedLab Inventory',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  userRole,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
             ),
           ),
           if (userRole == 'Admin') ...[

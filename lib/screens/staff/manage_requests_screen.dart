@@ -413,8 +413,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       if (request.instrumentType == 'reagent') {
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
-          children: const [
-            Chip(label: Text('Consumable - no return')),
+          children: [
+            const Chip(label: Text('Consumable - no return')),
           ],
         );
       }
