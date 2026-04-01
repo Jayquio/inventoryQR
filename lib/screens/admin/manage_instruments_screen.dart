@@ -202,7 +202,9 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
                       _instruments[index].available = newAvail;
                     });
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    // Ensure widget is still mounted after popping bottom sheet context
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(this.context).showSnackBar(
                       SnackBar(content: Text('Successfully returned 1 unit of ${instrument.name}')),
                     );
                   }
@@ -403,6 +405,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
   bool _validateForm(BuildContext context, String name, int qty, int avail) {
     if (name.trim().isEmpty) {
+      if (!context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name is required')));
       return false;
     }
@@ -419,9 +422,8 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
   Instrument _createInstrumentFromControllers(String type, _InstrumentFormControllers controllers, int qty, int avail) {
     final normalizedType = type.toLowerCase() == 'reagent' ? 'reagent' : 'instrument';
-    final serial = normalizedType == 'reagent'
-        ? null
-        : (controllers.serialNumber.text.trim().isEmpty ? null : controllers.serialNumber.text.trim());
+    final serialTrimmed = controllers.serialNumber.text.trim();
+    final serial = (normalizedType == 'reagent' || serialTrimmed.isEmpty) ? null : serialTrimmed;
     return Instrument(
       type: normalizedType,
       name: controllers.name.text.trim(),
@@ -771,7 +773,9 @@ class _InstrumentFormContent extends StatelessWidget {
             controller: controllers.serialNumber,
             enabled: !isReagent,
             decoration: InputDecoration(
-              labelText: isReagent ? 'Serial Number (not used for reagents)' : 'Serial Number',
+              labelText: isReagent 
+                ? 'Serial Number (not used for reagents)' 
+                : 'Serial Number',
             ),
           ),
           DropdownButtonFormField<String>(

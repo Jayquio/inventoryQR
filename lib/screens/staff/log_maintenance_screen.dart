@@ -236,7 +236,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
         color: AppTheme.primaryColor,

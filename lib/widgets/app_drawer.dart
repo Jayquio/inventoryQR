@@ -16,7 +16,7 @@ class AppDrawer extends StatelessWidget {
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(color: Color(0xFF4B0082)),
-            child: Text(
+            child: const Text(
               'MedLab Inventory',
               style: TextStyle(
                 color: Colors.white,

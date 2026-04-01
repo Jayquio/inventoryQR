@@ -426,7 +426,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   Widget _buildDateTimePicker() {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(Icons.event, color: AppTheme.primaryColor),
+      leading: const Icon(Icons.event, color: AppTheme.primaryColor),
       title: const Text('Needed Date & Time'),
       subtitle: Text(
         _neededAt != null ? _formatNeededAt(_neededAt!) : 'Tap to set when you need the instrument',

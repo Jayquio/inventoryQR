@@ -235,6 +235,15 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
     }).toList();
 
     if (filtered.isEmpty) {
+      String emptyMessage;
+      if (filterStatus == RequestStatus.pending) {
+        emptyMessage = 'No pending requests.';
+      } else if (filterStatus == RequestStatus.approved) {
+        emptyMessage = 'No instruments to be returned.';
+      } else {
+        emptyMessage = 'No requests found.';
+      }
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -242,11 +251,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
             Icon(Icons.assignment_outlined, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             Text(
-              filterStatus == RequestStatus.pending 
-                ? 'No pending requests.' 
-                : filterStatus == RequestStatus.approved 
-                  ? 'No instruments to be returned.' 
-                  : 'No requests found.',
+              emptyMessage,
               style: const TextStyle(color: Colors.grey),
             ),
           ],
