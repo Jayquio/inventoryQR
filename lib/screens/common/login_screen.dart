@@ -241,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _performBypass(String username, UserRole role, String message) async {
     AuthService.instance.setUsername(username);
     AuthService.instance.setRole(role);
-    if (context.mounted) {
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
     }
@@ -263,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    if (context.mounted) {
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Logged in as $username')));
       Navigator.of(context).pushReplacementNamed(_getRoute(role));
     }

@@ -332,10 +332,10 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     try {
       final item = _createInstrumentFromControllers(typeValue, controllers, qty, avail);
       await _persistInstrument(item: item, isEdit: isEdit, index: index, originalName: originalName);
-      if (!context.mounted) return;
+      if (!mounted) return;
       _handleSubmitSuccess(item: item, isEdit: isEdit, dialogContext: dialogContext);
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
       );
@@ -352,13 +352,13 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   }) async {
     if (isEdit) {
       await ApiClient.instance.updateInstrument(originalName: originalName!, instrument: item);
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => _instruments[index!] = item);
       return;
     }
 
     await ApiClient.instance.createInstrument(instrument: item);
-    if (!context.mounted) return;
+    if (!mounted) return;
     setState(() => _instruments.add(item));
   }
 
@@ -367,7 +367,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     required bool isEdit,
     required BuildContext dialogContext,
   }) {
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (dialogContext.mounted) {
       Navigator.pop(dialogContext);
     }

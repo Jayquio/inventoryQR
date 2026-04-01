@@ -73,9 +73,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               submitting: submitting,
               onCancel: () => Navigator.pop(context),
               onSubmit: () => _submitAddUser(
-                context: context,
+                dialogContext: context,
                 username: usernameController.text.trim(),
-                password: passwordController.text,
+                password: passwordController.text.trim(),
                 role: selectedRole.toLowerCase(),
                 setSubmitting: (v) => setStateDialog(() => submitting = v),
               ),
@@ -88,15 +88,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _submitAddUser({
-    required BuildContext context,
+    required BuildContext dialogContext,
     required String username,
     required String password,
     required String role,
     required Function(bool) setSubmitting,
   }) async {
     if (username.isEmpty || password.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All fields are required')));
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('All fields are required')));
       }
       return;
     }
@@ -104,14 +104,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setSubmitting(true);
     try {
       await ApiClient.instance.createUser(username: username, password: password, role: role);
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User created')));
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext).pop();
+        ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('User created')));
         _loadUsers();
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }
@@ -143,7 +143,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               submitting: submitting,
               onCancel: () => Navigator.pop(context),
               onSubmit: () => _submitEditUser(
-                context: context,
+                dialogContext: context,
                 username: user['username'],
                 role: selectedRole.toLowerCase(),
                 password: passwordController.text.trim().isEmpty ? null : passwordController.text.trim(),
@@ -158,15 +158,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _submitEditUser({
-    required BuildContext context,
+    required BuildContext dialogContext,
     required String username,
     String? password,
     required String role,
     required Function(bool) setSubmitting,
   }) async {
     if (username.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Username is required')));
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Username is required')));
       }
       return;
     }
@@ -174,14 +174,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setSubmitting(true);
     try {
       await ApiClient.instance.updateUser(username: username, password: password, role: role);
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User updated')));
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext).pop();
+        ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('User updated')));
         _loadUsers();
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
         );
       }

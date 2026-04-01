@@ -300,13 +300,13 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
               firstDate: now,
               lastDate: DateTime(now.year + 1),
             );
-            if (!context.mounted || date == null) return;
+            if (!mounted || date == null) return;
             
             final time = await showTimePicker(
               context: context,
               initialTime: TimeOfDay.fromDateTime(_neededAt ?? now),
             );
-            if (!context.mounted || time == null) return;
+            if (!mounted || time == null) return;
             setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
           },
           icon: const Icon(Icons.calendar_today),
@@ -339,7 +339,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
             onPressed: () async {
               try {
                 await downloadQrFile(_payload!, 'qr_$instName.png');
-                if (context.mounted) {
+                if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('QR downloaded!'),
@@ -348,7 +348,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
                   );
                 }
               } catch (e) {
-                if (context.mounted) {
+                if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Download failed: $e'), backgroundColor: Colors.red),
                   );
