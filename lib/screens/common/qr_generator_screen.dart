@@ -244,7 +244,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
           const Center(child: CircularProgressIndicator())
         else
           DropdownButtonFormField<String>(
-            value: _selectedInstrument,
+            initialValue: _selectedInstrument,
             items: _instruments.map((inst) {
               final serial = (inst.serialNumber != null && inst.serialNumber!.isNotEmpty)
                   ? ' • SN: ${inst.serialNumber}'
@@ -271,7 +271,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
         const Text('Course (CASE)', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedCourse,
+          initialValue: _selectedCourse,
           items: _caseCourses
               .map((c) => DropdownMenuItem<String>(value: c, child: Text(c, style: const TextStyle(fontSize: 12))))
               .toList(),

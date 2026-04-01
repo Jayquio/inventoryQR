@@ -178,6 +178,33 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
+  Future<void> _handleManualReturn(BuildContext context, Instrument instrument, int index) async {
+    try {
+      final newAvail = await ApiClient.instance.processTransaction(
+        type: 'return',
+        instrumentName: instrument.name,
+        processedBy: AuthService.instance.currentUsername,
+      );
+      if (!context.mounted) return;
+      if (newAvail != null) {
+        setState(() {
+          _instruments[index].available = newAvail;
+        });
+        Navigator.pop(context);
+        // Ensure widget is still mounted after popping bottom sheet context
+        if (!mounted) return;
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          SnackBar(content: Text('Successfully returned 1 unit of ${instrument.name}')),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+
   Widget _buildReturnButton(BuildContext context, Instrument instrument, int index, double width) {
     return SizedBox(
       width: width,
@@ -189,32 +216,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
           foregroundColor: Colors.white,
         ),
         onPressed: instrument.available < instrument.quantity
-            ? () async {
-                try {
-                  final newAvail = await ApiClient.instance.processTransaction(
-                    type: 'return',
-                    instrumentName: instrument.name,
-                    processedBy: AuthService.instance.currentUsername,
-                  );
-                  if (!context.mounted) return;
-                  if (newAvail != null) {
-                    setState(() {
-                      _instruments[index].available = newAvail;
-                    });
-                    Navigator.pop(context);
-                    // Ensure widget is still mounted after popping bottom sheet context
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(this.context).showSnackBar(
-                      SnackBar(content: Text('Successfully returned 1 unit of ${instrument.name}')),
-                    );
-                  }
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: ${e.toString()}')),
-                  );
-                }
-              }
+            ? () => _handleManualReturn(context, instrument, index)
             : null,
         icon: const Icon(Icons.keyboard_return),
         label: const Text(

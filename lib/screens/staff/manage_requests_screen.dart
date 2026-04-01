@@ -414,8 +414,15 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            const Chip(label: Text('Consumable - no return')),
-          ],
+            const Chip(label: const Text('Consumable - no return')),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              onPressed: () => _deleteRequest(originalIndex),
+              icon: const Icon(Icons.delete_outline, size: 20),
+              label: const Text('Delete'),
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+            ),
+          ]
         );
       }
       return LayoutBuilder(

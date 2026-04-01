@@ -1,16 +1,14 @@
 // lib/core/utils/qr_downloader_web.dart
 
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
-// ignore: depend_on_referenced_packages
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 import 'package:qr/qr.dart';
 
 Future<void> downloadQrFile(String payload, String fileName) async {
   try {
-    const int moduleSize = 10; // pixels per QR module
-    const int quietZone = 4;   // modules of white border
+    const int moduleSize = 10;
+    const int quietZone = 4;
 
-    // Generate QR code matrix
     final qrCode = QrCode.fromData(
       data: payload,
       errorCorrectLevel: QrErrorCorrectLevel.M,
@@ -19,16 +17,16 @@ Future<void> downloadQrFile(String payload, String fileName) async {
     final int modules = qrCode.moduleCount;
     final int canvasSize = (modules + quietZone * 2) * moduleSize;
 
-    // Create canvas and draw
-    final canvas = html.CanvasElement(width: canvasSize, height: canvasSize);
-    final ctx = canvas.context2D;
+    final canvas = web.document.createElement('canvas') as web.HTMLCanvasElement;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+    
+    final ctx = canvas.getContext('2d') as web.CanvasRenderingContext2D;
 
-    // White background
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#ffffff'.toJS;
     ctx.fillRect(0, 0, canvasSize, canvasSize);
 
-    // Draw QR modules
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = '#000000'.toJS;
     for (int x = 0; x < modules; x++) {
       for (int y = 0; y < modules; y++) {
         if (qrImage.isDark(y, x)) {
@@ -39,21 +37,21 @@ Future<void> downloadQrFile(String payload, String fileName) async {
       }
     }
 
-    // Trigger download as PNG
     final String baseName = fileName.split('.').first;
-    final dataUrl = canvas.toDataUrl('image/png');
-    html.AnchorElement(href: dataUrl)
-      ..setAttribute('download', '$baseName.png')
-      ..click();
+    final dataUrl = canvas.toDataURL('image/png');
+    
+    final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
+    anchor.href = dataUrl;
+    anchor.download = '$baseName.png';
+    anchor.click();
   } catch (e) {
-    // Fallback: download as text
-    // ignore: avoid_web_libraries_in_flutter
-    final blob = html.Blob([payload]);
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    html.AnchorElement(href: url)
-      ..setAttribute('download', '${fileName.split('.').first}.txt')
-      ..click();
-    html.Url.revokeObjectUrl(url);
+    final blob = web.Blob([payload.toJS].toJS);
+    final url = web.URL.createObjectURL(blob);
+    final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
+    anchor.href = url;
+    anchor.download = '${fileName.split('.').first}.txt';
+    anchor.click();
+    web.URL.revokeObjectURL(url);
   }
 }
 

@@ -313,7 +313,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     return DropdownButtonFormField<String>(
       decoration: _inputDecoration('Instrument', Icons.inventory),
       isExpanded: true,
-      value: item.name.isNotEmpty && options.any((i) => i.name == item.name)
+      initialValue: item.name.isNotEmpty && options.any((i) => i.name == item.name)
           ? item.name
           : null,
       items: options.map((instrument) {
@@ -410,7 +410,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     return DropdownButtonFormField<String>(
       decoration: _inputDecoration('Course (CASE)', Icons.school),
       isExpanded: true,
-      value: _selectedCourse,
+      initialValue: _selectedCourse,
       items: _caseCourses.map((course) {
         return DropdownMenuItem<String>(
           value: course,

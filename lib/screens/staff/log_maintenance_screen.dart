@@ -78,9 +78,9 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppTheme.primaryColor,
-                borderRadius: const BorderRadius.only(
+                borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(32),
                   bottomRight: Radius.circular(32),
                 ),
@@ -122,7 +122,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
                           DropdownButtonFormField<String>(
                             decoration: _inputDecoration('Select Instrument', Icons.inventory),
                             isExpanded: true,
-                            value: widget.preSelectedInstrument != null && widget.preSelectedInstrument!.isNotEmpty
+                            initialValue: widget.preSelectedInstrument != null && widget.preSelectedInstrument!.isNotEmpty
                                 ? widget.preSelectedInstrument
                                 : null,
                             items: instruments.map((instrument) {
@@ -158,7 +158,7 @@ class _LogMaintenanceScreenState extends State<LogMaintenanceScreen> {
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
                             decoration: _inputDecoration('Current Status', Icons.info_outline),
-                            value: _status,
+                            initialValue: _status,
                             items: ['Completed', 'Pending', 'In Progress'].map((status) {
                               return DropdownMenuItem<String>(
                                 value: status,
