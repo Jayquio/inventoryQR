@@ -1,6 +1,7 @@
 class Instrument {
   final String type;
   final String name;
+  final String? serialNumber;
   final String category;
   final int quantity;
   int available;
@@ -13,6 +14,7 @@ class Instrument {
   Instrument({
     this.type = 'instrument',
     required this.name,
+    this.serialNumber,
     required this.category,
     required this.quantity,
     required this.available,
@@ -27,6 +29,7 @@ class Instrument {
     return Instrument(
       type: (json['type'] ?? 'instrument') as String,
       name: json['name'] as String,
+      serialNumber: json['serialNumber'] as String?,
       category: (json['category'] ?? '') as String,
       quantity: int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
       available: int.tryParse(json['available']?.toString() ?? '0') ?? 0,
@@ -42,6 +45,7 @@ class Instrument {
     return {
       'type': type,
       'name': name,
+      if (serialNumber != null) 'serialNumber': serialNumber,
       'category': category,
       'quantity': quantity,
       'available': available,

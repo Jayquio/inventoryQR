@@ -176,6 +176,12 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   }
 
   Future<void> _markReturned(Request req) async {
+    if (req.instrumentType == 'reagent') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reagents are consumables and cannot be returned.')),
+      );
+      return;
+    }
     if (req.id.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot mark return: missing request id.')));
       return;
@@ -237,7 +243,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           req.purpose.toLowerCase().contains(searchTerm) ||
           req.status.name.toLowerCase().contains(searchTerm);
     }).where((req) {
-      if (_returnQueueFocus) return req.status == RequestStatus.approved;
+      if (_returnQueueFocus) return req.status == RequestStatus.approved && req.instrumentType != 'reagent';
       if (_onlyPending) return req.status == RequestStatus.pending;
       return true;
     }).toList();
@@ -404,6 +410,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       );
     }
     if (request.status == RequestStatus.approved) {
+      if (request.instrumentType == 'reagent') {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: const [
+            Chip(label: Text('Consumable - no return')),
+          ],
+        );
+      }
       return LayoutBuilder(
         builder: (context, constraints) {
           final narrow = constraints.maxWidth < 360;

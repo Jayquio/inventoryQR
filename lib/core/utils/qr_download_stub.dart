@@ -2,7 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 
-void downloadQrFile(String payload, String fileName) {
+Future<void> downloadQrFile(String payload, String fileName) async {
   // This is a stub that will be overridden by platform-specific implementations.
   debugPrint('Downloading $fileName on unknown platform...');
 }

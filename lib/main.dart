@@ -166,7 +166,10 @@ class MyApp extends StatelessWidget {
               return QrGeneratorScreen(userRole: role, preSelectedInstrument: pre);
             },
             AppRoutes.userQr: (context) => const UserQrScreen(),
-            AppRoutes.settings: (context) => const SettingsScreen(),
+            AppRoutes.settings: (context) {
+              final args = ModalRoute.of(context)!.settings.arguments as String?;
+              return SettingsScreen(userRole: args ?? 'Student');
+            },
           },
         );
       },

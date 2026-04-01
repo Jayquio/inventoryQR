@@ -30,7 +30,7 @@ if ($status === 'returned') {
   // Also (best-effort) increment instrument availability and record a transaction.
   $pdo->beginTransaction();
   try {
-    $selReq = $pdo->prepare('SELECT instrument_name, status FROM requests WHERE id = ? FOR UPDATE');
+    $selReq = $pdo->prepare('SELECT r.instrument_name, r.status, COALESCE(i.type, "instrument") AS instrument_type FROM requests r LEFT JOIN instruments i ON i.name = r.instrument_name WHERE r.id = ? FOR UPDATE');
     $selReq->execute([$id]);
     $reqRow = $selReq->fetch();
     if (!$reqRow) {
@@ -51,6 +51,11 @@ if ($status === 'returned') {
     }
 
     $instrument = $reqRow['instrument_name'];
+    $instrumentType = strtolower(trim((string)($reqRow['instrument_type'] ?? 'instrument')));
+    if ($instrumentType === 'reagent') {
+      $pdo->rollBack();
+      json_out(['error' => 'reagent_is_consumed_not_returnable'], 409);
+    }
 
     // Lock instrument row and increment availability up to quantity
     $selInst = $pdo->prepare('SELECT quantity, available FROM instruments WHERE name = ? FOR UPDATE');

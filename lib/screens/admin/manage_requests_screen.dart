@@ -72,6 +72,10 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
   }
 
   Future<void> _markReturned(Request req) async {
+    if (req.instrumentType == 'reagent') {
+      _showMessage(const SnackBar(content: Text('Reagents are consumables and cannot be returned.')));
+      return;
+    }
     if (req.id.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot sync return: request id is missing.')));
       return;
@@ -223,7 +227,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
       final matchesSearch = req.studentName.toLowerCase().contains(searchTerm) || 
                            req.instrumentName.toLowerCase().contains(searchTerm);
       if (filterStatus == null) return matchesSearch;
-      return matchesSearch && req.status == filterStatus;
+      final matchesStatus = req.status == filterStatus;
+      if (filterStatus == RequestStatus.approved) {
+        return matchesSearch && matchesStatus && req.instrumentType != 'reagent';
+      }
+      return matchesSearch && matchesStatus;
     }).toList();
 
     if (filtered.isEmpty) {
@@ -321,7 +329,13 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
               ],
             ),
             const Divider(height: 24),
-            Text('Instrument: ${request.instrumentName}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text('Instrument: ${request.instrumentName}', style: const TextStyle(fontWeight: FontWeight.w600))),
+                Text('Qty: ${request.quantity}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              ],
+            ),
             Text('Purpose: ${request.purpose}', style: const TextStyle(color: Colors.grey)),
             if (request.course != null) Text('Course: ${request.course}', style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
@@ -393,6 +407,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
   }
 
   Widget _buildApprovedActions(Request request) {
+    if (request.instrumentType == 'reagent') {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: const [
+          Chip(label: Text('Consumable - no return')),
+        ],
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final narrow = constraints.maxWidth < 360;

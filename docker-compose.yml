@@ -3,14 +3,13 @@ services:
   # ── MySQL Database (Replaces XAMPP MySQL) ──────────────────────────────────
   db:
     image: mariadb:10.4
-    container_name: inventory_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ""
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: medlab_inventory
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3306}:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./medlab_inventory.sql:/docker-entrypoint-initdb.d/init.sql
@@ -26,14 +25,13 @@ services:
   # ── phpMyAdmin (Database Manager) ───────────────────────────────────────────
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: inventory_phpmyadmin
     restart: always
     environment:
       PMA_HOST: db
       PMA_USER: root
       PMA_PASSWORD: ""
     ports:
-      - "8888:80"
+      - "${PMA_PORT:-8889}:80"
     networks:
       - inventory_net
     depends_on:
@@ -43,7 +41,6 @@ services:
   # ── Redis ──────────────────────────────────────────────────────────────────
   redis:
     image: redis:alpine
-    container_name: inventory_cache
     restart: always
     networks:
       - inventory_net
@@ -54,7 +51,6 @@ services:
     build:
       context: ./inventory_api
       dockerfile: Dockerfile
-    container_name: inventory_api
     restart: always
     environment:
       DB_HOST: db
@@ -63,7 +59,7 @@ services:
       DB_PASS: ""
       REDIS_HOST: redis
     ports:
-      - "8080:80"
+      - "${API_PORT:-8081}:80"
     volumes:
       - api_logs:/var/log/apache2
     networks:
@@ -86,10 +82,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
-    container_name: inventory_web
     restart: always
     ports:
-      - "8000:80"
+      - "${WEB_PORT:-8000}:80"
     networks:
       - inventory_net
     depends_on:

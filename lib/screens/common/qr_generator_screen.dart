@@ -20,7 +20,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
   String? _selectedCourse;
   DateTime? _neededAt;
   String? _payload;
-  List<String> _instrumentNames = [];
+  List<Instrument> _instruments = [];
   bool _loading = true;
   bool _advanced = false;
 
@@ -50,7 +50,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
       final List<Instrument> items = await ApiClient.instance.fetchInstruments();
       if (!mounted) return;
       setState(() {
-        _instrumentNames = items.map((e) => e.name).toList();
+        _instruments = items;
         _loading = false;
       });
     } catch (_) {
@@ -244,10 +244,16 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
           const Center(child: CircularProgressIndicator())
         else
           DropdownButtonFormField<String>(
-            initialValue: _selectedInstrument,
-            items: _instrumentNames
-                .map((name) => DropdownMenuItem<String>(value: name, child: Text(name)))
-                .toList(),
+            value: _selectedInstrument,
+            items: _instruments.map((inst) {
+              final serial = (inst.serialNumber != null && inst.serialNumber!.isNotEmpty)
+                  ? ' • SN: ${inst.serialNumber}'
+                  : '';
+              return DropdownMenuItem<String>(
+                value: inst.name,
+                child: Text('${inst.name}$serial', overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
             onChanged: (v) => setState(() => _selectedInstrument = v),
             decoration: const InputDecoration(
               labelText: 'Select Instrument',
@@ -330,19 +336,23 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
         const SizedBox(height: 12),
         Center(
           child: ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               try {
-                downloadQrFile(_payload!, 'qr_$instName.png');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('QR downloaded!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                await downloadQrFile(_payload!, 'qr_$instName.png');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('QR downloaded!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Download failed: $e'), backgroundColor: Colors.red),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Download failed: $e'), backgroundColor: Colors.red),
+                  );
+                }
               }
             },
             icon: const Icon(Icons.download),

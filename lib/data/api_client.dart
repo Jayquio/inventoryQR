@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_inventorymanagement/models/instrument.dart';
+import 'package:flutter_application_inventorymanagement/core/constants.dart';
 
 class ApiClient {
   ApiClient._();
@@ -20,7 +21,7 @@ class ApiClient {
 
   static String _baseUrl() {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
-    if (kIsWeb) return 'http://localhost:8080';
+    if (kIsWeb) return 'http://localhost:${AppNetwork.apiPort}';
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2/inventory_api';
     }
@@ -220,6 +221,8 @@ class ApiClient {
     required String studentName,
     required String instrumentName,
     required String purpose,
+    int quantity = 1,
+    String? serialNumber,
     String? course,
     String? neededAtIso,
   }) async {
@@ -227,7 +230,9 @@ class ApiClient {
     final payload = {
       'student_name': studentName,
       'instrument_name': instrumentName,
+      'quantity': quantity,
       'purpose': purpose,
+      if (serialNumber != null && serialNumber.isNotEmpty) 'serialNumber': serialNumber,
       if (course != null && course.isNotEmpty) 'course': course,
       if (neededAtIso != null && neededAtIso.isNotEmpty) 'needed_at': neededAtIso,
     };

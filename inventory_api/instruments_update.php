@@ -4,6 +4,7 @@ $in = json_input();
 
 $originalName = trim($in['originalName'] ?? '');
 $name = trim($in['name'] ?? '');
+$serialNumber = trim($in['serialNumber'] ?? '');
 $type = strtolower(trim($in['type'] ?? 'instrument'));
 $category = trim($in['category'] ?? '');
 $quantity = (int)($in['quantity'] ?? 0);
@@ -29,9 +30,9 @@ if ($originalName !== $name) {
 }
 
 $upd = $pdo->prepare('UPDATE instruments
-                      SET `type` = ?, name = ?, category = ?, quantity = ?, available = ?, status = ?, `condition` = ?, location = ?, last_maintenance = ?
+                      SET `type` = ?, name = ?, serial_number = ?, category = ?, quantity = ?, available = ?, status = ?, `condition` = ?, location = ?, last_maintenance = ?
                       WHERE name = ?');
-$upd->execute([$type, $name, $category, $quantity, $available, $status, $condition, $location, $lastMaintenance ?: null, $originalName]);
+$upd->execute([$type, $name, $serialNumber ?: null, $category, $quantity, $available, $status, $condition, $location, $lastMaintenance ?: null, $originalName]);
 
 if ($originalName !== $name) {
   try {

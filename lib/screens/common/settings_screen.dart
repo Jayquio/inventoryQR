@@ -302,15 +302,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setStateDialog(() => setSubmitting(true));
     try {
       await ApiClient.instance.updateUser(username: AuthService.instance.currentUsername, password: p1);
+      if (!mounted) return;
       if (ctx.mounted) Navigator.pop(ctx);
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
     } catch (e) {
       setStateDialog(() => setSubmitting(false));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
     }
   }
 

@@ -7,6 +7,11 @@ class UIConstants {
   static const Duration debounceDuration = Duration(milliseconds: 300);
 }
 
+class AppNetwork {
+  // Single source of truth for local Docker API port.
+  static const int apiPort = 8081;
+}
+
 class AppRoutes {
   static const String login = '/login';
   static const String adminDashboard = '/admin_dashboard';

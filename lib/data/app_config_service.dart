@@ -3,6 +3,7 @@ import 'dart:io' as io;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/constants.dart';
 import 'api_client.dart';
 
 class AppConfigService extends ChangeNotifier {
@@ -90,10 +91,10 @@ class AppConfigService extends ChangeNotifier {
     // and pick the first one that answers `/ping.php`.
     if (kIsWeb) {
       final List<String> candidates = [
-        // Docker Compose default (api:8080 -> container:80)
-        'http://localhost:8080',
+        // Docker Compose default (api:AppNetwork.apiPort -> container:80)
+        'http://localhost:${AppNetwork.apiPort}',
         // Some local setups may still expose the API under `/inventory_api`
-        'http://localhost:8080/inventory_api',
+        'http://localhost:${AppNetwork.apiPort}/inventory_api',
         // Older/local assumption kept for backward compatibility
         _localApiBase,
         // If running inside the Docker network (e.g., server-to-server)
@@ -107,7 +108,7 @@ class AppConfigService extends ChangeNotifier {
       }
 
       // Fallback to Docker port (most likely for your current setup)
-      return 'http://localhost:8080';
+      return 'http://localhost:${AppNetwork.apiPort}';
     }
 
     final List<String> candidates = [

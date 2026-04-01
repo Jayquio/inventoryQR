@@ -3,22 +3,25 @@ require __DIR__ . '/db.php';
 
 $studentFilter = $_GET['student_name'] ?? '';
 
-$sql = 'SELECT id,
+$sql = 'SELECT r.id,
                student_name AS studentName,
                instrument_name AS instrumentName,
-               purpose,
-               course,
-               needed_at AS neededAt,
-               status,
-               returned_by AS returnedBy,
-               returned_at AS returnedAt
-        FROM requests';
+               r.quantity,
+               r.purpose,
+               r.course,
+               r.needed_at AS neededAt,
+               r.status,
+               r.returned_by AS returnedBy,
+               r.returned_at AS returnedAt,
+               COALESCE(i.type, \'instrument\') AS instrumentType
+        FROM requests r
+        LEFT JOIN instruments i ON i.name = r.instrument_name';
 
 if ($studentFilter !== '') {
-    $stmt = $pdo->prepare($sql . ' WHERE student_name = ? ORDER BY id DESC');
+    $stmt = $pdo->prepare($sql . ' WHERE r.student_name = ? ORDER BY r.id DESC');
     $stmt->execute([$studentFilter]);
 } else {
-    $stmt = $pdo->query($sql . ' ORDER BY id DESC');
+    $stmt = $pdo->query($sql . ' ORDER BY r.id DESC');
 }
 
 json_out(['ok' => true, 'data' => $stmt->fetchAll()]);

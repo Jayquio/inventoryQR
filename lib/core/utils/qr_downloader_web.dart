@@ -5,7 +5,7 @@ import 'dart:html' as html;
 // ignore: depend_on_referenced_packages
 import 'package:qr/qr.dart';
 
-void downloadQrFile(String payload, String fileName) {
+Future<void> downloadQrFile(String payload, String fileName) async {
   try {
     const int moduleSize = 10; // pixels per QR module
     const int quietZone = 4;   // modules of white border

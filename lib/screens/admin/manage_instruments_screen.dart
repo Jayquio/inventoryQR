@@ -95,6 +95,8 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     return Column(
       children: [
         _buildDetailRow('Category', instrument.category),
+        if (instrument.serialNumber != null && instrument.serialNumber!.isNotEmpty)
+          _buildDetailRow('Serial Number', instrument.serialNumber!),
         _buildDetailRow('Quantity', instrument.quantity.toString()),
         _buildDetailRow('Available', instrument.available.toString()),
         _buildDetailRow('Borrowed', (instrument.quantity - instrument.available).toString()),
@@ -365,6 +367,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     required bool isEdit,
     required BuildContext dialogContext,
   }) {
+    if (!mounted) return;
     if (dialogContext.mounted) {
       Navigator.pop(dialogContext);
     }
@@ -415,9 +418,14 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   }
 
   Instrument _createInstrumentFromControllers(String type, _InstrumentFormControllers controllers, int qty, int avail) {
+    final normalizedType = type.toLowerCase() == 'reagent' ? 'reagent' : 'instrument';
+    final serial = normalizedType == 'reagent'
+        ? null
+        : (controllers.serialNumber.text.trim().isEmpty ? null : controllers.serialNumber.text.trim());
     return Instrument(
-      type: type,
+      type: normalizedType,
       name: controllers.name.text.trim(),
+      serialNumber: serial,
       category: controllers.category.text.trim(),
       quantity: qty,
       available: avail,
@@ -475,6 +483,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       }
       if (searchTerm.isEmpty) return true;
       return instrument.name.toLowerCase().contains(searchTerm) ||
+          (instrument.serialNumber?.toLowerCase().contains(searchTerm) ?? false) ||
           instrument.category.toLowerCase().contains(searchTerm) ||
           instrument.status.toLowerCase().contains(searchTerm) ||
           instrument.condition.toLowerCase().contains(searchTerm) ||
@@ -658,6 +667,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
 class _InstrumentFormControllers {
   final TextEditingController name;
+  final TextEditingController serialNumber;
   final TextEditingController category;
   final TextEditingController quantity;
   final TextEditingController available;
@@ -668,6 +678,7 @@ class _InstrumentFormControllers {
 
   _InstrumentFormControllers({Instrument? instrument})
       : name = TextEditingController(text: instrument?.name ?? ''),
+        serialNumber = TextEditingController(text: instrument?.serialNumber ?? ''),
         category = TextEditingController(text: instrument?.category ?? ''),
         quantity = TextEditingController(text: instrument?.quantity.toString() ?? ''),
         available = TextEditingController(text: instrument?.available.toString() ?? ''),
@@ -688,8 +699,60 @@ class _InstrumentFormContent extends StatelessWidget {
     required this.onTypeChanged,
   });
 
+  static const List<String> _categoryOptions = [
+    'Glassware',
+    'Measuring',
+    'Heating',
+    'Microscopy',
+    'Safety',
+    'Chemicals',
+    'Biology',
+    'Physics',
+    'Other',
+  ];
+
+  static const List<String> _statusOptions = [
+    'Available',
+    'In Use',
+    'Under Maintenance',
+    'Out of Stock',
+    'Damaged',
+  ];
+
+  static const List<String> _conditionOptions = [
+    'New',
+    'Good',
+    'Fair',
+    'Needs Repair',
+    'Unserviceable',
+  ];
+
+  static const List<String> _locationOptions = [
+    'Lab A',
+    'Lab B',
+    'Lab C',
+    'Storage Room',
+    'Chemistry Cabinet',
+    'Biology Cabinet',
+    'Physics Cabinet',
+    'Front Desk',
+  ];
+
+  List<String> _optionsWithCurrent(List<String> options, String current) {
+    final normalizedCurrent = current.trim();
+    if (normalizedCurrent.isEmpty || options.contains(normalizedCurrent)) {
+      return options;
+    }
+    return [normalizedCurrent, ...options];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isReagent = typeValue.toLowerCase() == 'reagent';
+    final categoryOptions = _optionsWithCurrent(_categoryOptions, controllers.category.text);
+    final statusOptions = _optionsWithCurrent(_statusOptions, controllers.status.text);
+    final conditionOptions = _optionsWithCurrent(_conditionOptions, controllers.condition.text);
+    final locationOptions = _optionsWithCurrent(_locationOptions, controllers.location.text);
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -704,7 +767,21 @@ class _InstrumentFormContent extends StatelessWidget {
             decoration: const InputDecoration(labelText: 'Type'),
           ),
           TextField(controller: controllers.name, decoration: const InputDecoration(labelText: 'Name')),
-          TextField(controller: controllers.category, decoration: const InputDecoration(labelText: 'Category')),
+          TextField(
+            controller: controllers.serialNumber,
+            enabled: !isReagent,
+            decoration: InputDecoration(
+              labelText: isReagent ? 'Serial Number (not used for reagents)' : 'Serial Number',
+            ),
+          ),
+          DropdownButtonFormField<String>(
+            initialValue: controllers.category.text.trim().isEmpty ? null : controllers.category.text.trim(),
+            items: categoryOptions
+                .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                .toList(),
+            onChanged: (v) => controllers.category.text = v ?? '',
+            decoration: const InputDecoration(labelText: 'Category'),
+          ),
           TextField(
             controller: controllers.quantity,
             decoration: const InputDecoration(labelText: 'Quantity'),
@@ -715,9 +792,30 @@ class _InstrumentFormContent extends StatelessWidget {
             decoration: const InputDecoration(labelText: 'Available'),
             keyboardType: TextInputType.number,
           ),
-          TextField(controller: controllers.status, decoration: const InputDecoration(labelText: 'Status')),
-          TextField(controller: controllers.condition, decoration: const InputDecoration(labelText: 'Condition')),
-          TextField(controller: controllers.location, decoration: const InputDecoration(labelText: 'Location')),
+          DropdownButtonFormField<String>(
+            initialValue: controllers.status.text.trim().isEmpty ? null : controllers.status.text.trim(),
+            items: statusOptions
+                .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                .toList(),
+            onChanged: (v) => controllers.status.text = v ?? '',
+            decoration: const InputDecoration(labelText: 'Status'),
+          ),
+          DropdownButtonFormField<String>(
+            initialValue: controllers.condition.text.trim().isEmpty ? null : controllers.condition.text.trim(),
+            items: conditionOptions
+                .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                .toList(),
+            onChanged: (v) => controllers.condition.text = v ?? '',
+            decoration: const InputDecoration(labelText: 'Condition'),
+          ),
+          DropdownButtonFormField<String>(
+            initialValue: controllers.location.text.trim().isEmpty ? null : controllers.location.text.trim(),
+            items: locationOptions
+                .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                .toList(),
+            onChanged: (v) => controllers.location.text = v ?? '',
+            decoration: const InputDecoration(labelText: 'Location'),
+          ),
           TextField(
             controller: controllers.lastMaintenance,
             decoration: const InputDecoration(labelText: _ManageInstrumentsScreenState._lastMaintenanceLabel),

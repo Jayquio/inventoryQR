@@ -91,6 +91,8 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     return Column(
       children: [
         _buildDetailRow('Category', instrument.category),
+        if (instrument.serialNumber != null && instrument.serialNumber!.isNotEmpty)
+          _buildDetailRow('Serial Number', instrument.serialNumber!),
         _buildDetailRow('Available', '${instrument.available}/${instrument.quantity}'),
         _buildDetailRow('Status', instrument.status),
         _buildDetailRow('Condition', instrument.condition),
@@ -200,6 +202,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
       if (_typeFilter != 'All' && instrument.type.toLowerCase() != _typeFilter.toLowerCase()) return false;
       if (searchTerm.isEmpty) return true;
       return instrument.name.toLowerCase().contains(searchTerm) ||
+          (instrument.serialNumber?.toLowerCase().contains(searchTerm) ?? false) ||
           instrument.category.toLowerCase().contains(searchTerm) ||
           instrument.status.toLowerCase().contains(searchTerm) ||
           instrument.condition.toLowerCase().contains(searchTerm) ||

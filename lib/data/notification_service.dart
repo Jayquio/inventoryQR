@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
+import '../core/constants.dart';
 
 class NotificationItem {
   NotificationItem({
@@ -116,7 +117,7 @@ class NotificationService extends ChangeNotifier {
     await prefs.setString('notifications', json.encode(raw));
   }
 
-  void connectWebSocket({String url = 'ws://localhost:8080/notifications'}) {
+  void connectWebSocket({String url = 'ws://localhost:${AppNetwork.apiPort}/notifications'}) {
     try {
       _channel?.sink.close();
       _channel = WebSocketChannel.connect(Uri.parse(url));
