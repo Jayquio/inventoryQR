@@ -300,13 +300,13 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
               firstDate: now,
               lastDate: DateTime(now.year + 1),
             );
-            if (!mounted || date == null) return;
+            if (!context.mounted || date == null) return;
             
             final time = await showTimePicker(
               context: context,
               initialTime: TimeOfDay.fromDateTime(_neededAt ?? now),
             );
-            if (!mounted || time == null) return;
+            if (!context.mounted || time == null) return;
             setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
           },
           icon: const Icon(Icons.calendar_today),
