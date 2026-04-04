@@ -21,7 +21,7 @@ class AppDrawer extends StatelessWidget {
               children: [
                 const Text(
                   'MedLab Inventory',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

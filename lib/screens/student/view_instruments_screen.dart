@@ -48,7 +48,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     }
   }
 
-  void _showInstrumentDetails(BuildContext context, instrument) {
+  void _showInstrumentDetails(BuildContext context, Instrument instrument) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -69,7 +69,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     );
   }
 
-  Widget _buildInstrumentHeader(instrument) {
+  Widget _buildInstrumentHeader(Instrument instrument) {
     return Row(
       children: [
         CircleAvatar(
@@ -87,13 +87,17 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     );
   }
 
-  Widget _buildInstrumentDetailsList(instrument) {
+  Widget _buildInstrumentDetailsList(Instrument instrument) {
     return Column(
       children: [
         _buildDetailRow('Category', instrument.category),
-        if (instrument.serialNumber != null && instrument.serialNumber!.isNotEmpty)
+        if (instrument.serialNumber != null &&
+            instrument.serialNumber!.isNotEmpty)
           _buildDetailRow('Serial Number', instrument.serialNumber!),
-        _buildDetailRow('Available', '${instrument.available}/${instrument.quantity}'),
+        _buildDetailRow(
+          'Available',
+          '${instrument.available}/${instrument.quantity}',
+        ),
         _buildDetailRow('Status', instrument.status),
         _buildDetailRow('Condition', instrument.condition),
         _buildDetailRow('Location', instrument.location),
@@ -102,7 +106,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, instrument) {
+  Widget _buildActionButtons(BuildContext context, Instrument instrument) {
     return Row(
       children: [
         Expanded(
@@ -116,15 +120,23 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     );
   }
 
-  VoidCallback? _getOnPressedAction(BuildContext context, instrument) {
-    final bool isUser = widget.userRole == 'Student' || widget.userRole == 'Teacher';
+  VoidCallback? _getOnPressedAction(
+    BuildContext context,
+    Instrument instrument,
+  ) {
+    final bool isUser =
+        widget.userRole == 'Student' || widget.userRole == 'Teacher';
     final bool isAdmin = widget.userRole == 'Admin';
 
     if (isUser) {
       if (instrument.available > 0) {
         return () {
           Navigator.pop(context);
-          Navigator.pushNamed(context, '/submit_request', arguments: instrument.name);
+          Navigator.pushNamed(
+            context,
+            '/submit_request',
+            arguments: instrument.name,
+          );
         };
       }
       return null;
@@ -133,7 +145,11 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     if (isAdmin) {
       return () {
         Navigator.pop(context);
-        Navigator.pushNamed(context, '/log_maintenance', arguments: instrument.name);
+        Navigator.pushNamed(
+          context,
+          '/log_maintenance',
+          arguments: instrument.name,
+        );
       };
     }
 
@@ -141,7 +157,8 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
   }
 
   String _getActionButtonLabel() {
-    final bool isUser = widget.userRole == 'Student' || widget.userRole == 'Teacher';
+    final bool isUser =
+        widget.userRole == 'Student' || widget.userRole == 'Teacher';
     final bool isAdmin = widget.userRole == 'Admin';
 
     if (isUser) return 'Request This';
@@ -162,7 +179,12 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     );
   }
 
-  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildStatItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     final w = MediaQuery.of(context).size.width;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -171,7 +193,11 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(color: Colors.white, fontSize: R.text(18, w), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: R.text(18, w),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         Text(
           label,
@@ -182,27 +208,29 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
   }
 
   Widget _buildStatDivider() {
-    return Container(
-      height: 30,
-      width: 1,
-      color: Colors.white24,
-    );
+    return Container(height: 30, width: 1, color: Colors.white24);
   }
 
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
     final searchTerm = _searchController.text.toLowerCase();
-    
+
     final totalInstruments = _instruments.length;
-    final availableInstruments = _instruments.where((i) => i.available > 0).length;
+    final availableInstruments = _instruments
+        .where((i) => i.available > 0)
+        .length;
     final categories = _instruments.map((i) => i.category).toSet().length;
 
     final filteredInstruments = _instruments.where((instrument) {
-      if (_typeFilter != 'All' && instrument.type.toLowerCase() != _typeFilter.toLowerCase()) return false;
+      if (_typeFilter != 'All' &&
+          instrument.type.toLowerCase() != _typeFilter.toLowerCase()) {
+        return false;
+      }
       if (searchTerm.isEmpty) return true;
       return instrument.name.toLowerCase().contains(searchTerm) ||
-          (instrument.serialNumber?.toLowerCase().contains(searchTerm) ?? false) ||
+          (instrument.serialNumber?.toLowerCase().contains(searchTerm) ??
+              false) ||
           instrument.category.toLowerCase().contains(searchTerm) ||
           instrument.status.toLowerCase().contains(searchTerm) ||
           instrument.condition.toLowerCase().contains(searchTerm) ||
@@ -237,11 +265,26 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory_2_outlined),
+                _buildStatItem(
+                  context,
+                  'Total',
+                  totalInstruments.toString(),
+                  Icons.inventory_2_outlined,
+                ),
                 _buildStatDivider(),
-                _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle_outline),
+                _buildStatItem(
+                  context,
+                  'Available',
+                  availableInstruments.toString(),
+                  Icons.check_circle_outline,
+                ),
                 _buildStatDivider(),
-                _buildStatItem(context, 'Categories', categories.toString(), Icons.category_outlined),
+                _buildStatItem(
+                  context,
+                  'Categories',
+                  categories.toString(),
+                  Icons.category_outlined,
+                ),
               ],
             ),
           ),
@@ -263,7 +306,10 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
                   value: _typeFilter,
                   items: const [
                     DropdownMenuItem(value: 'All', child: Text('All Types')),
-                    DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
+                    DropdownMenuItem(
+                      value: 'instrument',
+                      child: Text('Instrument'),
+                    ),
                     DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
                   ],
                   onChanged: (v) => setState(() {
@@ -280,22 +326,41 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
               child: LayoutBuilder(
                 key: ValueKey('${_searchController.text}_$_page'),
                 builder: (context, constraints) {
-                  final int crossAxisCount = R.columns(constraints.maxWidth, xs: 2, sm: 3, md: 4, lg: 5);
+                  final int crossAxisCount = R.columns(
+                    constraints.maxWidth,
+                    xs: 2,
+                    sm: 3,
+                    md: 4,
+                    lg: 5,
+                  );
                   const double spacing = 6.0;
                   const double totalPadding = 32.0; // 16 * 2
-                  final double itemWidth = (constraints.maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) / crossAxisCount;
-                  
+                  final double itemWidth =
+                      (constraints.maxWidth -
+                          totalPadding -
+                          (spacing * (crossAxisCount - 1))) /
+                      crossAxisCount;
+
                   // Ultra-compact height calculation:
                   // Image (16:9 aspect) -> itemWidth / 1.77
                   // Title + Status + Pills + Spacing
                   // 14 (Title) + 12 (Status) + 18 (Pills) + 12 (Spacings) + 8 (Internal Padding)
                   const double fixedContentHeight = 64;
-                  final double cellHeight = (itemWidth / 1.77) + fixedContentHeight;
-                  final double childAspectRatio = (itemWidth / cellHeight).clamp(0.5, 1.0);
+                  final double cellHeight =
+                      (itemWidth / 1.77) + fixedContentHeight;
+                  final double childAspectRatio = (itemWidth / cellHeight)
+                      .clamp(0.5, 1.0);
 
-                  final totalPages = (filteredInstruments.length / _perPage).ceil();
-                  final start = (_page * _perPage).clamp(0, filteredInstruments.length);
-                  final end = (start + _perPage).clamp(0, filteredInstruments.length);
+                  final totalPages = (filteredInstruments.length / _perPage)
+                      .ceil();
+                  final start = (_page * _perPage).clamp(
+                    0,
+                    filteredInstruments.length,
+                  );
+                  final end = (start + _perPage).clamp(
+                    0,
+                    filteredInstruments.length,
+                  );
                   final pageItems = filteredInstruments.sublist(start, end);
 
                   if (pageItems.isEmpty) {
@@ -307,24 +372,31 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
                       Expanded(
                         child: GridView.builder(
                           padding: const EdgeInsets.all(16),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            mainAxisSpacing: spacing,
-                            crossAxisSpacing: spacing,
-                            childAspectRatio: childAspectRatio,
-                          ),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                mainAxisSpacing: spacing,
+                                crossAxisSpacing: spacing,
+                                childAspectRatio: childAspectRatio,
+                              ),
                           itemCount: pageItems.length,
                           itemBuilder: (context, index) {
                             return InstrumentCard(
                               instrument: pageItems[index],
                               highlight: _searchController.text,
-                              onTap: () => _showInstrumentDetails(context, pageItems[index]),
+                              onTap: () => _showInstrumentDetails(
+                                context,
+                                pageItems[index],
+                              ),
                             );
                           },
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -334,12 +406,16 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
                             ),
                             const SizedBox(width: 12),
                             OutlinedButton(
-                              onPressed: _page > 0 ? () => setState(() => _page--) : null,
+                              onPressed: _page > 0
+                                  ? () => setState(() => _page--)
+                                  : null,
                               child: const Text('Prev'),
                             ),
                             const SizedBox(width: 8),
                             ElevatedButton(
-                              onPressed: _page < totalPages - 1 ? () => setState(() => _page++) : null,
+                              onPressed: _page < totalPages - 1
+                                  ? () => setState(() => _page++)
+                                  : null,
                               child: const Text('Next'),
                             ),
                           ],

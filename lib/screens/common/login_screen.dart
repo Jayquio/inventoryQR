@@ -359,9 +359,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String _getRoute(UserRole role) {
-    if (role == UserRole.admin || role == UserRole.superadmin)
+    if (role == UserRole.admin || role == UserRole.superadmin) {
       return AppRoutes.adminDashboard;
-    if (role == UserRole.teacher) return AppRoutes.teacherDashboard;
+    }
+    if (role == UserRole.teacher) {
+      return AppRoutes.teacherDashboard;
+    }
     return AppRoutes.studentDashboard;
   }
 

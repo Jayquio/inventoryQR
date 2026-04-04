@@ -105,7 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildRoleDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedRole,
+      initialValue: _selectedRole,
       decoration: InputDecoration(
         labelText: 'I am a...',
         prefixIcon: const Icon(Icons.work_outline),

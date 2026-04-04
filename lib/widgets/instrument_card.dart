@@ -49,7 +49,7 @@ class _InstrumentCardState extends State<InstrumentCard> {
                           ? Image.asset(
                               widget.instrument.imageAsset!,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, _, __) => _placeholder(),
+                              errorBuilder: (context, _, _) => _placeholder(),
                             )
                           : _placeholder(),
                     ),

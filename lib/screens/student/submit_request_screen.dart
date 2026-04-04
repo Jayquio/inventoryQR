@@ -288,7 +288,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _typeFilter,
+            initialValue: _typeFilter,
             decoration: _inputDecoration('Item Type Filter', Icons.tune),
             items: const [
               DropdownMenuItem(value: 'All', child: Text('All Items')),
@@ -375,7 +375,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     return DropdownButtonFormField<String>(
       decoration: _inputDecoration('Select Instrument', Icons.inventory),
       isExpanded: true,
-      value: item.name.isNotEmpty && uniqueNames.contains(item.name)
+      initialValue: item.name.isNotEmpty && uniqueNames.contains(item.name)
           ? item.name
           : null,
       items: uniqueNames.map((name) {
@@ -411,7 +411,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     );
 
     return DropdownButtonFormField<int>(
-      value: qtyOptions.contains(item.quantity)
+      initialValue: qtyOptions.contains(item.quantity)
           ? item.quantity
           : qtyOptions.first,
       decoration: _inputDecoration('Qty', null),
@@ -441,7 +441,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
     return DropdownButtonFormField<String>(
       key: ValueKey('${item.name}_serials_$index'),
-      value: serials.contains(item.serialNumber)
+      initialValue: serials.contains(item.serialNumber)
           ? item.serialNumber
           : serials.first,
       decoration: _inputDecoration('Serial No.', null),

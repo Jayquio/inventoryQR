@@ -135,7 +135,7 @@ class _ModuleSearchBarState extends State<ModuleSearchBar> {
                       itemBuilder: (context, index) {
                         return ValueListenableBuilder<int>(
                           valueListenable: _highlight,
-                          builder: (_, h, __) {
+                          builder: (_, h, _) {
                             final selected = index == h;
                             final m = _filtered[index];
                             return InkWell(
