@@ -1,0 +1,59 @@
+name: inventory-management-system
+region: sgp
+services:
+  # ── PHP API Service ────────────────────────────────────────────────────────
+  - name: api
+    github:
+      repo: Jayquio/inventoryQR
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: inventory_api/Dockerfile
+    source_dir: inventory_api
+    http_port: 80
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: DB_HOST
+        scope: RUN_TIME
+        value: ${db.hostname}
+      - key: DB_NAME
+        scope: RUN_TIME
+        value: ${db.name}
+      - key: DB_USER
+        scope: RUN_TIME
+        value: ${db.username}
+      - key: DB_PASS
+        scope: RUN_TIME
+        value: ${db.password}
+      - key: REDIS_HOST
+        scope: RUN_TIME
+        value: ${redis.hostname}
+
+  # ── Admin Web Dashboard (Flutter Web) ──────────────────────────────────────
+  - name: web
+    github:
+      repo: Jayquio/inventoryQR
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile.web
+    source_dir: .
+    http_port: 80
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: API_URL
+        scope: BUILD_TIME
+        value: https://api.yourdomain.org # Replace with your Cloudflare API domain
+
+databases:
+  # ── Managed MariaDB ────────────────────────────────────────────────────────
+  - name: db
+    engine: MYSQL
+    version: "8"
+    production: false
+
+  # ── Managed Redis ──────────────────────────────────────────────────────────
+  - name: redis
+    engine: REDIS
+    version: "7"
+    production: false

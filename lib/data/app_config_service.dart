@@ -13,11 +13,22 @@ class AppConfigService extends ChangeNotifier {
   // Shared API base URL constants (avoid duplicated literals)
   static const String _localApiBase = 'http://localhost/inventory_api';
   static const String _androidEmulatorApiBase = 'http://10.0.2.2/inventory_api';
+  static const String _productionApiBase = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://your-site.org/api',
+  );
 
   String _baseUrl = '';
   String get baseUrl => _baseUrl;
 
   Future<void> loadAndApplyBaseUrl() async {
+    // Priority 1: Use production URL if in release mode
+    if (kReleaseMode) {
+      _baseUrl = _productionApiBase;
+      ApiClient.setBaseUrl(_baseUrl);
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     _baseUrl = prefs.getString('api_base_url') ?? '';
     if (_baseUrl.isNotEmpty) {
@@ -63,7 +74,7 @@ class AppConfigService extends ChangeNotifier {
         ip.startsWith('172.2') ||
         ip.startsWith('172.3');
   }
-  
+
   // Collect LAN IP-based API candidates (server on same machine/LAN)
   Future<List<String>> _getLanCandidates() async {
     final candidates = <String>[];
@@ -74,7 +85,8 @@ class AppConfigService extends ChangeNotifier {
       );
       for (final iface in interfaces) {
         for (final addr in iface.addresses) {
-          if (addr.type == io.InternetAddressType.IPv4 && _isPrivateIp(addr.address)) {
+          if (addr.type == io.InternetAddressType.IPv4 &&
+              _isPrivateIp(addr.address)) {
             candidates.add('http://${addr.address}/inventory_api');
           }
         }

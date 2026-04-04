@@ -10,11 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 // Use environment variables for flexible configuration (Docker or local)
 $host = getenv('DB_HOST') ?: 'localhost';
+$port = getenv('DB_PORT') ?: '3306';
 $dbname = getenv('DB_NAME') ?: 'medlab_inventory';
 $dbuser = getenv('DB_USER') ?: 'root';
 $dbpass = getenv('DB_PASS') ?: ''; // XAMPP default is empty
 
-$dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
+$dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
 $user = $dbuser;
 $pass = $dbpass;
 

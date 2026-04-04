@@ -30,8 +30,8 @@ services:
       PMA_HOST: db
       PMA_USER: root
       PMA_PASSWORD: ""
-    ports:
-      - "${PMA_PORT:-8889}:80"
+    # ports:
+    #   - "${PMA_PORT:-8889}:80"
     networks:
       - inventory_net
     depends_on:
@@ -58,8 +58,8 @@ services:
       DB_USER: root
       DB_PASS: ""
       REDIS_HOST: redis
-    ports:
-      - "${API_PORT:-8081}:80"
+    # ports:
+    #   - "${API_PORT:-8081}:80"
     volumes:
       - api_logs:/var/log/apache2
     networks:
@@ -83,13 +83,28 @@ services:
       context: .
       dockerfile: Dockerfile.web
     restart: always
-    ports:
-      - "${WEB_PORT:-8000}:80"
+    # ports:
+    #   - "${WEB_PORT:-8000}:80"
     networks:
       - inventory_net
     depends_on:
       api:
         condition: service_healthy
+
+  # ── Nginx Reverse Proxy (Production Only) ──────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - inventory_net
+    depends_on:
+      - web
+      - api
+      - phpmyadmin
 
 volumes:
   db_data:
