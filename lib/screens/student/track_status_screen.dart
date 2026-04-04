@@ -2,8 +2,9 @@
 
 import 'package:flutter/material.dart';
 import '../../models/request.dart';
-import '../../widgets/search_bar.dart';
 import '../../data/api_client.dart';
+
+import '../../data/auth_service.dart';
 
 class TrackStatusScreen extends StatefulWidget {
   const TrackStatusScreen({super.key});
@@ -13,13 +14,17 @@ class TrackStatusScreen extends StatefulWidget {
 }
 
 class _TrackStatusScreenState extends State<TrackStatusScreen> {
-  final _nameController = TextEditingController();
-
   List<Request> _filteredRequests = [];
-  bool _loading = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchRequests();
+  }
 
   Future<void> _searchRequests() async {
-    final name = _nameController.text.trim();
+    final name = AuthService.instance.currentUsername;
     if (name.isNotEmpty) {
       if (!mounted) return;
       setState(() => _loading = true);
@@ -33,16 +38,12 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
       } catch (e) {
         if (!mounted) return;
         setState(() {
-           _filteredRequests = [];
-           _loading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } else {
-      if (context.mounted) {
-        setState(() {
           _filteredRequests = [];
+          _loading = false;
         });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -68,48 +69,48 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            DebouncedSearchBar(
-              controller: _nameController,
-              hintText: 'Enter your name to search requests',
-              onChanged: (value) => _searchRequests(),
-            ),
-            const SizedBox(height: 16),
             if (_loading)
-              const Center(child: CircularProgressIndicator())
+              const Expanded(child: Center(child: CircularProgressIndicator()))
             else
               Expanded(
-                child: _filteredRequests.isEmpty
-                    ? const Center(child: Text('Enter your name to view your requests'))
-                    : ListView.builder(
-                        itemCount: _filteredRequests.length,
-                        itemBuilder: (context, index) {
-                          final request = _filteredRequests[index];
-                          return Card(
-                            elevation: 4,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Instrument: ${request.instrumentName}',
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Status: ${request.status.name}',
-                                    style: TextStyle(
-                                      color: _getStatusColor(request.status),
-                                      fontWeight: FontWeight.bold,
+                child: RefreshIndicator(
+                  onRefresh: _searchRequests,
+                  child: _filteredRequests.isEmpty
+                      ? const Center(child: Text('No requests found.'))
+                      : ListView.builder(
+                          itemCount: _filteredRequests.length,
+                          itemBuilder: (context, index) {
+                            final request = _filteredRequests[index];
+                            return Card(
+                              elevation: 4,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Instrument: ${request.instrumentName}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Status: ${request.status.name}',
+                                      style: TextStyle(
+                                        color: _getStatusColor(request.status),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                            );
+                          },
+                        ),
+                ),
               ),
           ],
         ),

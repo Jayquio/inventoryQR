@@ -13,6 +13,8 @@ import '../../widgets/notification_icon.dart';
 import '../../data/auth_service.dart';
 import '../../core/theme.dart';
 
+import '../../data/notification_service.dart';
+
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
 
@@ -25,6 +27,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   List<Instrument> _instruments = [];
   bool _loading = true;
   Timer? _poller;
+  final Map<String, RequestStatus> _lastStatuses = {};
 
   @override
   void initState() {
@@ -40,6 +43,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final current = AuthService.instance.currentUsername;
       final rows = await ApiClient.instance.fetchRequests(studentName: current);
       final items = rows.map((e) => Request.fromJson(e)).toList();
+
+      // Notification logic: Check for status changes
+      for (final req in items) {
+        if (_lastStatuses.containsKey(req.id)) {
+          final oldStatus = _lastStatuses[req.id];
+          if (oldStatus != req.status && req.status != RequestStatus.pending) {
+            _notifyStatusChange(req);
+          }
+        }
+        _lastStatuses[req.id] = req.status;
+      }
+
       final insts = await ApiClient.instance.fetchInstruments();
       if (!mounted) return;
       setState(() {
@@ -51,6 +66,20 @@ class _StudentDashboardState extends State<StudentDashboard> {
       if (!mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  void _notifyStatusChange(Request req) {
+    final title = req.status == RequestStatus.approved ? 'Request Approved' : 'Request Update';
+    final message = 'Your request for ${req.instrumentName} is now ${req.status.name}.';
+    
+    NotificationService.instance.add(NotificationItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      message: message,
+      type: req.status == RequestStatus.approved ? 'success' : 'info',
+      timestamp: DateTime.now().toIso8601String(),
+      recipient: 'Student',
+    ));
   }
 
   @override
@@ -262,13 +291,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
               icon: Icons.qr_code_scanner,
               color: AppTheme.secondaryColor,
               onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Student'),
-            ),
-            _buildActionCard(
-              context,
-              title: 'My QR',
-              icon: Icons.qr_code_2,
-              color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, '/user_qr'),
             ),
             _buildActionCard(
               context,

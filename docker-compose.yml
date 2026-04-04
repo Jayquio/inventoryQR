@@ -100,6 +100,13 @@ services:
       - "443:443"
     volumes:
       - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - inventory_net
+    depends_on:
+      - web
+      - api
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
       # Optional HTTPS: put Cloudflare Origin cert or Let’s Encrypt files here and enable ssl in nginx.prod.conf
       # - ./certs:/etc/nginx/certs:ro
     networks:

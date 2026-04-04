@@ -14,6 +14,8 @@ class AppNetwork {
 
 class AppRoutes {
   static const String login = '/login';
+  static const String register = '/register';
+  static const String forgotPassword = '/forgot_password';
   static const String adminDashboard = '/admin_dashboard';
   static const String teacherDashboard = '/teacher_dashboard';
   static const String studentDashboard = '/student_dashboard';
@@ -55,9 +57,15 @@ class R {
     if (width < Breakpoints.sm) return const EdgeInsets.all(16);
     if (width < Breakpoints.md) return const EdgeInsets.all(20);
     return const EdgeInsets.all(24);
-    }
+  }
 
-  static int columns(double width, {int xs = 1, int sm = 2, int md = 3, int lg = 4}) {
+  static int columns(
+    double width, {
+    int xs = 1,
+    int sm = 2,
+    int md = 3,
+    int lg = 4,
+  }) {
     if (width < 420) return xs;
     if (width < Breakpoints.sm) return sm;
     if (width < Breakpoints.md) return md;

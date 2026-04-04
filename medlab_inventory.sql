@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Mar 29, 2026 at 10:35 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Host: db
+-- Generation Time: Apr 04, 2026 at 02:37 PM
+-- Server version: 10.4.34-MariaDB-1:10.4.34+maria~ubu2004
+-- PHP Version: 8.3.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -45,13 +45,13 @@ CREATE TABLE `instruments` (
 -- Dumping data for table `instruments`
 --
 
-INSERT INTO `instruments` (`type`, `id`, `name`, `category`, `quantity`, `available`, `status`, `condition`, `location`, `last_maintenance`) VALUES
-('instrument', 1, 'Microscope Olympus CX23', 'Microscopy', 5, 1, 'Available', 'Good', 'Lab Room A', '2024-10-15'),
-('instrument', 2, 'Centrifuge Machine', 'Sample Processing', 3, 0, 'Available', 'Good', 'Lab Room B', '2024-09-20'),
-('instrument', 3, 'Hematology Analyzer', 'Hematology', 2, 1, 'Available', 'Excellent', 'Lab Room C', '2024-08-05'),
-('instrument', 4, 'Clinical Chemistry Analyzer', 'Chemistry', 2, 1, 'In Use', 'Good', 'Lab Room C', '2024-07-18'),
-('instrument', 5, 'Autoclave Sterilizer', 'Sterilization', 1, 1, 'Available', 'Good', 'Sterilization Room', '2024-06-10'),
-('instrument', 6, 'microscope', 'yes', 10, 7, 'good', 'good', 'secret', '0000-00-00');
+INSERT INTO `instruments` (`type`, `id`, `name`, `serial_number`, `category`, `quantity`, `available`, `status`, `condition`, `location`, `last_maintenance`) VALUES
+('instrument', 1, 'Microscope Olympus CX23', NULL, 'Microscopy', 5, 1, 'Available', 'Good', 'Lab Room A', '2024-10-15'),
+('instrument', 2, 'Centrifuge Machine', NULL, 'Sample Processing', 3, 0, 'Available', 'Good', 'Lab Room B', '2024-09-20'),
+('instrument', 3, 'Hematology Analyzer', NULL, 'Hematology', 2, 1, 'Available', 'Excellent', 'Lab Room C', '2024-08-05'),
+('instrument', 4, 'Clinical Chemistry Analyzer', NULL, 'Chemistry', 2, 1, 'In Use', 'Good', 'Lab Room C', '2024-07-18'),
+('instrument', 5, 'Autoclave Sterilizer', NULL, 'Sterilization', 1, 1, 'Available', 'Good', 'Sterilization Room', '2024-06-10'),
+('instrument', 6, 'microscope', NULL, 'yes', 10, 7, 'good', 'good', 'secret', '0000-00-00');
 
 --
 -- Triggers `instruments`
@@ -158,21 +158,21 @@ CREATE TABLE `requests` (
 -- Dumping data for table `requests`
 --
 
-INSERT INTO `requests` (`id`, `student_name`, `instrument_name`, `purpose`, `course`, `needed_at`, `status`, `approved_by`, `approved_at`, `rejected_by`, `rejected_at`, `returned_by`, `returned_at`, `created_at`) VALUES
-(11, 'alexa', 'Centrifuge Machine', 'for lab', NULL, NULL, 'approved', 'admin', '2026-03-11 02:01:36', NULL, NULL, NULL, NULL, '2026-03-07 08:24:01'),
-(12, 'teacher', 'microscope', 'for project', '', '2026-03-13 02:13:00', 'approved', 'admin', '2026-03-11 02:01:42', NULL, NULL, NULL, NULL, '2026-03-10 17:13:39'),
-(14, 'ryota-kun', 'microscope', 'wowo', '', '2026-03-12 04:19:00', 'approved', 'admin', '2026-03-11 04:20:24', NULL, NULL, NULL, NULL, '2026-03-10 20:19:58'),
-(15, 'ryota-kun', 'Microscope Olympus CX23', 'yes', '', '2026-03-12 12:15:00', 'approved', 'admin', '2026-03-11 10:15:48', NULL, NULL, NULL, NULL, '2026-03-11 01:15:58'),
-(16, 'student', 'Centrifuge Machine', 'for project', 'BS Medical Technology/Medical Laboratory Science', '2026-03-27 15:00:00', 'approved', 'admin', '2026-03-29 12:10:33', NULL, NULL, NULL, NULL, '2026-03-26 04:20:58'),
-(17, 'dmcb', 'microscope', 'for project', 'BS Medical Technology/Medical Laboratory Science', '2026-03-30 00:00:00', 'approved', 'admin', '2026-03-29 13:24:31', NULL, NULL, NULL, NULL, '2026-03-27 02:17:11'),
-(18, 'ryota-kun', 'Hematology Analyzer', 'activity', 'BS Medical Technology/Medical Laboratory Science', '2026-04-10 12:09:00', 'approved', 'admin', '2026-03-29 10:10:51', NULL, NULL, NULL, NULL, '2026-03-29 02:09:50'),
-(19, 'alexa', 'microscope', 'For Activity', 'BS Medical Technology/Medical Laboratory Science', '2026-03-31 10:10:00', 'approved', 'admin', '2026-03-29 10:11:08', NULL, NULL, NULL, NULL, '2026-03-29 02:10:18'),
-(20, 'alexa', 'Centrifuge Machine', 'Laboratory', 'BS Pharmacy', '2026-04-01 10:14:00', 'rejected', NULL, NULL, 'admin', '2026-03-29 14:04:38', NULL, NULL, '2026-03-29 02:13:51'),
-(21, 'teacher', 'Clinical Chemistry Analyzer', 'yes', 'BS Biology', '2026-03-31 13:05:00', 'approved', 'admin', '2026-03-29 11:59:07', NULL, NULL, NULL, NULL, '2026-03-29 02:49:14'),
-(22, 'ryota-kun', 'Centrifuge Machine', 'Activity', 'BS Nursing', '2026-03-31 13:46:00', 'approved', 'admin', '2026-03-29 13:56:39', NULL, NULL, NULL, NULL, '2026-03-29 05:46:19'),
-(23, 'alexa', 'Clinical Chemistry Analyzer', 'For laboratory', 'BS Biology', '2026-03-31 15:30:00', 'rejected', NULL, NULL, 'admin', '2026-03-29 14:03:24', NULL, NULL, '2026-03-29 06:02:33'),
-(24, 'alexa', 'microscope', 'For laboratory activity', 'BS Medical Technology/Medical Laboratory Science', '2026-03-30 15:30:00', 'approved', 'admin', '2026-03-29 14:07:39', NULL, NULL, NULL, NULL, '2026-03-29 06:07:10'),
-(25, 'dmcb', 'Centrifuge Machine', 'yes', 'BS Medical Technology/Medical Laboratory Science', '2026-03-31 05:30:00', 'approved', 'admin', '2026-03-30 03:33:27', NULL, NULL, NULL, NULL, '2026-03-29 19:30:49');
+INSERT INTO `requests` (`id`, `student_name`, `instrument_name`, `quantity`, `purpose`, `course`, `needed_at`, `status`, `approved_by`, `approved_at`, `rejected_by`, `rejected_at`, `returned_by`, `returned_at`, `created_at`) VALUES
+(11, 'alexa', 'Centrifuge Machine', 1, 'for lab', NULL, NULL, 'approved', 'admin', '2026-03-11 02:01:36', NULL, NULL, NULL, NULL, '2026-03-07 08:24:01'),
+(12, 'teacher', 'microscope', 1, 'for project', '', '2026-03-13 02:13:00', 'approved', 'admin', '2026-03-11 02:01:42', NULL, NULL, NULL, NULL, '2026-03-10 17:13:39'),
+(14, 'ryota-kun', 'microscope', 1, 'wowo', '', '2026-03-12 04:19:00', 'approved', 'admin', '2026-03-11 04:20:24', NULL, NULL, NULL, NULL, '2026-03-10 20:19:58'),
+(15, 'ryota-kun', 'Microscope Olympus CX23', 1, 'yes', '', '2026-03-12 12:15:00', 'approved', 'admin', '2026-03-11 10:15:48', NULL, NULL, NULL, NULL, '2026-03-11 01:15:58'),
+(16, 'student', 'Centrifuge Machine', 1, 'for project', 'BS Medical Technology/Medical Laboratory Science', '2026-03-27 15:00:00', 'approved', 'admin', '2026-03-29 12:10:33', NULL, NULL, NULL, NULL, '2026-03-26 04:20:58'),
+(17, 'dmcb', 'microscope', 1, 'for project', 'BS Medical Technology/Medical Laboratory Science', '2026-03-30 00:00:00', 'approved', 'admin', '2026-03-29 13:24:31', NULL, NULL, NULL, NULL, '2026-03-27 02:17:11'),
+(18, 'ryota-kun', 'Hematology Analyzer', 1, 'activity', 'BS Medical Technology/Medical Laboratory Science', '2026-04-10 12:09:00', 'approved', 'admin', '2026-03-29 10:10:51', NULL, NULL, NULL, NULL, '2026-03-29 02:09:50'),
+(19, 'alexa', 'microscope', 1, 'For Activity', 'BS Medical Technology/Medical Laboratory Science', '2026-03-31 10:10:00', 'approved', 'admin', '2026-03-29 10:11:08', NULL, NULL, NULL, NULL, '2026-03-29 02:10:18'),
+(20, 'alexa', 'Centrifuge Machine', 1, 'Laboratory', 'BS Pharmacy', '2026-04-01 10:14:00', 'rejected', NULL, NULL, 'admin', '2026-03-29 14:04:38', NULL, NULL, '2026-03-29 02:13:51'),
+(21, 'teacher', 'Clinical Chemistry Analyzer', 1, 'yes', 'BS Biology', '2026-03-31 13:05:00', 'approved', 'admin', '2026-03-29 11:59:07', NULL, NULL, NULL, NULL, '2026-03-29 02:49:14'),
+(22, 'ryota-kun', 'Centrifuge Machine', 1, 'Activity', 'BS Nursing', '2026-03-31 13:46:00', 'approved', 'admin', '2026-03-29 13:56:39', NULL, NULL, NULL, NULL, '2026-03-29 05:46:19'),
+(23, 'alexa', 'Clinical Chemistry Analyzer', 1, 'For laboratory', 'BS Biology', '2026-03-31 15:30:00', 'rejected', NULL, NULL, 'admin', '2026-03-29 14:03:24', NULL, NULL, '2026-03-29 06:02:33'),
+(24, 'alexa', 'microscope', 1, 'For laboratory activity', 'BS Medical Technology/Medical Laboratory Science', '2026-03-30 15:30:00', 'approved', 'admin', '2026-03-29 14:07:39', NULL, NULL, NULL, NULL, '2026-03-29 06:07:10'),
+(25, 'dmcb', 'Centrifuge Machine', 1, 'yes', 'BS Medical Technology/Medical Laboratory Science', '2026-03-31 05:30:00', 'approved', 'admin', '2026-03-30 03:33:27', NULL, NULL, NULL, NULL, '2026-03-29 19:30:49');
 
 -- --------------------------------------------------------
 

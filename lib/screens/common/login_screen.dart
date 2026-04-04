@@ -42,9 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   BoxDecoration _buildBackgroundDecoration() {
-    return const BoxDecoration(
-      gradient: AppTheme.primaryGradient,
-    );
+    return const BoxDecoration(gradient: AppTheme.primaryGradient);
   }
 
   Widget _buildLoginCard() {
@@ -66,6 +64,8 @@ class _LoginScreenState extends State<LoginScreen> {
               _buildPasswordField(),
               const SizedBox(height: 24),
               _buildLoginButton(),
+              const SizedBox(height: 16),
+              _buildRegisterLink(),
               const SizedBox(height: 16),
               _buildQrLoginOption(),
             ],
@@ -105,7 +105,10 @@ class _LoginScreenState extends State<LoginScreen> {
       onChanged: (v) => setState(() {}), // Refresh to show superadmin settings
       decoration: InputDecoration(
         labelText: 'Username',
-        prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryColor),
+        prefixIcon: const Icon(
+          Icons.person_outline,
+          color: AppTheme.primaryColor,
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -122,7 +125,10 @@ class _LoginScreenState extends State<LoginScreen> {
       obscureText: _obscurePassword,
       decoration: InputDecoration(
         labelText: 'Password',
-        prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.primaryColor),
+        prefixIcon: const Icon(
+          Icons.lock_outline,
+          color: AppTheme.primaryColor,
+        ),
         suffixIcon: IconButton(
           icon: Icon(
             _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -147,15 +153,46 @@ class _LoginScreenState extends State<LoginScreen> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
           elevation: 4,
         ),
         child: _isLoading
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-            : const Text('LOGIN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Text(
+                'LOGIN',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
       ),
+    );
+  }
+
+  Widget _buildRegisterLink() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Don't have an account? "),
+        TextButton(
+          onPressed: () => Navigator.pushNamed(context, AppRoutes.register),
+          child: const Text(
+            'Create Account',
+            style: TextStyle(
+              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -163,11 +200,18 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       children: [
         TextButton.icon(
-          onPressed: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'login'),
-          icon: const Icon(Icons.qr_code_scanner, color: AppTheme.secondaryColor),
+          onPressed: () =>
+              Navigator.pushNamed(context, '/qr_scanner', arguments: 'login'),
+          icon: const Icon(
+            Icons.qr_code_scanner,
+            color: AppTheme.secondaryColor,
+          ),
           label: const Text(
             'Login via QR Code',
-            style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: AppTheme.secondaryColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         // Superadmin API Config Access
@@ -175,7 +219,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: TextButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/settings', arguments: 'Admin'),
+              onPressed: () =>
+                  Navigator.pushNamed(context, '/settings', arguments: 'Admin'),
               icon: const Icon(Icons.settings, color: Colors.orange, size: 16),
               label: const Text(
                 'Configure API (Superadmin)',
@@ -190,14 +235,26 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-    try {
-      final username = _usernameController.text.trim();
-      final password = _passwordController.text;
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
 
+    // Email domain restriction
+    if (username != 'superadmin' &&
+        username != 'admin' &&
+        !username.endsWith('@jmc.edu.ph')) {
+      _showError('Only jmc.edu.ph accounts are allowed.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
       if (await _handleBypassLogin(username, password)) return;
 
-      final res = await ApiClient.instance.login(username: username, password: password);
+      final res = await ApiClient.instance.login(
+        username: username,
+        password: password,
+      );
       final roleStr = (res['role']?.toString() ?? '').toLowerCase();
       UserRole? role = _parseRole(roleStr);
 
@@ -222,7 +279,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<bool> _handleBypassLogin(String username, String password) async {
     // 1. Superadmin Offline Bypass
     if (username == 'superadmin' && password == 'superadmin123') {
-      await _performBypass(username, UserRole.superadmin, 'Superadmin Bypass Mode Activated (Offline)');
+      await _performBypass(
+        username,
+        UserRole.superadmin,
+        'Superadmin Bypass Mode Activated (Offline)',
+      );
       return true;
     }
 
@@ -232,17 +293,27 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError('Admin access is restricted to Web browsers only.');
         return true;
       }
-      await _performBypass(username, UserRole.admin, 'Local Admin Maintenance Mode Activated');
+      await _performBypass(
+        username,
+        UserRole.admin,
+        'Local Admin Maintenance Mode Activated',
+      );
       return true;
     }
     return false;
   }
 
-  Future<void> _performBypass(String username, UserRole role, String message) async {
+  Future<void> _performBypass(
+    String username,
+    UserRole role,
+    String message,
+  ) async {
     AuthService.instance.setUsername(username);
     AuthService.instance.setRole(role);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
     }
   }
@@ -264,7 +335,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Logged in as $username')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Logged in as $username')));
       Navigator.of(context).pushReplacementNamed(_getRoute(role));
     }
   }
@@ -286,7 +359,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String _getRoute(UserRole role) {
-    if (role == UserRole.admin || role == UserRole.superadmin) return AppRoutes.adminDashboard;
+    if (role == UserRole.admin || role == UserRole.superadmin)
+      return AppRoutes.adminDashboard;
     if (role == UserRole.teacher) return AppRoutes.teacherDashboard;
     return AppRoutes.studentDashboard;
   }

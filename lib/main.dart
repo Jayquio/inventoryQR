@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'data/notification_service.dart';
 import 'screens/common/login_screen.dart';
+import 'screens/common/register_screen.dart';
 import 'screens/common/qr_scanner_screen.dart';
 import 'screens/common/qr_generator_screen.dart';
 import 'screens/common/settings_screen.dart';
@@ -53,14 +54,15 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'MedLab Inventory',
           theme: () {
-            final scheme = ColorScheme.fromSeed(
-              seedColor: AppTheme.primaryColor,
-              brightness: Brightness.light,
-            ).copyWith(
-              secondary: AppTheme.secondaryColor,
-              primary: AppTheme.primaryColor,
-              surface: AppTheme.backgroundLight,
-            );
+            final scheme =
+                ColorScheme.fromSeed(
+                  seedColor: AppTheme.primaryColor,
+                  brightness: Brightness.light,
+                ).copyWith(
+                  secondary: AppTheme.secondaryColor,
+                  primary: AppTheme.primaryColor,
+                  surface: AppTheme.backgroundLight,
+                );
             return ThemeData(
               useMaterial3: true,
               colorScheme: scheme,
@@ -73,14 +75,18 @@ class MyApp extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.secondaryColor,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               outlinedButtonTheme: OutlinedButtonThemeData(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.primaryColor,
                   side: const BorderSide(color: AppTheme.primaryColor),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -95,7 +101,9 @@ class MyApp extends StatelessWidget {
               ),
               cardTheme: CardThemeData(
                 color: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             );
           }(),
@@ -111,14 +119,18 @@ class MyApp extends StatelessWidget {
           initialRoute: AppRoutes.login,
           routes: {
             AppRoutes.login: (context) => const LoginScreen(),
+            AppRoutes.register: (context) => const RegisterScreen(),
             AppRoutes.adminDashboard: (context) => const AdminDashboard(),
             AppRoutes.teacherDashboard: (context) => const StaffDashboard(),
             AppRoutes.studentDashboard: (context) => const StudentDashboard(),
             AppRoutes.manageRequests: (context) => const ManageRequestsScreen(),
-            AppRoutes.manageInstruments: (context) => const ManageInstrumentsScreen(),
+            AppRoutes.manageInstruments: (context) =>
+                const ManageInstrumentsScreen(),
             AppRoutes.userManagement: (context) => const UserManagementScreen(),
-            AppRoutes.transactionLogs: (context) => const TransactionLogsScreen(),
-            AppRoutes.notificationCenter: (context) => const NotificationCenterScreen(),
+            AppRoutes.transactionLogs: (context) =>
+                const TransactionLogsScreen(),
+            AppRoutes.notificationCenter: (context) =>
+                const NotificationCenterScreen(),
             AppRoutes.submitRequest: (context) {
               final args = ModalRoute.of(context)!.settings.arguments;
               String? instrument;
@@ -138,19 +150,23 @@ class MyApp extends StatelessWidget {
               );
             },
             AppRoutes.viewInstruments: (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as String?;
+              final args =
+                  ModalRoute.of(context)!.settings.arguments as String?;
               return ViewInstrumentsScreen(userRole: args ?? 'Student');
             },
             AppRoutes.logMaintenance: (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as String?;
+              final args =
+                  ModalRoute.of(context)!.settings.arguments as String?;
               return LogMaintenanceScreen(preSelectedInstrument: args);
             },
             AppRoutes.handleReturns: (context) => const HandleReturnsScreen(),
-            AppRoutes.generateReports: (context) => const GenerateReportsScreen(),
+            AppRoutes.generateReports: (context) =>
+                const GenerateReportsScreen(),
             AppRoutes.trackStatus: (context) => const TrackStatusScreen(),
             AppRoutes.layoutPreview: (context) => const LayoutPreviewScreen(),
             AppRoutes.qrScanner: (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as String?;
+              final args =
+                  ModalRoute.of(context)!.settings.arguments as String?;
               return QrScannerScreen(userRole: args ?? 'Student');
             },
             AppRoutes.qrGenerator: (context) {
@@ -163,11 +179,15 @@ class MyApp extends StatelessWidget {
                 role = (args['userRole'] as String?) ?? role;
                 pre = args['preSelectedInstrument'] as String?;
               }
-              return QrGeneratorScreen(userRole: role, preSelectedInstrument: pre);
+              return QrGeneratorScreen(
+                userRole: role,
+                preSelectedInstrument: pre,
+              );
             },
             AppRoutes.userQr: (context) => const UserQrScreen(),
             AppRoutes.settings: (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as String?;
+              final args =
+                  ModalRoute.of(context)!.settings.arguments as String?;
               return SettingsScreen(userRole: args ?? 'Student');
             },
           },

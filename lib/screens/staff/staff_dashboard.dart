@@ -13,6 +13,8 @@ import '../../widgets/notification_icon.dart';
 import '../../core/theme.dart';
 import '../../data/auth_service.dart';
 
+import '../../data/notification_service.dart';
+
 class StaffDashboard extends StatefulWidget {
   const StaffDashboard({super.key});
 
@@ -25,6 +27,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
   List<Instrument> _instruments = [];
   bool _loading = true;
   Timer? _poller;
+  final Map<String, RequestStatus> _lastStatuses = {};
 
   @override
   void initState() {
@@ -40,6 +43,18 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
       final current = AuthService.instance.currentUsername;
       final rows = await ApiClient.instance.fetchRequests(studentName: current);
       final reqs = rows.map((e) => Request.fromJson(e)).toList();
+
+      // Notification logic: Check for status changes
+      for (final req in reqs) {
+        if (_lastStatuses.containsKey(req.id)) {
+          final oldStatus = _lastStatuses[req.id];
+          if (oldStatus != req.status && req.status != RequestStatus.pending) {
+            _notifyStatusChange(req);
+          }
+        }
+        _lastStatuses[req.id] = req.status;
+      }
+
       final insts = await ApiClient.instance.fetchInstruments();
       if (!mounted) return;
       setState(() {
@@ -51,6 +66,20 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
       if (!mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  void _notifyStatusChange(Request req) {
+    final title = req.status == RequestStatus.approved ? 'Request Approved' : 'Request Update';
+    final message = 'Your request for ${req.instrumentName} is now ${req.status.name}.';
+    
+    NotificationService.instance.add(NotificationItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      message: message,
+      type: req.status == RequestStatus.approved ? 'success' : 'info',
+      timestamp: DateTime.now().toIso8601String(),
+      recipient: 'Teacher',
+    ));
   }
 
   @override
