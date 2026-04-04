@@ -1,7 +1,23 @@
+# Deploy: DigitalOcean → Apps → Create App → "Edit your app spec" (or doctl apps create --spec do-app-spec.yaml)
+# Fixes "No components detected": the UI only auto-finds a root Dockerfile; this spec sets dockerfile_path explicitly.
+
 name: inventory-management-system
 region: sgp
+
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /api
+      component:
+        name: api
+    - match:
+        path:
+          prefix: /
+      component:
+        name: web
+
 services:
-  # ── PHP API Service ────────────────────────────────────────────────────────
   - name: api
     github:
       repo: Jayquio/inventoryQR
@@ -12,24 +28,33 @@ services:
     http_port: 80
     instance_count: 1
     instance_size_slug: basic-xxs
+    health_check:
+      http_path: /ping.php
+      initial_delay_seconds: 15
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
     envs:
       - key: DB_HOST
         scope: RUN_TIME
-        value: ${db.hostname}
+        value: ${db.HOSTNAME}
+      - key: DB_PORT
+        scope: RUN_TIME
+        value: ${db.PORT}
       - key: DB_NAME
         scope: RUN_TIME
-        value: ${db.name}
+        value: ${db.DATABASE}
       - key: DB_USER
         scope: RUN_TIME
-        value: ${db.username}
+        value: ${db.USERNAME}
       - key: DB_PASS
         scope: RUN_TIME
-        value: ${db.password}
+        value: ${db.PASSWORD}
       - key: REDIS_HOST
         scope: RUN_TIME
-        value: ${redis.hostname}
+        value: ${redis.HOSTNAME}
 
-  # ── Admin Web Dashboard (Flutter Web) ──────────────────────────────────────
   - name: web
     github:
       repo: Jayquio/inventoryQR
@@ -40,19 +65,13 @@ services:
     http_port: 80
     instance_count: 1
     instance_size_slug: basic-xxs
-    envs:
-      - key: API_URL
-        scope: BUILD_TIME
-        value: https://api.yourdomain.org # Replace with your Cloudflare API domain
 
 databases:
-  # ── Managed MariaDB ────────────────────────────────────────────────────────
   - name: db
     engine: MYSQL
     version: "8"
     production: false
 
-  # ── Managed Redis ──────────────────────────────────────────────────────────
   - name: redis
     engine: REDIS
     version: "7"
