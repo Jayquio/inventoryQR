@@ -5,8 +5,8 @@ services:
     image: mariadb:10.4
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ""
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-}"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "${MYSQL_ALLOW_EMPTY_PASSWORD:-yes}"
       MYSQL_DATABASE: medlab_inventory
     ports:
       - "${DB_PORT:-3306}:3306"
@@ -29,7 +29,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_USER: root
-      PMA_PASSWORD: ""
+      PMA_PASSWORD: "${MYSQL_ROOT_PASSWORD:-}"
     # ports:
     #   - "${PMA_PORT:-8889}:80"
     networks:
@@ -56,7 +56,7 @@ services:
       DB_HOST: db
       DB_NAME: medlab_inventory
       DB_USER: root
-      DB_PASS: ""
+      DB_PASS: "${MYSQL_ROOT_PASSWORD:-}"
       REDIS_HOST: redis
     # ports:
     #   - "${API_PORT:-8081}:80"
@@ -97,8 +97,11 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      # Optional HTTPS: put Cloudflare Origin cert or Let’s Encrypt files here and enable ssl in nginx.prod.conf
+      # - ./certs:/etc/nginx/certs:ro
     networks:
       - inventory_net
     depends_on:

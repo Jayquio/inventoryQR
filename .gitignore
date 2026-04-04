@@ -1,3 +1,6 @@
+# Local secrets (Droplet / production)
+.env
+
 # Miscellaneous
 *.class
 *.log
