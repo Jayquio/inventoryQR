@@ -291,20 +291,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return AppRoutes.studentDashboard;
   }
 
-  void _addLoginNotification(String username) {
-    NotificationService.instance.add(
-      NotificationItem(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        title: _userLoginTitle,
-        message: '$username logged in',
-        type: 'login',
-        timestamp: DateTime.now().toIso8601String(),
-        recipient: 'Admin',
-        priority: 'low',
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _usernameController.dispose();

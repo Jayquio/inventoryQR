@@ -23,9 +23,9 @@ class ApiClient {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     if (kIsWeb) return 'http://localhost:${AppNetwork.apiPort}';
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/inventory_api';
+      return 'http://10.0.2.2:8081';
     }
-    return 'http://localhost/inventory_api';
+    return 'http://localhost:8081';
   }
 
   Future<Map<String, dynamic>> login({

@@ -9,17 +9,21 @@ import '../../widgets/search_bar.dart';
 import '../../widgets/instrument_card.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
+import 'dart:math' as math; // Import for random number generation
 
 class ManageInstrumentsScreen extends StatefulWidget {
   const ManageInstrumentsScreen({super.key});
 
   @override
-  State<ManageInstrumentsScreen> createState() => _ManageInstrumentsScreenState();
+  State<ManageInstrumentsScreen> createState() =>
+      _ManageInstrumentsScreenState();
 }
 
 class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   static const String _exceptionPrefix = 'Exception: ';
   static const String _lastMaintenanceLabel = 'Last Maintenance';
+  static const String _chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'; // For random serial generation
 
   late List<Instrument> _instruments;
   final TextEditingController _searchController = TextEditingController();
@@ -47,12 +51,28 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        SnackBar(
+          content: Text(e.toString().replaceFirst(_exceptionPrefix, '')),
+        ),
       );
     }
   }
 
-  void _showInstrumentDetails(BuildContext context, Instrument instrument, int index) {
+  String _generateSerialNumber(String instrumentType) {
+    final prefix = instrumentType.substring(0, 3).toUpperCase();
+    final random = math.Random();
+    final suffix = List.generate(
+      6,
+      (_) => _chars[random.nextInt(_chars.length)],
+    ).join();
+    return '$prefix-$suffix';
+  }
+
+  void _showInstrumentDetails(
+    BuildContext context,
+    Instrument instrument,
+    int index,
+  ) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -95,11 +115,15 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     return Column(
       children: [
         _buildDetailRow('Category', instrument.category),
-        if (instrument.serialNumber != null && instrument.serialNumber!.isNotEmpty)
+        if (instrument.serialNumber != null &&
+            instrument.serialNumber!.isNotEmpty)
           _buildDetailRow('Serial Number', instrument.serialNumber!),
         _buildDetailRow('Quantity', instrument.quantity.toString()),
         _buildDetailRow('Available', instrument.available.toString()),
-        _buildDetailRow('Borrowed', (instrument.quantity - instrument.available).toString()),
+        _buildDetailRow(
+          'Borrowed',
+          (instrument.quantity - instrument.available).toString(),
+        ),
         _buildDetailRow('Status', instrument.status),
         _buildDetailRow('Condition', instrument.condition),
         _buildDetailRow('Location', instrument.location),
@@ -108,7 +132,11 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, Instrument instrument, int index) {
+  Widget _buildActionButtons(
+    BuildContext context,
+    Instrument instrument,
+    int index,
+  ) {
     return LayoutBuilder(
       builder: (ctx, constraints) {
         const spacing = 8.0;
@@ -151,7 +179,11 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  Widget _buildQrButton(BuildContext context, Instrument instrument, double width) {
+  Widget _buildQrButton(
+    BuildContext context,
+    Instrument instrument,
+    double width,
+  ) {
     return SizedBox(
       width: width,
       child: OutlinedButton.icon(
@@ -164,7 +196,10 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
           Navigator.pushNamed(
             context,
             '/qr_generator',
-            arguments: {'userRole': 'Teacher', 'preSelectedInstrument': instrument.name},
+            arguments: {
+              'userRole': 'Teacher',
+              'preSelectedInstrument': instrument.name,
+            },
           );
         },
         icon: const Icon(Icons.qr_code_2),
@@ -178,7 +213,11 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  Future<void> _handleManualReturn(BuildContext context, Instrument instrument, int index) async {
+  Future<void> _handleManualReturn(
+    BuildContext context,
+    Instrument instrument,
+    int index,
+  ) async {
     try {
       final newAvail = await ApiClient.instance.processTransaction(
         type: 'return',
@@ -194,18 +233,25 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         // Ensure widget is still mounted after popping bottom sheet context
         if (!mounted) return;
         ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(content: Text('Successfully returned 1 unit of ${instrument.name}')),
+          SnackBar(
+            content: Text('Successfully returned 1 unit of ${instrument.name}'),
+          ),
         );
       }
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     }
   }
 
-  Widget _buildReturnButton(BuildContext context, Instrument instrument, int index, double width) {
+  Widget _buildReturnButton(
+    BuildContext context,
+    Instrument instrument,
+    int index,
+    double width,
+  ) {
     return SizedBox(
       width: width,
       child: ElevatedButton.icon(
@@ -242,7 +288,12 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildStatItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     final w = MediaQuery.of(context).size.width;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -251,7 +302,11 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(color: Colors.white, fontSize: R.text(18, w), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: R.text(18, w),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         Text(
           label,
@@ -262,13 +317,9 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   }
 
   Widget _buildStatDivider() {
-    return Container(
-      height: 30,
-      width: 1,
-      color: Colors.white24,
-    );
+    return Container(height: 30, width: 1, color: Colors.white24);
   }
- 
+
   void _editInstrument(int index) {
     _showInstrumentForm(instrument: _instruments[index], index: index);
   }
@@ -293,22 +344,28 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
               typeValue: typeValue,
               controllers: controllers,
               onTypeChanged: (v) => setStateDialog(() => typeValue = v),
+              setStateDialog: setStateDialog,
             ),
             actions: [
               TextButton(
-                onPressed: submitting ? null : () => Navigator.pop(dialogContext),
+                onPressed: submitting
+                    ? null
+                    : () => Navigator.pop(dialogContext),
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: submitting ? null : () => _submitForm(
-                  dialogContext: dialogContext,
-                  isEdit: isEdit,
-                  index: index,
-                  originalName: instrument?.name,
-                  typeValue: typeValue,
-                  controllers: controllers,
-                  setSubmitting: (v) => setStateDialog(() => submitting = v),
-                ),
+                onPressed: submitting
+                    ? null
+                    : () => _submitForm(
+                        dialogContext: dialogContext,
+                        isEdit: isEdit,
+                        index: index,
+                        originalName: instrument?.name,
+                        typeValue: typeValue,
+                        controllers: controllers,
+                        setSubmitting: (v) =>
+                            setStateDialog(() => submitting = v),
+                      ),
                 child: Text(isEdit ? 'Update' : 'Add'),
               ),
             ],
@@ -334,14 +391,30 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
     setSubmitting(true);
     try {
-      final item = _createInstrumentFromControllers(typeValue, controllers, qty, avail);
-      await _persistInstrument(item: item, isEdit: isEdit, index: index, originalName: originalName);
+      final item = _createInstrumentFromControllers(
+        typeValue,
+        controllers,
+        qty,
+        avail,
+      );
+      await _persistInstrument(
+        item: item,
+        isEdit: isEdit,
+        index: index,
+        originalName: originalName,
+      );
       if (!mounted || !dialogContext.mounted) return;
-      _handleSubmitSuccess(item: item, isEdit: isEdit, dialogContext: dialogContext);
+      _handleSubmitSuccess(
+        item: item,
+        isEdit: isEdit,
+        dialogContext: dialogContext,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        SnackBar(
+          content: Text(e.toString().replaceFirst(_exceptionPrefix, '')),
+        ),
       );
     } finally {
       if (dialogContext.mounted) setSubmitting(false);
@@ -355,7 +428,10 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     required String? originalName,
   }) async {
     if (isEdit) {
-      await ApiClient.instance.updateInstrument(originalName: originalName!, instrument: item);
+      await ApiClient.instance.updateInstrument(
+        originalName: originalName!,
+        instrument: item,
+      );
       if (!mounted) return;
       setState(() => _instruments[index!] = item);
       return;
@@ -376,7 +452,9 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       Navigator.pop(dialogContext);
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(isEdit ? 'Instrument updated' : 'Instrument added')),
+      SnackBar(
+        content: Text(isEdit ? 'Instrument updated' : 'Instrument added'),
+      ),
     );
     if (isEdit) return;
     _showGenerateQrPrompt(item.name);
@@ -389,14 +467,21 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         title: const Text('Generate QR?'),
         content: Text('Create QR labels for "$instrumentName" now?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Later'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.pushNamed(context, '/qr_generator', arguments: {
-                'userRole': 'Teacher',
-                'preSelectedInstrument': instrumentName
-              });
+              Navigator.pushNamed(
+                context,
+                '/qr_generator',
+                arguments: {
+                  'userRole': 'Teacher',
+                  'preSelectedInstrument': instrumentName,
+                },
+              );
             },
             child: const Text('Generate'),
           ),
@@ -408,28 +493,54 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   bool _validateForm(BuildContext context, String name, int qty, int avail) {
     if (name.trim().isEmpty) {
       if (!context.mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name is required')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Name is required')));
       return false;
     }
     if (qty < 0 || avail < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quantity and Available must be valid numbers')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Quantity and Available must be valid numbers'),
+        ),
+      );
       return false;
     }
     if (avail > qty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Available cannot exceed Quantity')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Available cannot exceed Quantity')),
+      );
       return false;
     }
     return true;
   }
 
-  Instrument _createInstrumentFromControllers(String type, _InstrumentFormControllers controllers, int qty, int avail) {
-    final normalizedType = type.toLowerCase() == 'reagent' ? 'reagent' : 'instrument';
-    final serialTrimmed = controllers.serialNumber.text.trim();
-    final serial = (normalizedType == 'reagent' || serialTrimmed.isEmpty) ? null : serialTrimmed;
+  Instrument _createInstrumentFromControllers(
+    String type,
+    _InstrumentFormControllers controllers,
+    int qty,
+    int avail,
+  ) {
+    final normalizedType = type.toLowerCase() == 'reagent'
+        ? 'reagent'
+        : 'instrument';
+    String? finalSerialNumber;
+
+    if (normalizedType == 'reagent') {
+      finalSerialNumber = null; // Reagents don't use serial numbers
+    } else if (controllers.autoGenerateSerialNumber ||
+        controllers.serialNumber.text.trim().isEmpty) {
+      // Generate if auto-generate is checked OR if field is empty (and not a reagent)
+      finalSerialNumber = _generateSerialNumber(controllers.name.text.trim());
+    } else {
+      // Use manual input if provided and auto-generate is not checked
+      finalSerialNumber = controllers.serialNumber.text.trim();
+    }
+
     return Instrument(
       type: normalizedType,
       name: controllers.name.text.trim(),
-      serialNumber: serial,
+      serialNumber: finalSerialNumber,
       category: controllers.category.text.trim(),
       quantity: qty,
       available: avail,
@@ -439,7 +550,6 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       lastMaintenance: controllers.lastMaintenance.text.trim(),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -456,7 +566,11 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
             IconButton(
               icon: const Icon(Icons.qr_code_scanner),
               onPressed: () {
-                Navigator.pushNamed(context, '/qr_scanner', arguments: 'Teacher');
+                Navigator.pushNamed(
+                  context,
+                  '/qr_scanner',
+                  arguments: 'Teacher',
+                );
               },
             ),
           ],
@@ -471,9 +585,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
               ),
             _buildStatsRow(),
             _buildSearchFilterBar(),
-            Expanded(
-              child: _buildInstrumentList(filteredInstruments),
-            ),
+            Expanded(child: _buildInstrumentList(filteredInstruments)),
           ],
         ),
       ),
@@ -482,12 +594,14 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
   List<Instrument> _getFilteredInstruments(String searchTerm) {
     return _instruments.where((instrument) {
-      if (_typeFilter != 'All' && instrument.type.toLowerCase() != _typeFilter.toLowerCase()) {
+      if (_typeFilter != 'All' &&
+          instrument.type.toLowerCase() != _typeFilter.toLowerCase()) {
         return false;
       }
       if (searchTerm.isEmpty) return true;
       return instrument.name.toLowerCase().contains(searchTerm) ||
-          (instrument.serialNumber?.toLowerCase().contains(searchTerm) ?? false) ||
+          (instrument.serialNumber?.toLowerCase().contains(searchTerm) ??
+              false) ||
           instrument.category.toLowerCase().contains(searchTerm) ||
           instrument.status.toLowerCase().contains(searchTerm) ||
           instrument.condition.toLowerCase().contains(searchTerm) ||
@@ -497,7 +611,9 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
   Widget _buildStatsRow() {
     final totalInstruments = _instruments.length;
-    final availableInstruments = _instruments.where((i) => i.available > 0).length;
+    final availableInstruments = _instruments
+        .where((i) => i.available > 0)
+        .length;
     final categories = _instruments.map((i) => i.category).toSet().length;
 
     return Container(
@@ -512,7 +628,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.teal.withValues(alpha: 0.3),
+            color: Colors.teal.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -521,11 +637,26 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem(context, 'Total', totalInstruments.toString(), Icons.inventory_2_outlined),
+          _buildStatItem(
+            context,
+            'Total',
+            totalInstruments.toString(),
+            Icons.inventory_2_outlined,
+          ),
           _buildStatDivider(),
-          _buildStatItem(context, 'Available', availableInstruments.toString(), Icons.check_circle_outline),
+          _buildStatItem(
+            context,
+            'Available',
+            availableInstruments.toString(),
+            Icons.check_circle_outline,
+          ),
           _buildStatDivider(),
-          _buildStatItem(context, 'Categories', categories.toString(), Icons.category_outlined),
+          _buildStatItem(
+            context,
+            'Categories',
+            categories.toString(),
+            Icons.category_outlined,
+          ),
         ],
       ),
     );
@@ -572,7 +703,12 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  Widget _buildInstrumentGrid(List<Instrument> pageItems, int crossAxisCount, double spacing, double childAspectRatio) {
+  Widget _buildInstrumentGrid(
+    List<Instrument> pageItems,
+    int crossAxisCount,
+    double spacing,
+    double childAspectRatio,
+  ) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -588,7 +724,8 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         return InstrumentCard(
           instrument: instrument,
           highlight: _searchController.text,
-          onTap: () => _showInstrumentDetails(context, instrument, originalIndex),
+          onTap: () =>
+              _showInstrumentDetails(context, instrument, originalIndex),
         );
       },
     );
@@ -600,8 +737,17 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       child: LayoutBuilder(
         key: ValueKey('${_searchController.text}_$_page'),
         builder: (context, constraints) {
-          final crossAxisCount = R.columns(constraints.maxWidth, xs: 2, sm: 3, md: 4, lg: 5);
-          final layoutData = _calculateGridLayout(constraints.maxWidth, crossAxisCount);
+          final crossAxisCount = R.columns(
+            constraints.maxWidth,
+            xs: 2,
+            sm: 3,
+            md: 4,
+            lg: 5,
+          );
+          final layoutData = _calculateGridLayout(
+            constraints.maxWidth,
+            crossAxisCount,
+          );
           final pageData = _getPageData(filteredInstruments);
 
           if (pageData.items.isEmpty) {
@@ -629,7 +775,9 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   _GridLayoutData _calculateGridLayout(double maxWidth, int crossAxisCount) {
     const spacing = 6.0;
     const totalPadding = 32.0;
-    final itemWidth = (maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+    final itemWidth =
+        (maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) /
+        crossAxisCount;
     const fixedContentHeight = 64.0;
     final cellHeight = (itemWidth / 1.77) + fixedContentHeight;
     final childAspectRatio = (itemWidth / cellHeight).clamp(0.5, 1.0);
@@ -659,8 +807,8 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
           OutlinedButton(
             onPressed: _page > 0
                 ? () => setState(() {
-                      _page--;
-                    })
+                    _page--;
+                  })
                 : null,
             child: const Text('Prev'),
           ),
@@ -668,8 +816,8 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
           ElevatedButton(
             onPressed: _page < totalPages - 1
                 ? () => setState(() {
-                      _page++;
-                    })
+                    _page++;
+                  })
                 : null,
             child: const Text('Next'),
           ),
@@ -677,7 +825,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       ),
     );
   }
- 
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -707,28 +855,42 @@ class _InstrumentFormControllers {
   final TextEditingController condition;
   final TextEditingController location;
   final TextEditingController lastMaintenance;
+  bool autoGenerateSerialNumber; // New field
 
   _InstrumentFormControllers({Instrument? instrument})
-      : name = TextEditingController(text: instrument?.name ?? ''),
-        serialNumber = TextEditingController(text: instrument?.serialNumber ?? ''),
-        category = TextEditingController(text: instrument?.category ?? ''),
-        quantity = TextEditingController(text: instrument?.quantity.toString() ?? ''),
-        available = TextEditingController(text: instrument?.available.toString() ?? ''),
-        status = TextEditingController(text: instrument?.status ?? ''),
-        condition = TextEditingController(text: instrument?.condition ?? ''),
-        location = TextEditingController(text: instrument?.location ?? ''),
-        lastMaintenance = TextEditingController(text: instrument?.lastMaintenance ?? '');
+    : name = TextEditingController(text: instrument?.name ?? ''),
+      serialNumber = TextEditingController(
+        text: instrument?.serialNumber ?? '',
+      ),
+      category = TextEditingController(text: instrument?.category ?? ''),
+      quantity = TextEditingController(
+        text: instrument?.quantity.toString() ?? '',
+      ),
+      available = TextEditingController(
+        text: instrument?.available.toString() ?? '',
+      ),
+      status = TextEditingController(text: instrument?.status ?? ''),
+      condition = TextEditingController(text: instrument?.condition ?? ''),
+      location = TextEditingController(text: instrument?.location ?? ''),
+      lastMaintenance = TextEditingController(
+        text: instrument?.lastMaintenance ?? '',
+      ),
+      autoGenerateSerialNumber =
+          instrument?.serialNumber == null ||
+          instrument!.serialNumber!.isEmpty; // Default to true if no serial
 }
 
 class _InstrumentFormContent extends StatelessWidget {
   final String typeValue;
   final _InstrumentFormControllers controllers;
   final Function(String) onTypeChanged;
+  final StateSetter setStateDialog;
 
   const _InstrumentFormContent({
     required this.typeValue,
     required this.controllers,
     required this.onTypeChanged,
+    required this.setStateDialog,
   });
 
   static const List<String> _categoryOptions = [
@@ -781,10 +943,22 @@ class _InstrumentFormContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isReagent = typeValue.toLowerCase() == 'reagent';
-    final categoryOptions = _optionsWithCurrent(_categoryOptions, controllers.category.text);
-    final statusOptions = _optionsWithCurrent(_statusOptions, controllers.status.text);
-    final conditionOptions = _optionsWithCurrent(_conditionOptions, controllers.condition.text);
-    final locationOptions = _optionsWithCurrent(_locationOptions, controllers.location.text);
+    final categoryOptions = _optionsWithCurrent(
+      _categoryOptions,
+      controllers.category.text,
+    );
+    final statusOptions = _optionsWithCurrent(
+      _statusOptions,
+      controllers.status.text,
+    );
+    final conditionOptions = _optionsWithCurrent(
+      _conditionOptions,
+      controllers.condition.text,
+    );
+    final locationOptions = _optionsWithCurrent(
+      _locationOptions,
+      controllers.location.text,
+    );
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -798,18 +972,47 @@ class _InstrumentFormContent extends StatelessWidget {
             onChanged: (v) => onTypeChanged(v ?? 'instrument'),
             decoration: const InputDecoration(labelText: 'Type'),
           ),
-          TextField(controller: controllers.name, decoration: const InputDecoration(labelText: 'Name')),
+          TextField(
+            controller: controllers.name,
+            decoration: const InputDecoration(labelText: 'Name'),
+          ),
+          // Auto-generate checkbox
+          Row(
+            children: [
+              Checkbox(
+                value: controllers.autoGenerateSerialNumber,
+                onChanged: (bool? value) {
+                  setStateDialog(() {
+                    controllers.autoGenerateSerialNumber = value ?? false;
+                    if (controllers.autoGenerateSerialNumber) {
+                      controllers.serialNumber
+                          .clear(); // Clear manual input if auto-generating
+                    }
+                  });
+                },
+              ),
+              const Text('Auto-generate Serial Number'),
+            ],
+          ),
+          // Serial Number input field, enabled only if not auto-generating
           TextField(
             controller: controllers.serialNumber,
-            enabled: !isReagent,
+            enabled: !isReagent && !controllers.autoGenerateSerialNumber,
             decoration: InputDecoration(
-              labelText: isReagent 
-                ? 'Serial Number (not used for reagents)' 
-                : 'Serial Number',
+              labelText: isReagent
+                  ? 'Serial Number (not used for reagents)'
+                  : (controllers.autoGenerateSerialNumber
+                        ? 'Serial Number (Auto-generated)'
+                        : 'Serial Number'),
+              hintText: controllers.autoGenerateSerialNumber && !isReagent
+                  ? 'Will be generated automatically'
+                  : null,
             ),
           ),
           DropdownButtonFormField<String>(
-            initialValue: controllers.category.text.trim().isEmpty ? null : controllers.category.text.trim(),
+            initialValue: controllers.category.text.trim().isEmpty
+                ? null
+                : controllers.category.text.trim(),
             items: categoryOptions
                 .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
                 .toList(),
@@ -827,7 +1030,9 @@ class _InstrumentFormContent extends StatelessWidget {
             keyboardType: TextInputType.number,
           ),
           DropdownButtonFormField<String>(
-            initialValue: controllers.status.text.trim().isEmpty ? null : controllers.status.text.trim(),
+            initialValue: controllers.status.text.trim().isEmpty
+                ? null
+                : controllers.status.text.trim(),
             items: statusOptions
                 .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
                 .toList(),
@@ -835,7 +1040,9 @@ class _InstrumentFormContent extends StatelessWidget {
             decoration: const InputDecoration(labelText: 'Status'),
           ),
           DropdownButtonFormField<String>(
-            initialValue: controllers.condition.text.trim().isEmpty ? null : controllers.condition.text.trim(),
+            initialValue: controllers.condition.text.trim().isEmpty
+                ? null
+                : controllers.condition.text.trim(),
             items: conditionOptions
                 .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
                 .toList(),
@@ -843,7 +1050,9 @@ class _InstrumentFormContent extends StatelessWidget {
             decoration: const InputDecoration(labelText: 'Condition'),
           ),
           DropdownButtonFormField<String>(
-            initialValue: controllers.location.text.trim().isEmpty ? null : controllers.location.text.trim(),
+            initialValue: controllers.location.text.trim().isEmpty
+                ? null
+                : controllers.location.text.trim(),
             items: locationOptions
                 .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
                 .toList(),
@@ -852,12 +1061,12 @@ class _InstrumentFormContent extends StatelessWidget {
           ),
           TextField(
             controller: controllers.lastMaintenance,
-            decoration: const InputDecoration(labelText: _ManageInstrumentsScreenState._lastMaintenanceLabel),
+            decoration: const InputDecoration(
+              labelText: _ManageInstrumentsScreenState._lastMaintenanceLabel,
+            ),
           ),
         ],
       ),
     );
   }
 }
-
- 

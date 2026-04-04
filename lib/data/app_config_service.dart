@@ -122,7 +122,7 @@ class AppConfigService extends ChangeNotifier {
       if (ok) return base;
     }
 
-    return 'http://192.168.1.88/inventory_api';
+    return 'http://192.168.1.164:8081';
   }
 
   Future<bool> _probe(String url) async {
