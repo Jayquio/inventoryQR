@@ -19,7 +19,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -e
             cd ~/inventoryQR
             git pull origin main
-            docker compose down
-            docker compose up -d --build
+            # Do not run `docker compose down` before build: if build fails, the site
+            # would stay offline (Cloudflare 521). Recreate containers in place instead.
+            docker compose up -d --build --remove-orphans

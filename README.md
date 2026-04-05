@@ -55,3 +55,33 @@ Your existing workflow (SSH + `git pull` + `docker compose up -d --build`) will 
 ### 4. After changing API URL or Flutter UI
 
 Always re-run step 2, then commit `build/web/` again before deploy.
+
+### Cloudflare **Error 521** (“Web server is down”)
+
+Cloudflare reaches the internet, but **nothing answers** on your droplet (or on the port/SSL mode Cloudflare uses).
+
+1. **SSL/TLS mode (very common)**  
+   Nginx in this repo listens on **HTTP port 80 only** (no HTTPS on the droplet). In Cloudflare: **SSL/TLS → Overview**, set encryption to **Flexible** so Cloudflare talks to your origin on **port 80**.  
+   If you use **Full** or **Full (strict)**, Cloudflare expects **HTTPS on port 443** on the droplet; with no TLS there, you often get **521**.
+
+2. **Docker not running**  
+   On the server:
+   ```bash
+   cd ~/inventoryQR && git pull origin main
+   docker compose ps
+   docker compose up -d --build --remove-orphans
+   ```
+   Then test on the droplet:
+   ```bash
+   curl -sI -H "Host: admin.medtechinventorysystem.org" http://127.0.0.1/
+   ```
+   You should see HTTP `200` or `301/302` from nginx, not “connection refused”.
+
+3. **`build/web` missing on the server**  
+   If `ls ~/inventoryQR/build/web` fails, run `git pull origin main` (your deploy must include the committed `build/web` folder). Without it, the `web` image build fails.
+
+### Windows vs Linux commands
+
+- **`cd ~/inventoryQR`** is for **Linux (SSH on the droplet)**. On Windows PowerShell, use your real project path, e.g.  
+  `cd "C:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"`.
+- **`docker compose up`** on your **PC** needs **Docker Desktop running**. Production deploy is normally **GitHub Actions** or **SSH into the droplet** and run `docker compose` **there**.
