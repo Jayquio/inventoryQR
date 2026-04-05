@@ -27,7 +27,7 @@ class ApiClient {
       return '/inventory_api';
     }
     // Production API URL for mobile devices
-    return 'http://159.223.47';
+    return 'https://medtechinventorysystem.org/inventory_api';
   }
 
   Future<Map<String, dynamic>> login({
