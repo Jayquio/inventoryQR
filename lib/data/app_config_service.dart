@@ -22,9 +22,15 @@ class AppConfigService extends ChangeNotifier {
   String get baseUrl => _baseUrl;
 
   Future<void> loadAndApplyBaseUrl() async {
-    // Priority 1: Use production URL if in release mode
-    if (kReleaseMode) {
-      _baseUrl = _productionApiBase;
+    // Release, or any non-debug web session (e.g. deployed admin site): always use
+    // compile-time production API. Some web builds did not set kReleaseMode as expected,
+    // which let localhost probing/prefs send login to http://localhost:8081.
+    // `flutter run -d chrome` (kDebugMode) still uses auto-detection below.
+    if (kReleaseMode || (kIsWeb && !kDebugMode)) {
+      _baseUrl = _productionApiBase.trim();
+      if (_baseUrl.isEmpty) {
+        _baseUrl = 'https://api.medtechinventorysystem.org';
+      }
       ApiClient.setBaseUrl(_baseUrl);
       return;
     }
