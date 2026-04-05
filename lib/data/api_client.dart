@@ -26,10 +26,8 @@ class ApiClient {
       // If the API is at /inventory_api, this will work correctly.
       return '/inventory_api';
     }
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8081';
-    }
-    return 'http://localhost:8081';
+    // Production API URL for mobile devices
+    return 'http://159.223.47';
   }
 
   Future<Map<String, dynamic>> login({
