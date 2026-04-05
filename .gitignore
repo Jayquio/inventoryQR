@@ -33,7 +33,10 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+# Ship build/web for Docker (built locally: scripts/build_web_prod.ps1). Ignore rest of /build/.
+/build/*
+!/build/web/
+!/build/web/**
 /coverage/
 
 # Symbolication related

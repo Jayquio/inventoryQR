@@ -77,9 +77,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
-      args:
-        # Must match the public API origin (https if admin is served over HTTPS — avoids mixed-content blocks).
-        API_URL: https://api.medtechinventorysystem.org
     restart: always
     networks:
       - inventory_net

@@ -3,7 +3,10 @@
 .github/
 .idea/
 .vscode/
-build/
+# Pre-built Flutter web lives in build/web (copied by Dockerfile.web). Ignore other targets.
+build/**
+!build/web/
+!build/web/**
 ios/
 android/
 windows/
