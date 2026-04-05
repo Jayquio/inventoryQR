@@ -85,3 +85,19 @@ Cloudflare reaches the internet, but **nothing answers** on your droplet (or on 
 - **`cd ~/inventoryQR`** is for **Linux (SSH on the droplet)**. On Windows PowerShell, use your real project path, e.g.  
   `cd "C:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"`.
 - **`docker compose up`** on your **PC** needs **Docker Desktop running**. Production deploy is normally **GitHub Actions** or **SSH into the droplet** and run `docker compose` **there**.
+
+### MariaDB `Access denied for user 'root'` / API `db_error`
+
+Compose now sets **`MYSQL_ROOT_PASSWORD`** (default `medlab_root_change_me`, or set **`MYSQL_ROOT_PASSWORD`** in a `.env` file on the server — see `.env.example`).
+
+**Important:** If the database volume already exists, MariaDB will **not** re-run init scripts or change the root password. After pulling this update, **one-time** reset the volume (this **deletes DB data**; backup first if needed):
+
+```bash
+cd ~/inventoryQR
+docker compose down
+docker volume rm inventoryqr_db_data
+# If the name differs: docker volume ls | grep db_data
+docker compose up -d --build
+```
+
+Then `docker compose exec api php -r "new PDO('mysql:host=db;dbname=medlab_inventory','root','YOUR_PASSWORD');"` should succeed (use the same password as in `.env` or the default above).

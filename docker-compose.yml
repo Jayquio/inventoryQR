@@ -5,7 +5,9 @@ services:
     image: mariadb:10.4
     restart: always
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      # Explicit password avoids "Access denied for root" when the data volume
+      # was created under different settings or MariaDB remote auth differs from empty root.
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-medlab_root_change_me}
       MYSQL_DATABASE: medlab_inventory
     ports:
       - "${DB_PORT:-3306}:3306"
@@ -15,7 +17,11 @@ services:
     networks:
       - inventory_net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,7 +34,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_USER: root
-      PMA_PASSWORD: ""
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-medlab_root_change_me}
     networks:
       - inventory_net
     depends_on:
@@ -53,7 +59,7 @@ services:
       DB_HOST: db
       DB_NAME: medlab_inventory
       DB_USER: root
-      DB_PASS: ""
+      DB_PASS: ${MYSQL_ROOT_PASSWORD:-medlab_root_change_me}
       REDIS_HOST: redis
     volumes:
       - api_logs:/var/log/apache2
