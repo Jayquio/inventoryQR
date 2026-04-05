@@ -13,7 +13,10 @@ class AppConfigService extends ChangeNotifier {
   // Shared API base URL constants (avoid duplicated literals)
   static const String _localApiBase = 'http://localhost:8081';
   static const String _androidEmulatorApiBase = 'http://10.0.2.2:8081';
-  static const String _productionApiBase = 'https://medtechinventorysystem.org';
+  static const String _productionApiBase = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://api.medtechinventorysystem.org',
+  );
 
   String _baseUrl = '';
   String get baseUrl => _baseUrl;
@@ -119,8 +122,8 @@ class AppConfigService extends ChangeNotifier {
         if (ok) return base;
       }
 
-      // Fallback to Docker port (most likely for your current setup)
-      return 'http://localhost:${AppNetwork.apiPort}';
+      // Fallback to production API instead of localhost if detection fails on web
+      return _productionApiBase;
     }
 
     final List<String> candidates = [
