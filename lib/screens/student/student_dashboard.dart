@@ -69,17 +69,22 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   void _notifyStatusChange(Request req) {
-    final title = req.status == RequestStatus.approved ? 'Request Approved' : 'Request Update';
-    final message = 'Your request for ${req.instrumentName} is now ${req.status.name}.';
-    
-    NotificationService.instance.add(NotificationItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      message: message,
-      type: req.status == RequestStatus.approved ? 'success' : 'info',
-      timestamp: DateTime.now().toIso8601String(),
-      recipient: 'Student',
-    ));
+    final title = req.status == RequestStatus.approved
+        ? 'Request Approved'
+        : 'Request Update';
+    final message =
+        'Your request for ${req.instrumentName} is now ${req.status.name}.';
+
+    NotificationService.instance.add(
+      NotificationItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title,
+        message: message,
+        type: req.status == RequestStatus.approved ? 'success' : 'info',
+        timestamp: DateTime.now().toIso8601String(),
+        recipient: 'Student',
+      ),
+    );
   }
 
   @override
@@ -92,9 +97,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
     final myRequests = _requests;
-    final pendingRequests = myRequests.where((req) => req.status == RequestStatus.pending).length;
-    final approvedRequests = myRequests.where((req) => req.status == RequestStatus.approved).length;
-    final availableInstruments = _instruments.where((inst) => inst.available > 0).length;
+    final pendingRequests = myRequests
+        .where((req) => req.status == RequestStatus.pending)
+        .length;
+    final approvedRequests = myRequests
+        .where((req) => req.status == RequestStatus.approved)
+        .length;
+    final availableInstruments = _instruments
+        .where((inst) => inst.available > 0)
+        .length;
 
     return Scaffold(
       appBar: _buildAppBar(),
@@ -123,16 +134,29 @@ class _StudentDashboardState extends State<StudentDashboard> {
               const SizedBox(height: 24),
               _buildSectionTitle('Overview', w),
               const SizedBox(height: 16),
-              _buildOverviewSection(context, myRequests.length, pendingRequests, approvedRequests, availableInstruments),
+              _buildOverviewSection(
+                context,
+                myRequests.length,
+                pendingRequests,
+                approvedRequests,
+                availableInstruments,
+              ),
               const SizedBox(height: 32),
               _buildSectionTitle('Quick Actions', w),
               const SizedBox(height: 16),
-              _buildQuickActionsGrid(myRequests.length, pendingRequests, approvedRequests, availableInstruments),
+              _buildQuickActionsGrid(
+                myRequests.length,
+                pendingRequests,
+                approvedRequests,
+                availableInstruments,
+              ),
               const SizedBox(height: 24),
               if (myRequests.isNotEmpty) ...[
                 _buildSectionTitle('Recent Requests', w),
                 const SizedBox(height: 16),
-                ...myRequests.take(3).map((request) => _buildRecentRequestCard(request)),
+                ...myRequests
+                    .take(3)
+                    .map((request) => _buildRecentRequestCard(request)),
               ],
               const SizedBox(height: 24),
               _buildSectionTitle('Important Notices', w),
@@ -150,12 +174,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
       title: const Text("Student Dashboard"),
       backgroundColor: AppTheme.primaryColor,
       actions: [
-        const NotificationIcon(recipients: ['Student'], types: ['success', 'info', 'error']),
+        const NotificationIcon(
+          recipients: ['Student'],
+          types: ['success', 'info', 'error'],
+        ),
         IconButton(
           icon: const Icon(Icons.logout),
           onPressed: () {
             ModuleSearchController.instance.setQuery('');
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+            );
           },
           tooltip: 'Logout',
         ),
@@ -166,9 +197,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget _buildWelcomeCard() {
     return Card(
       elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -189,10 +218,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             const SizedBox(height: 8),
             const Text(
               'Access laboratory instruments for your research',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.white70),
             ),
           ],
         ),
@@ -211,7 +237,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildOverviewSection(BuildContext context, int total, int pending, int approved, int available) {
+  Widget _buildOverviewSection(
+    BuildContext context,
+    int total,
+    int pending,
+    int approved,
+    int available,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
@@ -258,7 +290,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
               available.toString(),
               Icons.inventory,
               AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Student'),
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.viewInstruments,
+                arguments: 'Student',
+              ),
             ),
           ],
         ),
@@ -266,10 +302,21 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildQuickActionsGrid(int total, int pending, int approved, int available) {
+  Widget _buildQuickActionsGrid(
+    int total,
+    int pending,
+    int approved,
+    int available,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
+        final crossAxisCount = R.columns(
+          constraints.maxWidth,
+          xs: 3,
+          sm: 3,
+          md: 4,
+          lg: 5,
+        );
         return GridView.count(
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
@@ -290,7 +337,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
               title: 'Scan QR',
               icon: Icons.qr_code_scanner,
               color: AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Student'),
+              onTap: () => Navigator.pushNamed(
+                context,
+                '/qr_scanner',
+                arguments: 'Student',
+              ),
             ),
             _buildActionCard(
               context,
@@ -304,7 +355,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
               title: 'Instruments',
               icon: Icons.inventory,
               color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments),
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.viewInstruments),
             ),
             _buildActionCard(
               context,
@@ -318,7 +370,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
               title: 'Overview',
               icon: Icons.dashboard,
               color: AppTheme.primaryColor,
-              onTap: () => _showOverviewDialog(context, total, pending, approved, available),
+              onTap: () => _showOverviewDialog(
+                context,
+                total,
+                pending,
+                approved,
+                available,
+              ),
             ),
           ],
         );
@@ -330,9 +388,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -374,9 +430,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return Card(
       elevation: 4,
       color: AppTheme.wisteriaLight,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: const Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -406,7 +460,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  void _showOverviewDialog(BuildContext context, int total, int pending, int approved, int available) {
+  void _showOverviewDialog(
+    BuildContext context,
+    int total,
+    int pending,
+    int approved,
+    int available,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -416,15 +476,38 @@ class _StudentDashboardState extends State<StudentDashboard> {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _overviewStatTile(color: AppTheme.primaryColor, icon: Icons.pending, value: '$pending', label: 'My Pending'),
-              _overviewStatTile(color: AppTheme.secondaryColor, icon: Icons.check_circle, value: '$approved', label: 'My Approved'),
-              _overviewStatTile(color: Colors.blue, icon: Icons.assignment, value: '$total', label: 'My Total'),
-              _overviewStatTile(color: AppTheme.secondaryColor, icon: Icons.inventory, value: '$available', label: 'Available'),
+              _overviewStatTile(
+                color: AppTheme.primaryColor,
+                icon: Icons.pending,
+                value: '$pending',
+                label: 'My Pending',
+              ),
+              _overviewStatTile(
+                color: AppTheme.secondaryColor,
+                icon: Icons.check_circle,
+                value: '$approved',
+                label: 'My Approved',
+              ),
+              _overviewStatTile(
+                color: Colors.blue,
+                icon: Icons.assignment,
+                value: '$total',
+                label: 'My Total',
+              ),
+              _overviewStatTile(
+                color: AppTheme.secondaryColor,
+                icon: Icons.inventory,
+                value: '$available',
+                label: 'Available',
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -460,7 +543,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               Text(label, style: const TextStyle(color: Colors.black87)),
             ],
           ),
@@ -469,7 +559,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+  Widget _buildStatItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -515,7 +612,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
- 
   Widget _buildActionCard(
     BuildContext context, {
     required String title,
@@ -532,7 +628,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -597,7 +696,4 @@ class _StudentDashboardState extends State<StudentDashboard> {
         return 'Returned';
     }
   }
-
 }
-
- 

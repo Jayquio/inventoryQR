@@ -104,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
       controller: _usernameController,
       onChanged: (v) => setState(() {}), // Refresh to show superadmin settings
       decoration: InputDecoration(
-        labelText: 'Username',
+        labelText: 'Username or Email',
         prefixIcon: const Icon(
           Icons.person_outline,
           color: AppTheme.primaryColor,
@@ -178,17 +178,23 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildRegisterLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Text("Don't have an account? "),
+        const Text("Don't have an account?", style: TextStyle(fontSize: 14)),
         TextButton(
           onPressed: () => Navigator.pushNamed(context, AppRoutes.register),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           child: const Text(
             'Create Account',
             style: TextStyle(
               color: AppTheme.primaryColor,
               fontWeight: FontWeight.bold,
+              fontSize: 16,
             ),
           ),
         ),
@@ -241,6 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // Email domain restriction
     if (username != 'superadmin' &&
         username != 'admin' &&
+        username.contains('@') &&
         !username.endsWith('@jmc.edu.ph')) {
       _showError('Only jmc.edu.ph accounts are allowed.');
       return;
@@ -268,11 +275,24 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      await _completeLogin(username, role);
+      final dbUsername = res['username']?.toString() ?? username;
+      final dbEmail = res['email']?.toString();
+
+      await _completeLogin(dbUsername, role, email: dbEmail);
     } catch (e) {
-      _showError(e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) {
+        String msg = 'Login failed';
+        if (e.toString().contains('invalid_credentials')) {
+          msg = 'Invalid username or password';
+        } else if (e.toString().contains('Connection refused')) {
+          msg = 'Server connection error. Check your network.';
+        } else {
+          msg = e.toString().replaceFirst('Exception: ', '');
+        }
+        _showError(msg);
+      }
     } finally {
-      if (context.mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -318,9 +338,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _completeLogin(String username, UserRole role) async {
+  Future<void> _completeLogin(
+    String username,
+    UserRole role, {
+    String? email,
+  }) async {
     AuthService.instance.setUsername(username);
     AuthService.instance.setRole(role);
+    if (email != null) AuthService.instance.setEmail(email);
 
     NotificationService.instance.add(
       NotificationItem(

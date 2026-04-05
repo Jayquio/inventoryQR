@@ -13,6 +13,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -34,7 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: _buildRegisterCard(),
@@ -71,6 +72,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+              _buildEmailField(),
+              const SizedBox(height: 16),
               _buildUsernameField(),
               const SizedBox(height: 16),
               _buildRoleDropdown(),
@@ -87,17 +90,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildUsernameField() {
+  Widget _buildEmailField() {
     return TextFormField(
-      controller: _usernameController,
+      controller: _emailController,
       decoration: InputDecoration(
-        labelText: 'Email (@jmc.edu.ph)',
+        labelText: 'JMC Email',
         prefixIcon: const Icon(Icons.email_outlined),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: (v) {
         if (v == null || v.isEmpty) return 'Required';
         if (!v.endsWith('@jmc.edu.ph')) return 'Must use @jmc.edu.ph email';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildUsernameField() {
+    return TextFormField(
+      controller: _usernameController,
+      decoration: InputDecoration(
+        labelText: 'Username',
+        prefixIcon: const Icon(Icons.person_outline),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      validator: (v) {
+        if (v == null || v.isEmpty) return 'Required';
+        if (v.length < 3) return 'Too short';
         return null;
       },
     );
@@ -176,6 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         username: _usernameController.text.trim(),
         password: _passwordController.text,
         role: _selectedRole.toLowerCase(),
+        email: _emailController.text.trim(),
       );
 
       if (mounted) {

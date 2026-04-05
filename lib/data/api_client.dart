@@ -21,7 +21,11 @@ class ApiClient {
 
   static String _baseUrl() {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
-    if (kIsWeb) return 'http://localhost:${AppNetwork.apiPort}';
+    if (kIsWeb) {
+      // For production web, we use a relative path if served from the same domain
+      // If the API is at /inventory_api, this will work correctly.
+      return '/inventory_api';
+    }
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8081';
     }
@@ -44,7 +48,9 @@ class ApiClient {
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       return body.cast<String, dynamic>();
     }
-    final msg = body is Map ? (body['error'] ?? 'login_failed') : 'login_failed';
+    final msg = body is Map
+        ? (body['error'] ?? 'login_failed')
+        : 'login_failed';
     throw Exception(msg.toString());
   }
 
@@ -52,20 +58,28 @@ class ApiClient {
     required String username,
     required String password,
     required String role,
+    String? email,
   }) async {
     final uri = Uri.parse('${_baseUrl()}/create_user.php');
     final res = await http
         .post(
           uri,
           headers: _jsonHeaders,
-          body: jsonEncode({'username': username, 'password': password, 'role': role}),
+          body: jsonEncode({
+            'username': username,
+            'password': password,
+            'role': role,
+            if (email != null) 'email': email,
+          }),
         )
         .timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       return body.cast<String, dynamic>();
     }
-    final msg = body is Map ? (body['error'] ?? 'create_failed') : 'create_failed';
+    final msg = body is Map
+        ? (body['error'] ?? 'create_failed')
+        : 'create_failed';
     throw Exception(msg.toString());
   }
 
@@ -81,17 +95,15 @@ class ApiClient {
       if (role != null && role.isNotEmpty) 'role': role,
     };
     final res = await http
-        .post(
-          uri,
-          headers: _jsonHeaders,
-          body: jsonEncode(payload),
-        )
+        .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       return body.cast<String, dynamic>();
     }
-    final msg = body is Map ? (body['error'] ?? 'update_failed') : 'update_failed';
+    final msg = body is Map
+        ? (body['error'] ?? 'update_failed')
+        : 'update_failed';
     throw Exception(msg.toString());
   }
 
@@ -106,18 +118,25 @@ class ApiClient {
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
-      final msg = body is Map ? (body['error'] ?? 'delete_failed') : 'delete_failed';
+      final msg = body is Map
+          ? (body['error'] ?? 'delete_failed')
+          : 'delete_failed';
       throw Exception(msg.toString());
     }
   }
 
   Future<List<Map<String, dynamic>>> fetchUsers() async {
     final uri = Uri.parse('${_baseUrl()}/users_list.php');
-    final res = await http.get(uri, headers: _authHeaders).timeout(const Duration(seconds: 15));
+    final res = await http
+        .get(uri, headers: _authHeaders)
+        .timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
-      return data.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+      return data
+          .whereType<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList();
     }
     final msg = body is Map ? (body['error'] ?? 'load_failed') : 'load_failed';
     throw Exception(msg.toString());
@@ -125,7 +144,9 @@ class ApiClient {
 
   Future<bool> ping() async {
     final uri = Uri.parse('${_baseUrl()}/ping.php');
-    final res = await http.get(uri, headers: _authHeaders).timeout(const Duration(seconds: 5));
+    final res = await http
+        .get(uri, headers: _authHeaders)
+        .timeout(const Duration(seconds: 5));
     if (res.statusCode == 200) {
       final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
       return body is Map && body['ok'] == true;
@@ -135,7 +156,9 @@ class ApiClient {
 
   Future<List<Instrument>> fetchInstruments() async {
     final uri = Uri.parse('${_baseUrl()}/instruments_list.php');
-    final res = await http.get(uri, headers: _authHeaders).timeout(const Duration(seconds: 15));
+    final res = await http
+        .get(uri, headers: _authHeaders)
+        .timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
@@ -151,68 +174,72 @@ class ApiClient {
   Future<void> createInstrument({required Instrument instrument}) async {
     final uri = Uri.parse('${_baseUrl()}/instruments_create.php');
     final res = await http
-        .post(
-          uri,
-          headers: _jsonHeaders,
-          body: jsonEncode(instrument.toJson()),
-        )
+        .post(uri, headers: _jsonHeaders, body: jsonEncode(instrument.toJson()))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
-      final msg = body is Map ? (body['error'] ?? 'create_failed') : 'create_failed';
+      final msg = body is Map
+          ? (body['error'] ?? 'create_failed')
+          : 'create_failed';
       throw Exception(msg.toString());
     }
   }
 
-  Future<void> updateInstrument({required String originalName, required Instrument instrument}) async {
+  Future<void> updateInstrument({
+    required String originalName,
+    required Instrument instrument,
+  }) async {
     final uri = Uri.parse('${_baseUrl()}/instruments_update.php');
     final payload = {'originalName': originalName, ...instrument.toJson()};
     final res = await http
-        .post(
-          uri,
-          headers: _jsonHeaders,
-          body: jsonEncode(payload),
-        )
+        .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
-      final msg = body is Map ? (body['error'] ?? 'update_failed') : 'update_failed';
+      final msg = body is Map
+          ? (body['error'] ?? 'update_failed')
+          : 'update_failed';
       throw Exception(msg.toString());
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchRequests({String? studentName}) async {
+  Future<List<Map<String, dynamic>>> fetchRequests({
+    String? studentName,
+  }) async {
     final url = studentName != null && studentName.isNotEmpty
         ? '${_baseUrl()}/requests_list.php?student_name=${Uri.encodeQueryComponent(studentName)}'
         : '${_baseUrl()}/requests_list.php';
     final uri = Uri.parse(url);
-    final res = await http.get(uri, headers: _authHeaders).timeout(const Duration(seconds: 15));
+    final res = await http
+        .get(uri, headers: _authHeaders)
+        .timeout(const Duration(seconds: 15));
     final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
-      return data.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+      return data
+          .whereType<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList();
     }
     final msg = body is Map ? (body['error'] ?? 'load_failed') : 'load_failed';
     throw Exception(msg.toString());
   }
 
-  Future<void> updateRequestStatus({required String id, required String status, required String user}) async {
+  Future<void> updateRequestStatus({
+    required String id,
+    required String status,
+    required String user,
+  }) async {
     final uri = Uri.parse('${_baseUrl()}/requests_update_status.php');
-    final payload = {
-      'id': id,
-      'status': status,
-      'user': user,
-    };
+    final payload = {'id': id, 'status': status, 'user': user};
     final res = await http
-        .post(
-          uri,
-          headers: _jsonHeaders,
-          body: jsonEncode(payload),
-        )
+        .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
-      final msg = body is Map ? (body['error'] ?? 'update_failed') : 'update_failed';
+      final msg = body is Map
+          ? (body['error'] ?? 'update_failed')
+          : 'update_failed';
       throw Exception(msg.toString());
     }
   }
@@ -232,20 +259,20 @@ class ApiClient {
       'instrument_name': instrumentName,
       'quantity': quantity,
       'purpose': purpose,
-      if (serialNumber != null && serialNumber.isNotEmpty) 'serialNumber': serialNumber,
+      if (serialNumber != null && serialNumber.isNotEmpty)
+        'serialNumber': serialNumber,
       if (course != null && course.isNotEmpty) 'course': course,
-      if (neededAtIso != null && neededAtIso.isNotEmpty) 'needed_at': neededAtIso,
+      if (neededAtIso != null && neededAtIso.isNotEmpty)
+        'needed_at': neededAtIso,
     };
     final res = await http
-        .post(
-          uri,
-          headers: _jsonHeaders,
-          body: jsonEncode(payload),
-        )
+        .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
-      final msg = body is Map ? (body['error'] ?? 'request_failed') : 'request_failed';
+      final msg = body is Map
+          ? (body['error'] ?? 'request_failed')
+          : 'request_failed';
       throw Exception(msg.toString());
     }
   }
@@ -282,15 +309,13 @@ class ApiClient {
   Future<void> deleteRequest({required String id}) async {
     final uri = Uri.parse('${_baseUrl()}/request_delete.php');
     final res = await http
-        .post(
-          uri,
-          headers: _jsonHeaders,
-          body: jsonEncode({'id': id}),
-        )
+        .post(uri, headers: _jsonHeaders, body: jsonEncode({'id': id}))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
-      final msg = body is Map ? (body['error'] ?? 'delete_failed') : 'delete_failed';
+      final msg = body is Map
+          ? (body['error'] ?? 'delete_failed')
+          : 'delete_failed';
       throw Exception(msg.toString());
     }
   }

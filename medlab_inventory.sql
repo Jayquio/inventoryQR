@@ -209,6 +209,7 @@ INSERT INTO `transactions` (`id`, `instrument_name`, `type`, `processed_by`, `cr
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `username` varchar(64) NOT NULL,
+  `email` varchar(128) DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `role` enum('admin','teacher','student') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -217,14 +218,14 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `password`, `role`) VALUES
-(1, 'admin', 'admin', 'admin'),
-(2, 'teacher', 'teacher', 'teacher'),
-(3, 'student', 'student', 'student'),
-(4, 'dmcb', 'dmcb', 'student'),
-(5, 'ryota-kun', 'arigato', 'teacher'),
-(6, 'alexa', 'alexa123', 'student'),
-(10, 'jq', '123', 'teacher');
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`) VALUES
+(1, 'admin', 'admin@inventory.com', 'admin', 'admin'),
+(2, 'teacher', 'teacher@jmc.edu.ph', 'teacher', 'teacher'),
+(3, 'student', 'student@jmc.edu.ph', 'student', 'student'),
+(4, 'dmcb', 'dmcb@jmc.edu.ph', 'dmcb', 'student'),
+(5, 'ryota-kun', 'ryota@jmc.edu.ph', 'arigato', 'teacher'),
+(6, 'alexa', 'alexa@jmc.edu.ph', 'alexa123', 'student'),
+(10, 'jq', 'jayquio.lagrama@jmc.edu.ph', '123', 'teacher');
 
 --
 -- Indexes for dumped tables

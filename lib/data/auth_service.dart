@@ -8,9 +8,11 @@ class AuthService extends ChangeNotifier {
 
   UserRole _currentRole = UserRole.student;
   String _currentUsername = 'guest';
+  String _currentUserEmail = '';
 
   UserRole get currentRole => _currentRole;
   String get currentUsername => _currentUsername;
+  String get currentUserEmail => _currentUserEmail;
 
   void setRole(UserRole role) {
     _currentRole = role;
@@ -19,6 +21,11 @@ class AuthService extends ChangeNotifier {
 
   void setUsername(String username) {
     _currentUsername = username;
+    notifyListeners();
+  }
+
+  void setEmail(String email) {
+    _currentUserEmail = email;
     notifyListeners();
   }
 

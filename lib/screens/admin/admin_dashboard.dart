@@ -16,7 +16,7 @@ import '../../data/auth_service.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
- 
+
   @override
   Widget build(BuildContext context) {
     return RoleGuard(
@@ -27,7 +27,10 @@ class AdminDashboard extends StatelessWidget {
           title: const Text("Admin Dashboard"),
           backgroundColor: AppTheme.primaryColor,
           actions: [
-            const NotificationIcon(recipients: ['Admin'], types: ['login', 'request']),
+            const NotificationIcon(
+              recipients: ['Admin'],
+              types: ['login', 'request'],
+            ),
             IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () {
@@ -44,15 +47,8 @@ class AdminDashboard extends StatelessWidget {
       ),
     );
   }
-
- 
-
- 
-
 }
 
- 
- 
 class _OperationalStatusIndicator extends StatelessWidget {
   const _OperationalStatusIndicator();
 
@@ -71,10 +67,7 @@ class _OperationalStatusIndicator extends StatelessWidget {
           SizedBox(width: 6),
           Text(
             'Operational',
-            style: TextStyle(
-              color: Colors.green,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -88,7 +81,8 @@ class _UpdatedTimeText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final tsText = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    final tsText =
+        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
     return Text(
       'Updated $tsText',
       style: const TextStyle(color: Colors.grey, fontSize: 12),
@@ -101,7 +95,7 @@ class _AdminDashboardBody extends StatefulWidget {
   @override
   State<_AdminDashboardBody> createState() => _AdminDashboardBodyState();
 }
- 
+
 class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   final TextEditingController _searchController = TextEditingController();
   bool _recentExpanded = true;
@@ -112,7 +106,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   List<Map<String, dynamic>> _requests = [];
   bool _isLoading = true;
   String? _error;
- 
+
   @override
   void initState() {
     super.initState();
@@ -123,7 +117,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   }
 
   Future<void> _loadDashboardData() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final results = await Future.wait([
         ApiClient.instance.fetchInstruments(),
@@ -145,7 +142,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       }
     }
   }
- 
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -170,19 +167,27 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       return iso;
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
 
     // Compute stats from real API data
     final totalInstruments = _instruments.length;
-    final availableInstruments = _instruments.where((inst) => inst.available > 0).length;
-    final pendingRequests = _requests.where((req) => (req['status'] ?? '') == 'pending').length;
-    final approvedRequests = _requests.where((req) => (req['status'] ?? '') == 'approved').length;
-    final outOfStockInstruments = _instruments.where((inst) => inst.available == 0).length;
+    final availableInstruments = _instruments
+        .where((inst) => inst.available > 0)
+        .length;
+    final pendingRequests = _requests
+        .where((req) => (req['status'] ?? '') == 'pending')
+        .length;
+    final approvedRequests = _requests
+        .where((req) => (req['status'] ?? '') == 'approved')
+        .length;
+    final outOfStockInstruments = _instruments
+        .where((inst) => inst.available == 0)
+        .length;
     final searchTerm = _searchController.text.toLowerCase();
- 
+
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -193,7 +198,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
           children: [
             Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
             const SizedBox(height: 12),
-            Text('Failed to load dashboard', style: TextStyle(color: Colors.red.shade700, fontSize: 16)),
+            Text(
+              'Failed to load dashboard',
+              style: TextStyle(color: Colors.red.shade700, fontSize: 16),
+            ),
             const SizedBox(height: 8),
             ElevatedButton.icon(
               onPressed: _loadDashboardData,
@@ -227,7 +235,14 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                 const SizedBox(height: 24),
                 _buildSectionTitle('Quick Overview', w),
                 const SizedBox(height: 12),
-                _buildOverviewSection(context, totalInstruments, availableInstruments, pendingRequests, approvedRequests, outOfStockInstruments),
+                _buildOverviewSection(
+                  context,
+                  totalInstruments,
+                  availableInstruments,
+                  pendingRequests,
+                  approvedRequests,
+                  outOfStockInstruments,
+                ),
                 const SizedBox(height: 24),
                 _buildSectionTitle('Quick Actions', w),
                 const SizedBox(height: 12),
@@ -255,9 +270,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   Widget _buildWelcomeCard() {
     return Card(
       elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -278,10 +291,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
             const SizedBox(height: 8),
             const Text(
               'Manage your laboratory inventory efficiently',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.white70),
             ),
           ],
         ),
@@ -300,7 +310,14 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     );
   }
 
-  Widget _buildOverviewSection(BuildContext context, int total, int available, int pending, int approved, int outOfStock) {
+  Widget _buildOverviewSection(
+    BuildContext context,
+    int total,
+    int available,
+    int pending,
+    int approved,
+    int outOfStock,
+  ) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -309,18 +326,62 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildStatCard(context, 'Total', total.toString(), Icons.inventory_2, AppTheme.primaryColor, AppRoutes.viewInstruments),
-            _buildStatCard(context, 'Available', available.toString(), Icons.check_circle_outline, Colors.green, AppRoutes.viewInstruments),
-            _buildStatCard(context, 'Pending', pending.toString(), Icons.hourglass_top, Colors.orange, AppRoutes.manageRequests),
-            _buildStatCard(context, 'Approved', approved.toString(), Icons.assignment_turned_in, AppTheme.secondaryColor, AppRoutes.manageRequests, 'Return Queue'),
-            _buildStatCard(context, 'Out of Stock', outOfStock.toString(), Icons.remove_shopping_cart, Colors.red, AppRoutes.viewInstruments),
+            _buildStatCard(
+              context,
+              'Total',
+              total.toString(),
+              Icons.inventory_2,
+              AppTheme.primaryColor,
+              AppRoutes.viewInstruments,
+            ),
+            _buildStatCard(
+              context,
+              'Available',
+              available.toString(),
+              Icons.check_circle_outline,
+              Colors.green,
+              AppRoutes.viewInstruments,
+            ),
+            _buildStatCard(
+              context,
+              'Pending',
+              pending.toString(),
+              Icons.hourglass_top,
+              Colors.orange,
+              AppRoutes.manageRequests,
+            ),
+            _buildStatCard(
+              context,
+              'Approved',
+              approved.toString(),
+              Icons.assignment_turned_in,
+              AppTheme.secondaryColor,
+              AppRoutes.manageRequests,
+              'Return Queue',
+            ),
+            _buildStatCard(
+              context,
+              'Out of Stock',
+              outOfStock.toString(),
+              Icons.remove_shopping_cart,
+              Colors.red,
+              AppRoutes.viewInstruments,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color, String route, [Object? routeArguments]) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    String route, [
+    Object? routeArguments,
+  ]) {
     return GestureDetector(
       onTap: () {
         final navigator = Navigator.of(context);
@@ -394,7 +455,13 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   Widget _buildQuickActionsGrid(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
+        final crossAxisCount = R.columns(
+          constraints.maxWidth,
+          xs: 3,
+          sm: 3,
+          md: 4,
+          lg: 5,
+        );
         return GridView.count(
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
@@ -431,7 +498,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
               onTap: () {
                 final navigator = Navigator.of(context);
                 // Navigate to requests with Return Queue filter
-                navigator.pushNamed(AppRoutes.manageRequests, arguments: 'Return Queue');
+                navigator.pushNamed(
+                  AppRoutes.manageRequests,
+                  arguments: 'Return Queue',
+                );
               },
             ),
             _buildActionCard(
@@ -467,16 +537,25 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     );
   }
 
-  Widget _buildTransactionNotificationsCard(BuildContext context, String searchTerm) {
+  Widget _buildTransactionNotificationsCard(
+    BuildContext context,
+    String searchTerm,
+  ) {
     return AnimatedBuilder(
       animation: NotificationService.instance,
       builder: (context, _) {
-        final base = NotificationService.instance.notifications.take(20).toList();
+        final base = NotificationService.instance.notifications
+            .take(20)
+            .toList();
         final notifications = searchTerm.isEmpty
             ? base
             : base
-                .where((n) => '${n.title} ${n.message}'.toLowerCase().contains(searchTerm))
-                .toList();
+                  .where(
+                    (n) => '${n.title} ${n.message}'.toLowerCase().contains(
+                      searchTerm,
+                    ),
+                  )
+                  .toList();
         final unread = NotificationService.instance.unreadCount;
         return Card(
           elevation: 4,
@@ -523,10 +602,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
             const Expanded(
               child: Text(
                 'Transaction Logs',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -540,13 +616,13 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: TextButton.icon(
-            onPressed: () {
-              final navigator = Navigator.of(context);
-              navigator.pushNamed('/notification_center');
-            },
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('Open Center'),
-          ),
+              onPressed: () {
+                final navigator = Navigator.of(context);
+                navigator.pushNamed('/notification_center');
+              },
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Open Center'),
+            ),
           ),
         ),
       ],
@@ -560,10 +636,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         const SizedBox(width: 8),
         const Text(
           'Transaction Logs',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(width: 8),
         if (unread > 0) _buildUnreadPill(unread),
@@ -660,13 +733,12 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
   Widget _buildRecentActivityCard() {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: AnimatedBuilder(
         animation: NotificationService.instance,
         builder: (context, _) {
-          final pageItems = NotificationService.instance.getPaginatedNotifications(_notifPage);
+          final pageItems = NotificationService.instance
+              .getPaginatedNotifications(_notifPage);
           final total = NotificationService.instance.notifications.length;
           final totalPages = (total / 10).ceil();
           return Padding(
@@ -674,7 +746,8 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
             child: Column(
               children: [
                 _buildRecentActivityHeader(),
-                if (_recentExpanded) _buildRecentActivityExpandedBody(pageItems, totalPages),
+                if (_recentExpanded)
+                  _buildRecentActivityExpandedBody(pageItems, totalPages),
               ],
             ),
           );
@@ -703,7 +776,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     );
   }
 
-  Widget _buildRecentActivityExpandedBody(List<NotificationItem> pageItems, int totalPages) {
+  Widget _buildRecentActivityExpandedBody(
+    List<NotificationItem> pageItems,
+    int totalPages,
+  ) {
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -726,10 +802,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                _getTypeIcon(n.type),
-                color: _getTypeColor(n.type),
-              ),
+              Icon(_getTypeIcon(n.type), color: _getTypeColor(n.type)),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -770,21 +843,23 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     return Row(
       children: [
         TextButton(
-          onPressed: _notifPage > 0 ? () => setState(() => _notifPage -= 1) : null,
+          onPressed: _notifPage > 0
+              ? () => setState(() => _notifPage -= 1)
+              : null,
           child: const Text('Prev'),
         ),
         const SizedBox(width: 8),
         Text('Page ${_notifPage + 1} of $safeTotalPages'),
         const Spacer(),
         TextButton(
-          onPressed: (_notifPage + 1) < totalPages ? () => setState(() => _notifPage += 1) : null,
+          onPressed: (_notifPage + 1) < totalPages
+              ? () => setState(() => _notifPage += 1)
+              : null,
           child: const Text('Next'),
         ),
       ],
     );
   }
- 
-  
 
   Widget _buildActionCard(
     BuildContext context, {
@@ -802,7 +877,10 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -828,56 +906,64 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       ),
     );
   }
- 
+
   void _showAllDataDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('System Overview'),
-        content: Builder(builder: (context) {
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _overviewStatTile(
-                      color: Colors.blue,
-                      icon: Icons.inventory,
-                      value: _instruments.length.toString(),
-                      label: 'Total Instruments',
-                    ),
-                    _overviewStatTile(
-                      color: Colors.orange,
-                      icon: Icons.pending_actions,
-                      value: _requests.where((req) => (req['status'] ?? '') == 'pending').length.toString(),
-                      label: 'Active Requests',
-                    ),
-                    _overviewStatTile(
-                      color: Colors.green,
-                      icon: Icons.check_circle,
-                      value: _requests.where((req) => (req['status'] ?? '') == 'approved').length.toString(),
-                      label: 'Approved Requests',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Divider(height: 1),
-                const SizedBox(height: 12),
-                const Row(
-                  children: [
-                    _OperationalStatusIndicator(),
-                    Spacer(),
-                    _UpdatedTimeText(),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }),
+        content: Builder(
+          builder: (context) {
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _overviewStatTile(
+                        color: Colors.blue,
+                        icon: Icons.inventory,
+                        value: _instruments.length.toString(),
+                        label: 'Total Instruments',
+                      ),
+                      _overviewStatTile(
+                        color: Colors.orange,
+                        icon: Icons.pending_actions,
+                        value: _requests
+                            .where((req) => (req['status'] ?? '') == 'pending')
+                            .length
+                            .toString(),
+                        label: 'Active Requests',
+                      ),
+                      _overviewStatTile(
+                        color: Colors.green,
+                        icon: Icons.check_circle,
+                        value: _requests
+                            .where((req) => (req['status'] ?? '') == 'approved')
+                            .length
+                            .toString(),
+                        label: 'Approved Requests',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 12),
+                  const Row(
+                    children: [
+                      _OperationalStatusIndicator(),
+                      Spacer(),
+                      _UpdatedTimeText(),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
         actions: [
           TextButton(
             onPressed: () {
@@ -894,7 +980,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       ),
     );
   }
- 
+
   Widget _overviewStatTile({
     required Color color,
     required IconData icon,
@@ -936,10 +1022,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
               const SizedBox(height: 2),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.black87, fontSize: 12),
               ),
             ],
           ),
@@ -947,7 +1030,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       ),
     );
   }
- 
+
   Color _getTypeColor(String type) {
     switch (type) {
       case 'error':
@@ -962,7 +1045,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
         return Colors.grey;
     }
   }
- 
+
   IconData _getTypeIcon(String type) {
     switch (type) {
       case 'error':

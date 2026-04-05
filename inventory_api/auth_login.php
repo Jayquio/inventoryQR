@@ -9,12 +9,12 @@ if ($username === '' || $password === '') {
   json_out(['error' => 'missing_fields'], 400);
 }
 
-$stmt = $pdo->prepare('SELECT id, username, password, role FROM users WHERE username = ?');
-$stmt->execute([$username]);
+$stmt = $pdo->prepare('SELECT id, username, email, password, role FROM users WHERE username = ? OR email = ?');
+$stmt->execute([$username, $username]);
 $row = $stmt->fetch();
 
 if (!$row || $password !== $row['password']) {
   json_out(['error' => 'invalid_credentials'], 401);
 }
 
-json_out(['ok' => true, 'username' => $row['username'], 'role' => $row['role']]);
+json_out(['ok' => true, 'username' => $row['username'], 'email' => $row['email'], 'role' => $row['role']]);

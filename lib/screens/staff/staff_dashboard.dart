@@ -69,17 +69,22 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
   }
 
   void _notifyStatusChange(Request req) {
-    final title = req.status == RequestStatus.approved ? 'Request Approved' : 'Request Update';
-    final message = 'Your request for ${req.instrumentName} is now ${req.status.name}.';
-    
-    NotificationService.instance.add(NotificationItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      message: message,
-      type: req.status == RequestStatus.approved ? 'success' : 'info',
-      timestamp: DateTime.now().toIso8601String(),
-      recipient: 'Teacher',
-    ));
+    final title = req.status == RequestStatus.approved
+        ? 'Request Approved'
+        : 'Request Update';
+    final message =
+        'Your request for ${req.instrumentName} is now ${req.status.name}.';
+
+    NotificationService.instance.add(
+      NotificationItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title,
+        message: message,
+        type: req.status == RequestStatus.approved ? 'success' : 'info',
+        timestamp: DateTime.now().toIso8601String(),
+        recipient: 'Teacher',
+      ),
+    );
   }
 
   @override
@@ -91,12 +96,18 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    
+
     // Filter for individual user data only
     final myRequests = _requests;
-    final pendingRequests = myRequests.where((req) => req.status == RequestStatus.pending).length;
-    final approvedRequests = myRequests.where((req) => req.status == RequestStatus.approved).length;
-    final availableInstruments = _instruments.where((inst) => inst.available > 0).length;
+    final pendingRequests = myRequests
+        .where((req) => req.status == RequestStatus.pending)
+        .length;
+    final approvedRequests = myRequests
+        .where((req) => req.status == RequestStatus.approved)
+        .length;
+    final availableInstruments = _instruments
+        .where((inst) => inst.available > 0)
+        .length;
 
     return Scaffold(
       appBar: _buildAppBar(),
@@ -125,16 +136,29 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               const SizedBox(height: 24),
               _buildSectionTitle('Overview', w),
               const SizedBox(height: 16),
-              _buildOverviewSection(context, myRequests.length, pendingRequests, approvedRequests, availableInstruments),
+              _buildOverviewSection(
+                context,
+                myRequests.length,
+                pendingRequests,
+                approvedRequests,
+                availableInstruments,
+              ),
               const SizedBox(height: 32),
               _buildSectionTitle('Quick Actions', w),
               const SizedBox(height: 16),
-              _buildQuickActionsGrid(myRequests.length, pendingRequests, approvedRequests, availableInstruments),
+              _buildQuickActionsGrid(
+                myRequests.length,
+                pendingRequests,
+                approvedRequests,
+                availableInstruments,
+              ),
               const SizedBox(height: 24),
               if (myRequests.isNotEmpty) ...[
                 _buildSectionTitle('Recent Requests', w),
                 const SizedBox(height: 16),
-                ...myRequests.take(3).map((request) => _buildRecentRequestCard(request)),
+                ...myRequests
+                    .take(3)
+                    .map((request) => _buildRecentRequestCard(request)),
               ],
               const SizedBox(height: 24),
               _buildSectionTitle('Important Notices', w),
@@ -152,12 +176,19 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
       title: const Text("Teacher Dashboard"),
       backgroundColor: AppTheme.primaryColor,
       actions: [
-        const NotificationIcon(recipients: ['Teacher'], types: ['request', 'info', 'success']),
+        const NotificationIcon(
+          recipients: ['Teacher'],
+          types: ['request', 'info', 'success'],
+        ),
         IconButton(
           icon: const Icon(Icons.logout),
           onPressed: () {
             ModuleSearchController.instance.setQuery('');
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+            );
           },
           tooltip: 'Logout',
         ),
@@ -168,9 +199,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
   Widget _buildWelcomeCard() {
     return Card(
       elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -191,10 +220,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
             const SizedBox(height: 8),
             const Text(
               'Request instruments and track your borrowing status',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.white70),
             ),
           ],
         ),
@@ -213,7 +239,13 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     );
   }
 
-  Widget _buildOverviewSection(BuildContext context, int total, int pending, int approved, int available) {
+  Widget _buildOverviewSection(
+    BuildContext context,
+    int total,
+    int pending,
+    int approved,
+    int available,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
@@ -260,7 +292,11 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               available.toString(),
               Icons.inventory,
               AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.viewInstruments,
+                arguments: 'Teacher',
+              ),
             ),
           ],
         ),
@@ -268,10 +304,21 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     );
   }
 
-  Widget _buildQuickActionsGrid(int total, int pending, int approved, int available) {
+  Widget _buildQuickActionsGrid(
+    int total,
+    int pending,
+    int approved,
+    int available,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = R.columns(constraints.maxWidth, xs: 3, sm: 3, md: 4, lg: 5);
+        final crossAxisCount = R.columns(
+          constraints.maxWidth,
+          xs: 3,
+          sm: 3,
+          md: 4,
+          lg: 5,
+        );
         return GridView.count(
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
@@ -292,7 +339,11 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               title: 'Scan QR',
               icon: Icons.qr_code_scanner,
               color: AppTheme.secondaryColor,
-              onTap: () => Navigator.pushNamed(context, '/qr_scanner', arguments: 'Teacher'),
+              onTap: () => Navigator.pushNamed(
+                context,
+                '/qr_scanner',
+                arguments: 'Teacher',
+              ),
             ),
             _buildActionCard(
               context,
@@ -306,7 +357,11 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               title: 'Monitor',
               icon: Icons.inventory,
               color: AppTheme.primaryColor,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher'),
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.viewInstruments,
+                arguments: 'Teacher',
+              ),
             ),
             _buildActionCard(
               context,
@@ -320,7 +375,13 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
               title: 'Overview',
               icon: Icons.dashboard,
               color: AppTheme.primaryColor,
-              onTap: () => _showOverviewDialog(context, total, pending, approved, available),
+              onTap: () => _showOverviewDialog(
+                context,
+                total,
+                pending,
+                approved,
+                available,
+              ),
             ),
           ],
         );
@@ -332,9 +393,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -376,9 +435,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     return Card(
       elevation: 4,
       color: AppTheme.wisteriaLight,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: const Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -408,7 +465,13 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     );
   }
 
-  void _showOverviewDialog(BuildContext context, int total, int pending, int approved, int available) {
+  void _showOverviewDialog(
+    BuildContext context,
+    int total,
+    int pending,
+    int approved,
+    int available,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -418,15 +481,38 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _overviewStatTile(color: AppTheme.primaryColor, icon: Icons.pending, value: '$pending', label: 'My Pending'),
-              _overviewStatTile(color: AppTheme.secondaryColor, icon: Icons.check_circle, value: '$approved', label: 'My Approved'),
-              _overviewStatTile(color: Colors.blue, icon: Icons.assignment, value: '$total', label: 'My Total'),
-              _overviewStatTile(color: AppTheme.secondaryColor, icon: Icons.inventory, value: '$available', label: 'Available'),
+              _overviewStatTile(
+                color: AppTheme.primaryColor,
+                icon: Icons.pending,
+                value: '$pending',
+                label: 'My Pending',
+              ),
+              _overviewStatTile(
+                color: AppTheme.secondaryColor,
+                icon: Icons.check_circle,
+                value: '$approved',
+                label: 'My Approved',
+              ),
+              _overviewStatTile(
+                color: Colors.blue,
+                icon: Icons.assignment,
+                value: '$total',
+                label: 'My Total',
+              ),
+              _overviewStatTile(
+                color: AppTheme.secondaryColor,
+                icon: Icons.inventory,
+                value: '$available',
+                label: 'Available',
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -462,7 +548,14 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               Text(label, style: const TextStyle(color: Colors.black87)),
             ],
           ),
@@ -471,7 +564,14 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
     );
   }
 
-  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+  Widget _buildStatItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -533,7 +633,10 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -598,7 +701,4 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
         return 'Returned';
     }
   }
-
 }
-
- 
