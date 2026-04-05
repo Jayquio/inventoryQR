@@ -89,7 +89,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _showApiUrlDialog() async {
     final controller = TextEditingController(
-      text: AppConfigService.instance.baseUrl.isEmpty ? 'http://192.168.1.88/inventory_api' : AppConfigService.instance.baseUrl,
+      text: AppConfigService.instance.baseUrl.isEmpty ? 'https://medtechinventorysystem.org' : AppConfigService.instance.baseUrl,
+      selection: TextSelection.collapsed(offset: AppConfigService.instance.baseUrl.isEmpty ? 33 : AppConfigService.instance.baseUrl.length),
     );
     final newUrl = await showDialog<String>(
       context: context,
@@ -97,7 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Set API Base URL'),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'http://192.168.1.88/inventory_api'),
+          decoration: const InputDecoration(hintText: 'https://medtechinventorysystem.org'),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
