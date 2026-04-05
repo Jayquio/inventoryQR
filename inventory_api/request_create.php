@@ -37,13 +37,17 @@ if ($neededAt !== '' && strtotime($neededAt) === false) {
   json_out(['error' => 'invalid_needed_at'], 400);
 }
 
-// Enforce 3-day policy when needed_at is provided.
+// Enforce 3-day buffer policy (today not counted).
 if ($neededAt !== '') {
   $neededTs = strtotime($neededAt);
   if ($neededTs !== false) {
-    $minTs = strtotime('+3 days');
+    // Current date at midnight
+    $todayMidnight = strtotime('today midnight');
+    // First available date is 4 days from today's midnight (Today + 3 days buffer)
+    $minTs = $todayMidnight + (4 * 24 * 60 * 60); 
+    
     if ($neededTs < $minTs) {
-      json_out(['error' => 'needed_at_must_be_at_least_3_days_ahead'], 400);
+      json_out(['error' => 'needed_at_must_be_at_least_3_days_ahead_excluding_today'], 400);
     }
   }
 }

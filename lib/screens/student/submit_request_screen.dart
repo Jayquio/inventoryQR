@@ -118,6 +118,8 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   void _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
+    
+    final now = DateTime.now();
 
     if (_neededAt == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,11 +130,18 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       return;
     }
 
-    final minAllowed = DateTime.now().add(const Duration(days: 3));
+    // Enforce 4-day advance policy (Today + 3 full days buffer)
+    final minAllowed = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).add(const Duration(days: 4));
     if (_neededAt!.isBefore(minAllowed)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Requests must be filed at least 3 days before use'),
+          content: Text(
+            'Requests must be filed at least 3 days in advance (today not counted)',
+          ),
         ),
       );
       return;
@@ -379,13 +388,34 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
           ? item.name
           : null,
       items: uniqueNames.map((name) {
-        final instrument = allOptions.firstWhere((i) => i.name == name);
+        final instruments = allOptions.where((i) => i.name == name);
+        final totalAvailable = instruments.fold<int>(
+          0,
+          (sum, i) => sum + i.available,
+        );
+        final firstInstrument = instruments.first;
+
         return DropdownMenuItem<String>(
           value: name,
-          child: Text(
-            '[${instrument.type.toUpperCase()}] $name',
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  '[${firstInstrument.type.toUpperCase()}] $name',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+              Text(
+                'Avail: $totalAvailable',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: totalAvailable > 0 ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         );
       }).toList(),
@@ -533,17 +563,22 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
   Future<void> _pickDateTime() async {
     final now = DateTime.now();
-    // Enforce 3-day advance policy for all users
-    final firstAllowedDate = now.add(const Duration(days: 3));
-    
+    // Enforce 4-day advance policy (Today + 3 full days buffer)
+    // If today is April 1, April 2, 3, 4 are buffer, April 5 is the first available.
+    final firstAllowedDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).add(const Duration(days: 4));
+
     final date = await showDatePicker(
       context: context,
-      initialDate: _neededAt != null && _neededAt!.isAfter(firstAllowedDate) 
-          ? _neededAt! 
+      initialDate: _neededAt != null && _neededAt!.isAfter(firstAllowedDate)
+          ? _neededAt!
           : firstAllowedDate,
       firstDate: firstAllowedDate,
       lastDate: DateTime(now.year + 1),
-      helpText: 'Select Date (At least 3 days in advance)',
+      helpText: 'Select Date (At least 4 days from today)',
     );
     if (!mounted || date == null) return;
     final time = await showTimePicker(
