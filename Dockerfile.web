@@ -12,8 +12,10 @@ ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PAT
 WORKDIR /app
 COPY . .
 
-# Build argument for the API base URL
-ARG API_URL
+# Build argument for the API base URL (no trailing slash). Rebuild with
+# `docker compose build --no-cache web` after changing API_URL — the Flutter
+# step is heavily cached.
+ARG API_URL=https://api.medtechinventorysystem.org
 RUN flutter build web --release --dart-define=API_BASE_URL=$API_URL
 
 # Stage 2: Serve with Nginx

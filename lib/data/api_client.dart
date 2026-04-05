@@ -21,7 +21,7 @@ class ApiClient {
   static String _baseUrl() {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     // Fallback to production API URL for both web and mobile
-    return 'http://api.medtechinventorysystem.org';
+    return 'https://api.medtechinventorysystem.org';
   }
 
   Future<Map<String, dynamic>> login({

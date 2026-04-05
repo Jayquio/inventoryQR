@@ -15,7 +15,7 @@ class AppConfigService extends ChangeNotifier {
   static const String _androidEmulatorApiBase = 'http://10.0.2.2:8081';
   static const String _productionApiBase = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://api.medtechinventorysystem.org',
+    defaultValue: 'https://api.medtechinventorysystem.org',
   );
 
   String _baseUrl = '';
