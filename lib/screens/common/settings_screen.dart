@@ -18,18 +18,21 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-
   @override
   Widget build(BuildContext context) {
     final role = widget.userRole;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false),
+            onPressed: () => Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+            ),
             tooltip: 'Logout',
           ),
         ],
@@ -80,7 +83,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ListTile(
         leading: const Icon(Icons.cloud, color: Colors.blueGrey),
         title: const Text('API Server'),
-        subtitle: Text(AppConfigService.instance.baseUrl.isEmpty ? 'Default URL' : AppConfigService.instance.baseUrl),
+        subtitle: Text(
+          AppConfigService.instance.baseUrl.isEmpty
+              ? 'Default URL'
+              : AppConfigService.instance.baseUrl,
+        ),
         trailing: const Icon(Icons.edit),
         onTap: _showApiUrlDialog,
       ),
@@ -88,21 +95,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showApiUrlDialog() async {
-    final controller = TextEditingController(
-      text: AppConfigService.instance.baseUrl.isEmpty ? 'https://medtechinventorysystem.org' : AppConfigService.instance.baseUrl,
-      selection: TextSelection.collapsed(offset: AppConfigService.instance.baseUrl.isEmpty ? 33 : AppConfigService.instance.baseUrl.length),
-    );
+    final baseUrl = AppConfigService.instance.baseUrl.isEmpty
+        ? 'https://medtechinventorysystem.org'
+        : AppConfigService.instance.baseUrl;
+    final controller = TextEditingController(text: baseUrl);
+    controller.selection = TextSelection.collapsed(offset: baseUrl.length);
+
     final newUrl = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Set API Base URL'),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'https://medtechinventorysystem.org'),
+          decoration: const InputDecoration(
+            hintText: 'https://medtechinventorysystem.org',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, controller.text), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -110,7 +127,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await AppConfigService.instance.setBaseUrl(newUrl);
       ApiClient.setBaseUrl(AppConfigService.instance.baseUrl);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('API set to ${AppConfigService.instance.baseUrl}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('API set to ${AppConfigService.instance.baseUrl}'),
+        ),
+      );
     }
   }
 
@@ -125,7 +146,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final ok = await AppConfigService.instance.detectAndApply();
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(ok ? 'Detected: ${AppConfigService.instance.baseUrl}' : 'No server detected; set URL manually')),
+            SnackBar(
+              content: Text(
+                ok
+                    ? 'Detected: ${AppConfigService.instance.baseUrl}'
+                    : 'No server detected; set URL manually',
+              ),
+            ),
           );
         },
       ),
@@ -142,7 +169,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: () async {
           final ok = await ApiClient.instance.ping();
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'API reachable' : 'API not reachable')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ok ? 'API reachable' : 'API not reachable')),
+          );
         },
       ),
     );
@@ -172,7 +201,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Close'),
+                ),
               ],
             ),
           );
@@ -220,7 +252,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             TextButton(
               onPressed: () async {
                 await prefs.setBool('notifications_enabled', enabled);
@@ -232,7 +267,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification settings saved')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notification settings saved')),
+                );
               },
               child: const Text('Save'),
             ),
@@ -264,11 +301,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setStateDialog) => AlertDialog(
           title: const Text('Change Password'),
-          content: _buildPasswordDialogContent(newPwController, confirmPwController),
+          content: _buildPasswordDialogContent(
+            newPwController,
+            confirmPwController,
+          ),
           actions: [
-            TextButton(onPressed: submitting ? null : () => Navigator.pop(ctx), child: const Text('Cancel')),
             TextButton(
-              onPressed: submitting ? null : () => _handleChangePassword(ctx, setStateDialog, newPwController, confirmPwController, (val) => submitting = val),
+              onPressed: submitting ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: submitting
+                  ? null
+                  : () => _handleChangePassword(
+                      ctx,
+                      setStateDialog,
+                      newPwController,
+                      confirmPwController,
+                      (val) => submitting = val,
+                    ),
               child: const Text('Save'),
             ),
           ],
@@ -277,13 +328,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildPasswordDialogContent(TextEditingController p1, TextEditingController p2) {
+  Widget _buildPasswordDialogContent(
+    TextEditingController p1,
+    TextEditingController p2,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextField(controller: p1, obscureText: true, decoration: const InputDecoration(labelText: 'New Password')),
+        TextField(
+          controller: p1,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'New Password'),
+        ),
         const SizedBox(height: 8),
-        TextField(controller: p2, obscureText: true, decoration: const InputDecoration(labelText: 'Confirm Password')),
+        TextField(
+          controller: p2,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'Confirm Password'),
+        ),
       ],
     );
   }
@@ -302,10 +364,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     setStateDialog(() => setSubmitting(true));
     try {
-      await ApiClient.instance.updateUser(username: AuthService.instance.currentUsername, password: p1);
+      await ApiClient.instance.updateUser(
+        username: AuthService.instance.currentUsername,
+        password: p1,
+      );
       if (!mounted) return;
       if (ctx.mounted) Navigator.pop(ctx);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Password updated')));
     } catch (e) {
       setStateDialog(() => setSubmitting(false));
       if (!mounted) return;
@@ -317,11 +384,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _validatePasswords(String p1, String p2) {
     if (p1.isEmpty || p2.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter both fields')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter both fields')));
       return false;
     }
     if (p1 != p2) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
       return false;
     }
     return true;
@@ -346,17 +417,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
       showDragHandle: true,
       builder: (ctx) => ListView(
         children: [
-          _buildBottomSheetItem(ctx, Icons.people, 'User Management', '/user_management'),
-          _buildBottomSheetItem(ctx, Icons.inventory, 'Manage Instruments', '/manage_instruments'),
-          _buildBottomSheetItem(ctx, Icons.receipt_long, 'Transaction Logs', '/transaction_logs'),
-          _buildBottomSheetItem(ctx, Icons.notifications_active, 'Notification Center', '/notification_center'),
-          _buildBottomSheetItem(ctx, Icons.bar_chart, 'Generate Reports', '/generate_reports'),
+          _buildBottomSheetItem(
+            ctx,
+            Icons.people,
+            'User Management',
+            '/user_management',
+          ),
+          _buildBottomSheetItem(
+            ctx,
+            Icons.inventory,
+            'Manage Instruments',
+            '/manage_instruments',
+          ),
+          _buildBottomSheetItem(
+            ctx,
+            Icons.receipt_long,
+            'Transaction Logs',
+            '/transaction_logs',
+          ),
+          _buildBottomSheetItem(
+            ctx,
+            Icons.notifications_active,
+            'Notification Center',
+            '/notification_center',
+          ),
+          _buildBottomSheetItem(
+            ctx,
+            Icons.bar_chart,
+            'Generate Reports',
+            '/generate_reports',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomSheetItem(BuildContext ctx, IconData icon, String title, String route) {
+  Widget _buildBottomSheetItem(
+    BuildContext ctx,
+    IconData icon,
+    String title,
+    String route,
+  ) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
@@ -382,7 +483,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _showStaffPreferencesDialog() async {
     final prefs = await SharedPreferences.getInstance();
-    bool onlyPending = prefs.getBool('teacher_show_pending_only') ?? prefs.getBool('staff_show_pending_only') ?? true;
+    bool onlyPending =
+        prefs.getBool('teacher_show_pending_only') ??
+        prefs.getBool('staff_show_pending_only') ??
+        true;
     if (!mounted) return;
     showDialog(
       context: context,
@@ -400,12 +504,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             TextButton(
               onPressed: () async {
                 await prefs.setBool('teacher_show_pending_only', onlyPending);
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Work preferences saved')));
+                if (mounted)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Work preferences saved')),
+                  );
               },
               child: const Text('Save'),
             ),
@@ -434,9 +544,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       showDragHandle: true,
       builder: (ctx) => ListView(
         children: [
-          _buildBottomSheetItem(ctx, Icons.inventory, 'View Instruments', AppRoutes.viewInstruments),
-          _buildBottomSheetItem(ctx, Icons.add, 'Submit Request', '/submit_request'),
-          _buildBottomSheetItem(ctx, Icons.track_changes, 'Track Status', AppRoutes.trackStatus),
+          _buildBottomSheetItem(
+            ctx,
+            Icons.inventory,
+            'View Instruments',
+            AppRoutes.viewInstruments,
+          ),
+          _buildBottomSheetItem(
+            ctx,
+            Icons.add,
+            'Submit Request',
+            '/submit_request',
+          ),
+          _buildBottomSheetItem(
+            ctx,
+            Icons.track_changes,
+            'Track Status',
+            AppRoutes.trackStatus,
+          ),
         ],
       ),
     );
@@ -465,13 +590,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildThemeOption(ThemeMode.light, Icons.light_mode, 'Light', picked, (v) => setStateDialog(() => picked = v)),
-              _buildThemeOption(ThemeMode.dark, Icons.dark_mode, 'Dark', picked, (v) => setStateDialog(() => picked = v)),
-              _buildThemeOption(ThemeMode.system, Icons.phone_android, 'System', picked, (v) => setStateDialog(() => picked = v)),
+              _buildThemeOption(
+                ThemeMode.light,
+                Icons.light_mode,
+                'Light',
+                picked,
+                (v) => setStateDialog(() => picked = v),
+              ),
+              _buildThemeOption(
+                ThemeMode.dark,
+                Icons.dark_mode,
+                'Dark',
+                picked,
+                (v) => setStateDialog(() => picked = v),
+              ),
+              _buildThemeOption(
+                ThemeMode.system,
+                Icons.phone_android,
+                'System',
+                picked,
+                (v) => setStateDialog(() => picked = v),
+              ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             TextButton(
               onPressed: () async {
                 await ThemeService.instance.setMode(picked);
@@ -485,11 +631,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildThemeOption(ThemeMode mode, IconData icon, String title, ThemeMode current, ValueChanged<ThemeMode> onPicked) {
+  Widget _buildThemeOption(
+    ThemeMode mode,
+    IconData icon,
+    String title,
+    ThemeMode current,
+    ValueChanged<ThemeMode> onPicked,
+  ) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
-      trailing: current == mode ? const Icon(Icons.check, color: Colors.green) : null,
+      trailing: current == mode
+          ? const Icon(Icons.check, color: Colors.green)
+          : null,
       onTap: () => onPicked(mode),
     );
   }
@@ -503,7 +657,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: const Text('Get help and contact support'),
         trailing: const Icon(Icons.arrow_forward_ios),
         onTap: () {
-          final api = AppConfigService.instance.baseUrl.isEmpty ? 'Default URL' : AppConfigService.instance.baseUrl;
+          final api = AppConfigService.instance.baseUrl.isEmpty
+              ? 'Default URL'
+              : AppConfigService.instance.baseUrl;
           showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
@@ -512,13 +668,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('For assistance, contact your system administrator.'),
+                  const Text(
+                    'For assistance, contact your system administrator.',
+                  ),
                   const SizedBox(height: 8),
                   Text('API: $api'),
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Close'),
+                ),
               ],
             ),
           );

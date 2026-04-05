@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_inventorymanagement/models/instrument.dart';
-import 'package:flutter_application_inventorymanagement/core/constants.dart';
 
 class ApiClient {
   ApiClient._();
