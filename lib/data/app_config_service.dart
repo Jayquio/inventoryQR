@@ -11,12 +11,9 @@ class AppConfigService extends ChangeNotifier {
   static final AppConfigService instance = AppConfigService._();
 
   // Shared API base URL constants (avoid duplicated literals)
-  static const String _localApiBase = 'http://localhost/inventory_api';
-  static const String _androidEmulatorApiBase = 'http://10.0.2.2/inventory_api';
-  static const String _productionApiBase = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://your-site.org/api',
-  );
+  static const String _localApiBase = 'http://localhost:8081';
+  static const String _androidEmulatorApiBase = 'http://10.0.2.2:8081';
+  static const String _productionApiBase = 'https://medtechinventorysystem.org';
 
   String _baseUrl = '';
   String get baseUrl => _baseUrl;
@@ -42,6 +39,9 @@ class AppConfigService extends ChangeNotifier {
     final detected = await _detectBaseUrl();
     if (detected != null && detected.isNotEmpty) {
       await setBaseUrl(detected);
+    } else {
+      // If detection fails, use production as final fallback even in debug
+      await setBaseUrl(_productionApiBase);
     }
   }
 
@@ -134,7 +134,7 @@ class AppConfigService extends ChangeNotifier {
       if (ok) return base;
     }
 
-    return 'http://192.168.1.164:8081';
+    return null; // Let the caller decide the final fallback
   }
 
   Future<bool> _probe(String url) async {

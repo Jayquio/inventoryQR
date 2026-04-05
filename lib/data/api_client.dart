@@ -23,11 +23,11 @@ class ApiClient {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     if (kIsWeb) {
       // For production web, we use a relative path if served from the same domain
-      // If the API is at /inventory_api, this will work correctly.
-      return '/inventory_api';
+      // If the API is at the same origin as the web app, this will work.
+      return '';
     }
     // Production API URL for mobile devices
-    return 'https://medtechinventorysystem.org/inventory_api';
+    return 'https://medtechinventorysystem.org';
   }
 
   Future<Map<String, dynamic>> login({
