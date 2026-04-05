@@ -533,10 +533,14 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
   Future<void> _pickDateTime() async {
     final now = DateTime.now();
+    // Enforce 3-day advance policy for all users
     final firstAllowedDate = now.add(const Duration(days: 3));
+    
     final date = await showDatePicker(
       context: context,
-      initialDate: firstAllowedDate.isAfter(now) ? firstAllowedDate : now,
+      initialDate: _neededAt != null && _neededAt!.isAfter(firstAllowedDate) 
+          ? _neededAt! 
+          : firstAllowedDate,
       firstDate: firstAllowedDate,
       lastDate: DateTime(now.year + 1),
       helpText: 'Select Date (At least 3 days in advance)',
