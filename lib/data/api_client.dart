@@ -14,14 +14,31 @@ class ApiClient {
 
   static const Map<String, String> _authHeaders = {};
 
+  static const String _productionApiFallback =
+      'https://api.medtechinventorysystem.org';
+
+  static bool _isLocalhostUrl(String u) {
+    final lower = u.toLowerCase();
+    return lower.contains('localhost') || lower.contains('127.0.0.1');
+  }
+
+  /// On web, never keep a localhost base URL (browsers resolve it to the user's PC).
   static void setBaseUrl(String url) {
-    _overrideBaseUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
+    var u = url.trim().replaceAll(RegExp(r'/+$'), '');
+    if (kIsWeb && _isLocalhostUrl(u)) {
+      u = '';
+    }
+    _overrideBaseUrl = u;
   }
 
   static String _baseUrl() {
-    if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
-    // Fallback to production API URL for both web and mobile
-    return 'https://api.medtechinventorysystem.org';
+    if (_overrideBaseUrl.isNotEmpty) {
+      if (kIsWeb && _isLocalhostUrl(_overrideBaseUrl)) {
+        return _productionApiFallback;
+      }
+      return _overrideBaseUrl;
+    }
+    return _productionApiFallback;
   }
 
   Future<Map<String, dynamic>> login({
