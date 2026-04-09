@@ -546,7 +546,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       available: avail,
       status: controllers.status.text.trim(),
       condition: controllers.condition.text.trim(),
-      location: controllers.location.text.trim(),
+      location: 'Central Lab',
       lastMaintenance: controllers.lastMaintenance.text.trim(),
     );
   }
@@ -955,10 +955,6 @@ class _InstrumentFormContent extends StatelessWidget {
       _conditionOptions,
       controllers.condition.text,
     );
-    final locationOptions = _optionsWithCurrent(
-      _locationOptions,
-      controllers.location.text,
-    );
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1048,16 +1044,6 @@ class _InstrumentFormContent extends StatelessWidget {
                 .toList(),
             onChanged: (v) => controllers.condition.text = v ?? '',
             decoration: const InputDecoration(labelText: 'Condition'),
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: controllers.location.text.trim().isEmpty
-                ? null
-                : controllers.location.text.trim(),
-            items: locationOptions
-                .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
-                .toList(),
-            onChanged: (v) => controllers.location.text = v ?? '',
-            decoration: const InputDecoration(labelText: 'Location'),
           ),
           TextField(
             controller: controllers.lastMaintenance,

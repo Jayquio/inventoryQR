@@ -8,7 +8,11 @@ import '../../core/utils/qr_downloader.dart';
 class QrGeneratorScreen extends StatefulWidget {
   final String userRole;
   final String? preSelectedInstrument;
-  const QrGeneratorScreen({super.key, required this.userRole, this.preSelectedInstrument});
+  const QrGeneratorScreen({
+    super.key,
+    required this.userRole,
+    this.preSelectedInstrument,
+  });
 
   @override
   State<QrGeneratorScreen> createState() => _QrGeneratorScreenState();
@@ -24,7 +28,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
   bool _loading = true;
   bool _advanced = false;
 
-  final List<String> _caseCourses = [
+  final List<String> _cahseCourses = [
     'BS Pharmacy',
     'BS Biology',
     'BS Radiologic Technology',
@@ -47,7 +51,8 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
 
   Future<void> _load() async {
     try {
-      final List<Instrument> items = await ApiClient.instance.fetchInstruments();
+      final List<Instrument> items = await ApiClient.instance
+          .fetchInstruments();
       if (!mounted) return;
       setState(() {
         _instruments = items;
@@ -158,15 +163,23 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_selectedInstrument ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              _selectedInstrument ?? '',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             QrCodeService.instance.buildQrWidget(_payload!, size: 260),
             const SizedBox(height: 8),
-            const Text('Tip: Use system print or screenshot to create a label.'),
+            const Text(
+              'Tip: Use system print or screenshot to create a label.',
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -198,11 +211,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
       return const Wrap(
         spacing: 12,
         children: [
-          ChoiceChip(
-            label: Text('Label'),
-            selected: true,
-            onSelected: null,
-          ),
+          ChoiceChip(label: Text('Label'), selected: true, onSelected: null),
         ],
       );
     }
@@ -246,12 +255,16 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
           DropdownButtonFormField<String>(
             initialValue: _selectedInstrument,
             items: _instruments.map((inst) {
-              final serial = (inst.serialNumber != null && inst.serialNumber!.isNotEmpty)
+              final serial =
+                  (inst.serialNumber != null && inst.serialNumber!.isNotEmpty)
                   ? ' • SN: ${inst.serialNumber}'
                   : '';
               return DropdownMenuItem<String>(
                 value: inst.name,
-                child: Text('${inst.name}$serial', overflow: TextOverflow.ellipsis),
+                child: Text(
+                  '${inst.name}$serial',
+                  overflow: TextOverflow.ellipsis,
+                ),
               );
             }).toList(),
             onChanged: (v) => setState(() => _selectedInstrument = v),
@@ -268,12 +281,20 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Course (CASE)', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Course (CAHSE)',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: _selectedCourse,
-          items: _caseCourses
-              .map((c) => DropdownMenuItem<String>(value: c, child: Text(c, style: const TextStyle(fontSize: 12))))
+          items: _cahseCourses
+              .map(
+                (c) => DropdownMenuItem<String>(
+                  value: c,
+                  child: Text(c, style: const TextStyle(fontSize: 12)),
+                ),
+              )
               .toList(),
           onChanged: (v) => setState(() => _selectedCourse = v),
           decoration: const InputDecoration(
@@ -289,7 +310,10 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Scheduled Borrowing Date', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Scheduled Borrowing Date',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: () async {
@@ -301,16 +325,26 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
               lastDate: DateTime(now.year + 1),
             );
             if (!mounted || date == null) return;
-            
+
             final time = await showTimePicker(
               context: context,
               initialTime: TimeOfDay.fromDateTime(_neededAt ?? now),
             );
             if (!mounted || time == null) return;
-            setState(() => _neededAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+            setState(
+              () => _neededAt = DateTime(
+                date.year,
+                date.month,
+                date.day,
+                time.hour,
+                time.minute,
+              ),
+            );
           },
           icon: const Icon(Icons.calendar_today),
-          label: Text(_neededAt == null ? 'Set Schedule' : _formatNeededAt(_neededAt!)),
+          label: Text(
+            _neededAt == null ? 'Set Schedule' : _formatNeededAt(_neededAt!),
+          ),
         ),
       ],
     );
@@ -326,13 +360,20 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
 
   Widget _buildQrResult() {
     if (_payload == null) return const SizedBox.shrink();
-    final instName = (_selectedInstrument ?? 'qr').replaceAll(RegExp(r'\s+'), '_').toLowerCase();
+    final instName = (_selectedInstrument ?? 'qr')
+        .replaceAll(RegExp(r'\s+'), '_')
+        .toLowerCase();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Generated QR', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Generated QR',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
-        Center(child: QrCodeService.instance.buildQrWidget(_payload!, size: 220)),
+        Center(
+          child: QrCodeService.instance.buildQrWidget(_payload!, size: 220),
+        ),
         const SizedBox(height: 12),
         Center(
           child: ElevatedButton.icon(
@@ -350,7 +391,10 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Download failed: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text('Download failed: $e'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
@@ -364,7 +408,10 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        SelectableText(_payload!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        SelectableText(
+          _payload!,
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
       ],
     );
   }
@@ -401,7 +448,9 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
     try {
       String payload;
       if (!_advanced) {
-        payload = QrCodeService.instance.buildInstrumentLabelPayload(instrumentName: _selectedInstrument!);
+        payload = QrCodeService.instance.buildInstrumentLabelPayload(
+          instrumentName: _selectedInstrument!,
+        );
       } else {
         if (_selectedType == null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -418,9 +467,9 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
       }
       setState(() => _payload = payload);
     } on QrPermissionException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 }

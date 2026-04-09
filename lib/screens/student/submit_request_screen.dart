@@ -45,7 +45,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   bool _loading = true;
   String _typeFilter = 'All';
 
-  final List<String> _caseCourses = [
+  final List<String> _cahseCourses = [
     'BS Pharmacy',
     'BS Biology',
     'BS Radiologic Technology',
@@ -118,7 +118,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   void _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
-    
+
     final now = DateTime.now();
 
     if (_neededAt == null) {
@@ -532,10 +532,10 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
   Widget _buildCourseDropdown() {
     return DropdownButtonFormField<String>(
-      decoration: _inputDecoration('Course (CASE)', Icons.school),
+      decoration: _inputDecoration('Course (CAHSE)', Icons.school),
       isExpanded: true,
       initialValue: _selectedCourse,
-      items: _caseCourses.map((course) {
+      items: _cahseCourses.map((course) {
         return DropdownMenuItem<String>(
           value: course,
           child: Text(course, style: const TextStyle(fontSize: 13)),

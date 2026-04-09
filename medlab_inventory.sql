@@ -37,7 +37,7 @@ CREATE TABLE `instruments` (
   `available` int(11) NOT NULL DEFAULT 0,
   `status` varchar(32) DEFAULT NULL,
   `condition` varchar(32) DEFAULT NULL,
-  `location` varchar(64) DEFAULT NULL,
+  `location` varchar(64) DEFAULT 'Central Lab',
   `last_maintenance` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -46,12 +46,12 @@ CREATE TABLE `instruments` (
 --
 
 INSERT INTO `instruments` (`type`, `id`, `name`, `serial_number`, `category`, `quantity`, `available`, `status`, `condition`, `location`, `last_maintenance`) VALUES
-('instrument', 1, 'Microscope Olympus CX23', NULL, 'Microscopy', 5, 1, 'Available', 'Good', 'Lab Room A', '2024-10-15'),
-('instrument', 2, 'Centrifuge Machine', NULL, 'Sample Processing', 3, 0, 'Available', 'Good', 'Lab Room B', '2024-09-20'),
-('instrument', 3, 'Hematology Analyzer', NULL, 'Hematology', 2, 1, 'Available', 'Excellent', 'Lab Room C', '2024-08-05'),
-('instrument', 4, 'Clinical Chemistry Analyzer', NULL, 'Chemistry', 2, 1, 'In Use', 'Good', 'Lab Room C', '2024-07-18'),
-('instrument', 5, 'Autoclave Sterilizer', NULL, 'Sterilization', 1, 1, 'Available', 'Good', 'Sterilization Room', '2024-06-10'),
-('instrument', 6, 'microscope', NULL, 'yes', 10, 7, 'good', 'good', 'secret', '0000-00-00');
+('instrument', 1, 'Microscope Olympus CX23', NULL, 'Microscopy', 5, 1, 'Available', 'Good', 'Central Lab', '2024-10-15'),
+('instrument', 2, 'Centrifuge Machine', NULL, 'Sample Processing', 3, 0, 'Available', 'Good', 'Central Lab', '2024-09-20'),
+('instrument', 3, 'Hematology Analyzer', NULL, 'Hematology', 2, 1, 'Available', 'Excellent', 'Central Lab', '2024-08-05'),
+('instrument', 4, 'Clinical Chemistry Analyzer', NULL, 'Chemistry', 2, 1, 'In Use', 'Good', 'Central Lab', '2024-07-18'),
+('instrument', 5, 'Autoclave Sterilizer', NULL, 'Sterilization', 1, 1, 'Available', 'Good', 'Central Lab', '2024-06-10'),
+('instrument', 6, 'microscope', NULL, 'yes', 10, 7, 'good', 'good', 'Central Lab', '0000-00-00');
 
 --
 -- Triggers `instruments`
