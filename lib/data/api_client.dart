@@ -41,6 +41,19 @@ class ApiClient {
     return _productionApiFallback;
   }
 
+  dynamic _safeDecode(String body) {
+    if (body.isEmpty) return {};
+    try {
+      return jsonDecode(body);
+    } catch (e) {
+      // If not JSON, return a helpful error map
+      if (body.contains('<br />') || body.contains('<b>')) {
+        return {'error': 'Server Error (PHP): ' + body.replaceAll(RegExp(r'<[^>]*>'), ' ').trim()};
+      }
+      return {'error': 'Invalid server response: ' + body.substring(0, body.length > 100 ? 100 : body.length)};
+    }
+  }
+
   Future<Map<String, dynamic>> login({
     required String username,
     required String password,
@@ -53,7 +66,7 @@ class ApiClient {
           body: jsonEncode({'username': username, 'password': password}),
         )
         .timeout(const Duration(seconds: 15));
-    final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+    final body = _safeDecode(res.body);
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       return body.cast<String, dynamic>();
     }
@@ -82,7 +95,7 @@ class ApiClient {
           }),
         )
         .timeout(const Duration(seconds: 15));
-    final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+    final body = _safeDecode(res.body);
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       return body.cast<String, dynamic>();
     }
@@ -106,7 +119,7 @@ class ApiClient {
     final res = await http
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
-    final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+    final body = _safeDecode(res.body);
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       return body.cast<String, dynamic>();
     }
@@ -126,7 +139,7 @@ class ApiClient {
         )
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final body = _safeDecode(res.body);
       final msg = body is Map
           ? (body['error'] ?? 'delete_failed')
           : 'delete_failed';
@@ -139,7 +152,7 @@ class ApiClient {
     final res = await http
         .get(uri, headers: _authHeaders)
         .timeout(const Duration(seconds: 15));
-    final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+    final body = _safeDecode(res.body);
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
       return data
@@ -157,7 +170,7 @@ class ApiClient {
         .get(uri, headers: _authHeaders)
         .timeout(const Duration(seconds: 5));
     if (res.statusCode == 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final body = _safeDecode(res.body);
       return body is Map && body['ok'] == true;
     }
     return false;
@@ -168,7 +181,7 @@ class ApiClient {
     final res = await http
         .get(uri, headers: _authHeaders)
         .timeout(const Duration(seconds: 15));
-    final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+    final body = _safeDecode(res.body);
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
       return data
@@ -186,7 +199,7 @@ class ApiClient {
         .post(uri, headers: _jsonHeaders, body: jsonEncode(instrument.toJson()))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final body = _safeDecode(res.body);
       final msg = body is Map
           ? (body['error'] ?? 'create_failed')
           : 'create_failed';
@@ -204,7 +217,7 @@ class ApiClient {
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final body = _safeDecode(res.body);
       final msg = body is Map
           ? (body['error'] ?? 'update_failed')
           : 'update_failed';
@@ -229,7 +242,7 @@ class ApiClient {
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final body = _safeDecode(res.body);
       final msg = body is Map
           ? (body['error'] ?? 'update_failed')
           : 'update_failed';
@@ -247,7 +260,7 @@ class ApiClient {
     final res = await http
         .get(uri, headers: _authHeaders)
         .timeout(const Duration(seconds: 15));
-    final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+    final body = _safeDecode(res.body);
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final data = (body['data'] as List? ?? []);
       return data
@@ -270,7 +283,7 @@ class ApiClient {
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final body = _safeDecode(res.body);
       final msg = body is Map
           ? (body['error'] ?? 'update_failed')
           : 'update_failed';
@@ -303,7 +316,7 @@ class ApiClient {
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final body = _safeDecode(res.body);
       final msg = body is Map
           ? (body['error'] ?? 'request_failed')
           : 'request_failed';
@@ -330,7 +343,7 @@ class ApiClient {
           }),
         )
         .timeout(const Duration(seconds: 15));
-    final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+    final body = _safeDecode(res.body);
     if (res.statusCode == 200 && body is Map && body['ok'] == true) {
       final avail = body['available'];
       if (avail is int) return avail;
@@ -346,7 +359,7 @@ class ApiClient {
         .post(uri, headers: _jsonHeaders, body: jsonEncode({'id': id}))
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final body = _safeDecode(res.body);
       final msg = body is Map
           ? (body['error'] ?? 'delete_failed')
           : 'delete_failed';

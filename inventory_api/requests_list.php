@@ -4,8 +4,8 @@ require __DIR__ . '/db.php';
 $studentFilter = $_GET['student_name'] ?? '';
 
 $sql = 'SELECT r.id,
-               student_name AS studentName,
-               instrument_name AS instrumentName,
+               r.student_name AS studentName,
+               r.instrument_name AS instrumentName,
                r.quantity,
                r.purpose,
                r.course,
@@ -20,11 +20,15 @@ $sql = 'SELECT r.id,
         FROM requests r
         LEFT JOIN instruments i ON i.name = r.instrument_name';
 
-if ($studentFilter !== '') {
-    $stmt = $pdo->prepare($sql . ' WHERE r.student_name = ? ORDER BY r.id DESC');
-    $stmt->execute([$studentFilter]);
-} else {
-    $stmt = $pdo->query($sql . ' ORDER BY r.id DESC');
-}
+try {
+    if ($studentFilter !== '') {
+        $stmt = $pdo->prepare($sql . ' WHERE r.student_name = ? ORDER BY r.id DESC');
+        $stmt->execute([$studentFilter]);
+    } else {
+        $stmt = $pdo->query($sql . ' ORDER BY r.id DESC');
+    }
 
-json_out(['ok' => true, 'data' => $stmt->fetchAll()]);
+    json_out(['ok' => true, 'data' => $stmt->fetchAll()]);
+} catch (PDOException $e) {
+    json_out(['ok' => false, 'error' => 'Query failed: ' . $e->getMessage()], 500);
+}

@@ -8,6 +8,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 // Ensure all server-side timestamps use Philippine time
 @date_default_timezone_set('Asia/Manila');
 
+// Start output buffering to prevent any accidental output before json_out
+ob_start();
+
 // Use environment variables for flexible configuration (Docker or local)
 $host = getenv('DB_HOST') ?: 'localhost';
 $port = getenv('DB_PORT') ?: '3306';
@@ -25,8 +28,10 @@ try {
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
   ]);
 } catch (Throwable $e) {
+  // Clear any output buffer (like PHP warnings)
+  if (ob_get_length()) ob_clean();
   http_response_code(500);
-  echo json_encode(['error' => 'db_error']);
+  echo json_encode(['error' => 'db_error', 'details' => $e->getMessage()]);
   exit;
 }
 
@@ -37,7 +42,10 @@ function json_input() {
 }
 
 function json_out($data, int $code = 200) {
+  // Clear any output buffer (like PHP warnings)
+  if (ob_get_length()) ob_clean();
   http_response_code($code);
+  header('Content-Type: application/json');
   echo json_encode($data);
   exit;
 }
