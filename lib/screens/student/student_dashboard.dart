@@ -28,6 +28,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   bool _loading = true;
   Timer? _poller;
   final Map<String, RequestStatus> _lastStatuses = {};
+  final Map<String, int> _lastQuantities = {};
 
   @override
   void initState() {
@@ -44,15 +45,24 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final rows = await ApiClient.instance.fetchRequests(studentName: current);
       final items = rows.map((e) => Request.fromJson(e)).toList();
 
-      // Notification logic: Check for status changes
+      // Notification logic: Check for status or quantity changes
       for (final req in items) {
         if (_lastStatuses.containsKey(req.id)) {
           final oldStatus = _lastStatuses[req.id];
-          if (oldStatus != req.status && req.status != RequestStatus.pending) {
+          final oldQty = _lastQuantities[req.id];
+
+          // Priority 1: Check for Override
+          if (req.isOverride && oldQty != null && oldQty != req.quantity) {
+            _notifyOverride(req);
+          }
+          // Priority 2: Check for Status change
+          else if (oldStatus != req.status &&
+              req.status != RequestStatus.pending) {
             _notifyStatusChange(req);
           }
         }
         _lastStatuses[req.id] = req.status;
+        _lastQuantities[req.id] = req.quantity;
       }
 
       final insts = await ApiClient.instance.fetchInstruments();
@@ -66,6 +76,30 @@ class _StudentDashboardState extends State<StudentDashboard> {
       if (!mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  void _notifyOverride(Request req) {
+    final reasonMsg =
+        (req.overrideReason != null && req.overrideReason!.isNotEmpty)
+        ? '\nReason: ${req.overrideReason}'
+        : '';
+
+    NotificationService.instance.add(
+      NotificationItem(
+        id: 'override_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Override Update',
+        message:
+            'Your request for ${req.instrumentName} has been adjusted from ${req.originalQuantity} to ${req.quantity} units by the admin.$reasonMsg',
+        type: 'warning',
+        timestamp: DateTime.now().toIso8601String(),
+        recipient: 'Student',
+        priority: 'high',
+        isOverride: true,
+        originalQuantity: req.originalQuantity,
+        overrideQuantity: req.quantity,
+        overrideReason: req.overrideReason,
+      ),
+    );
   }
 
   void _notifyStatusChange(Request req) {

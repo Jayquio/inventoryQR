@@ -405,9 +405,52 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         Text(
           n.message,
           style: const TextStyle(fontSize: 13, color: Colors.black87),
-          maxLines: 2,
+          maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
+        if (n.isOverride) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 14, color: Colors.orange),
+                    const SizedBox(width: 4),
+                    Text(
+                      'OVERRIDE DETAILS',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Original: ${n.originalQuantity} units → Updated: ${n.overrideQuantity} units',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                if (n.overrideReason != null && n.overrideReason!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Reason: ${n.overrideReason}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade800, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 4),
         _buildBottomInfo(n),
       ],

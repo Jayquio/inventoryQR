@@ -13,6 +13,9 @@ class Request {
   final String? rejectedBy;
   final String? returnedBy;
   RequestStatus status;
+  final bool isOverride;
+  final int? originalQuantity;
+  final String? overrideReason;
 
   Request({
     this.id = '',
@@ -27,6 +30,9 @@ class Request {
     this.rejectedBy,
     this.returnedBy,
     required this.status,
+    this.isOverride = false,
+    this.originalQuantity,
+    this.overrideReason,
   });
 
   factory Request.fromJson(Map<String, dynamic> json) {
@@ -45,11 +51,18 @@ class Request {
       purpose: (json['purpose'] ?? '') as String,
       course: (json['course'] ?? '') as String?,
       neededAt: (json['neededAt'] ?? '') as String?,
-      instrumentType: (json['instrumentType'] ?? 'instrument').toString().toLowerCase(),
+      instrumentType: (json['instrumentType'] ?? 'instrument')
+          .toString()
+          .toLowerCase(),
       approvedBy: (json['approvedBy'] ?? '') as String?,
       rejectedBy: (json['rejectedBy'] ?? '') as String?,
       returnedBy: (json['returnedBy'] ?? '') as String?,
       status: status,
+      isOverride: (json['isOverride'] == 1 || json['isOverride'] == true),
+      originalQuantity: int.tryParse(
+        json['originalQuantity']?.toString() ?? '',
+      ),
+      overrideReason: (json['overrideReason'] ?? '') as String?,
     );
   }
 
@@ -69,10 +82,17 @@ class Request {
       if (course != null && course!.isNotEmpty) 'course': course,
       if (neededAt != null && neededAt!.isNotEmpty) 'neededAt': neededAt,
       'instrumentType': instrumentType,
-      if (approvedBy != null && approvedBy!.isNotEmpty) 'approvedBy': approvedBy,
-      if (rejectedBy != null && rejectedBy!.isNotEmpty) 'rejectedBy': rejectedBy,
-      if (returnedBy != null && returnedBy!.isNotEmpty) 'returnedBy': returnedBy,
+      if (approvedBy != null && approvedBy!.isNotEmpty)
+        'approvedBy': approvedBy,
+      if (rejectedBy != null && rejectedBy!.isNotEmpty)
+        'rejectedBy': rejectedBy,
+      if (returnedBy != null && returnedBy!.isNotEmpty)
+        'returnedBy': returnedBy,
       'status': statusStr,
+      'isOverride': isOverride ? 1 : 0,
+      if (originalQuantity != null) 'originalQuantity': originalQuantity,
+      if (overrideReason != null && overrideReason!.isNotEmpty)
+        'overrideReason': overrideReason,
     };
   }
 }

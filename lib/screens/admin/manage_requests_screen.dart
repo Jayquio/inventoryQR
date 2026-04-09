@@ -337,18 +337,21 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
                 );
 
                 // Add notification for the user
-                final reasonMsg = reason.isNotEmpty ? '\nReason: $reason' : '';
+                final originalQty = req.quantity;
                 NotificationService.instance.add(
                   NotificationItem(
                     id: 'override_${DateTime.now().microsecondsSinceEpoch}',
-                    title: 'Request Updated (Admin Override)',
+                    title: 'Override Update',
                     message:
-                        'Your request for ${req.instrumentName} has been updated to $newQty units.$reasonMsg',
+                        'Your request for ${req.instrumentName} has been updated from $originalQty to $newQty units.',
                     type: 'info',
                     timestamp: DateTime.now().toIso8601String(),
-                    recipient:
-                        'Student', // In a real app, this would be specific to the student ID
+                    recipient: 'Student', // In a real app, this would be specific to the student ID
                     priority: 'high',
+                    isOverride: true,
+                    originalQuantity: originalQty,
+                    overrideQuantity: newQty,
+                    overrideReason: reason,
                   ),
                 );
 

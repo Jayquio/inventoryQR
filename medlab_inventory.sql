@@ -151,6 +151,9 @@ CREATE TABLE `requests` (
   `rejected_at` datetime DEFAULT NULL,
   `returned_by` varchar(64) DEFAULT NULL,
   `returned_at` datetime DEFAULT NULL,
+  `is_override` tinyint(1) NOT NULL DEFAULT 0,
+  `original_quantity` int(11) DEFAULT NULL,
+  `override_reason` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

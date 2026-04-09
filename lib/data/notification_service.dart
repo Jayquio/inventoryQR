@@ -16,6 +16,10 @@ class NotificationItem {
     this.course,
     this.read = false,
     this.priority = 'medium',
+    this.isOverride = false,
+    this.originalQuantity,
+    this.overrideQuantity,
+    this.overrideReason,
   });
 
   final String id;
@@ -27,6 +31,10 @@ class NotificationItem {
   final String? course;
   bool read;
   final String priority;
+  final bool isOverride;
+  final int? originalQuantity;
+  final int? overrideQuantity;
+  final String? overrideReason;
 }
 
 class NotificationService extends ChangeNotifier {
@@ -56,14 +64,17 @@ class NotificationService extends ChangeNotifier {
   }
 
   void markAsRead(String id) {
-    final n = _notifications.firstWhere((e) => e.id == id, orElse: () => NotificationItem(
-      id: id,
-      title: 'Unknown',
-      message: '',
-      type: 'info',
-      timestamp: DateTime.now().toIso8601String(),
-      recipient: 'All',
-    ));
+    final n = _notifications.firstWhere(
+      (e) => e.id == id,
+      orElse: () => NotificationItem(
+        id: id,
+        title: 'Unknown',
+        message: '',
+        type: 'info',
+        timestamp: DateTime.now().toIso8601String(),
+        recipient: 'All',
+      ),
+    );
     n.read = true;
     notifyListeners();
     _persist();
@@ -84,7 +95,9 @@ class NotificationService extends ChangeNotifier {
       final List<dynamic> raw = json.decode(jsonStr);
       _notifications
         ..clear()
-        ..addAll(raw.map((e) => NotificationItem(
+        ..addAll(
+          raw.map(
+            (e) => NotificationItem(
               id: e['id'],
               title: e['title'],
               message: e['message'],
@@ -94,7 +107,13 @@ class NotificationService extends ChangeNotifier {
               course: e['course'],
               read: e['read'] ?? false,
               priority: e['priority'] ?? 'medium',
-            )));
+              isOverride: e['isOverride'] ?? false,
+              originalQuantity: e['originalQuantity'],
+              overrideQuantity: e['overrideQuantity'],
+              overrideReason: e['overrideReason'],
+            ),
+          ),
+        );
       notifyListeners();
     }
   }
@@ -102,22 +121,30 @@ class NotificationService extends ChangeNotifier {
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = _notifications
-        .map((n) => {
-              'id': n.id,
-              'title': n.title,
-              'message': n.message,
-              'type': n.type,
-              'timestamp': n.timestamp,
-              'recipient': n.recipient,
-              'course': n.course,
-              'read': n.read,
-              'priority': n.priority,
-            })
+        .map(
+          (n) => {
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'type': n.type,
+            'timestamp': n.timestamp,
+            'recipient': n.recipient,
+            'course': n.course,
+            'read': n.read,
+            'priority': n.priority,
+            'isOverride': n.isOverride,
+            'originalQuantity': n.originalQuantity,
+            'overrideQuantity': n.overrideQuantity,
+            'overrideReason': n.overrideReason,
+          },
+        )
         .toList();
     await prefs.setString('notifications', json.encode(raw));
   }
 
-  void connectWebSocket({String url = 'ws://localhost:${AppNetwork.apiPort}/notifications'}) {
+  void connectWebSocket({
+    String url = 'ws://localhost:${AppNetwork.apiPort}/notifications',
+  }) {
     try {
       _channel?.sink.close();
       _channel = WebSocketChannel.connect(Uri.parse(url));
@@ -125,15 +152,20 @@ class NotificationService extends ChangeNotifier {
         try {
           final data = json.decode(event);
           if (data is Map<String, dynamic>) {
-            add(NotificationItem(
-              id: data['id'] ?? DateTime.now().microsecondsSinceEpoch.toString(),
-              title: data['title'] ?? 'Update',
-              message: data['message'] ?? '',
-              type: data['type'] ?? 'info',
-              timestamp: data['timestamp'] ?? DateTime.now().toIso8601String(),
-              recipient: data['recipient'] ?? 'All',
-              priority: data['priority'] ?? 'medium',
-            ));
+            add(
+              NotificationItem(
+                id:
+                    data['id'] ??
+                    DateTime.now().microsecondsSinceEpoch.toString(),
+                title: data['title'] ?? 'Update',
+                message: data['message'] ?? '',
+                type: data['type'] ?? 'info',
+                timestamp:
+                    data['timestamp'] ?? DateTime.now().toIso8601String(),
+                recipient: data['recipient'] ?? 'All',
+                priority: data['priority'] ?? 'medium',
+              ),
+            );
           }
         } catch (_) {}
       });
@@ -155,7 +187,10 @@ class NotificationService extends ChangeNotifier {
     _autoRefreshTimer = null;
   }
 
-  List<NotificationItem> getPaginatedNotifications(int page, {int pageSize = 10}) {
+  List<NotificationItem> getPaginatedNotifications(
+    int page, {
+    int pageSize = 10,
+  }) {
     final start = page * pageSize;
     final end = start + pageSize;
     if (start >= _notifications.length) return const [];

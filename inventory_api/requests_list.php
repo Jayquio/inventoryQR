@@ -13,6 +13,9 @@ $sql = 'SELECT r.id,
                r.status,
                r.returned_by AS returnedBy,
                r.returned_at AS returnedAt,
+               r.is_override AS isOverride,
+               r.original_quantity AS originalQuantity,
+               r.override_reason AS overrideReason,
                COALESCE(i.type, \'instrument\') AS instrumentType
         FROM requests r
         LEFT JOIN instruments i ON i.name = r.instrument_name';

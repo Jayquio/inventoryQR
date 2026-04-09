@@ -22,7 +22,7 @@ if (!in_array($role, ['admin', 'superadmin'], true)) {
 
 $pdo->beginTransaction();
 try {
-  $selReq = $pdo->prepare('SELECT status, instrument_name FROM requests WHERE id = ? FOR UPDATE');
+  $selReq = $pdo->prepare('SELECT status, instrument_name, quantity FROM requests WHERE id = ? FOR UPDATE');
   $selReq->execute([$id]);
   $reqRow = $selReq->fetch();
   
@@ -30,6 +30,8 @@ try {
     $pdo->rollBack();
     json_out(['error' => 'not_found'], 404);
   }
+
+  $original_quantity = (int)($reqRow['quantity'] ?? 1);
 
   // Only allow updating quantity for pending requests to avoid complex stock management
   if ($reqRow['status'] !== 'pending') {
@@ -52,8 +54,8 @@ try {
     json_out(['error' => 'quantity_exceeds_total_stock'], 400);
   }
 
-  $upd = $pdo->prepare('UPDATE requests SET quantity = ? WHERE id = ?');
-  $upd->execute([$new_quantity, $id]);
+  $upd = $pdo->prepare('UPDATE requests SET quantity = ?, is_override = 1, original_quantity = ?, override_reason = ? WHERE id = ?');
+  $upd->execute([$new_quantity, $original_quantity, $reason, $id]);
   
   $pdo->commit();
   json_out(['ok' => true]);

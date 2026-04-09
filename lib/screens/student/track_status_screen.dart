@@ -104,6 +104,47 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                    if (request.isOverride) ...[
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Row(
+                                              children: [
+                                                Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                                                SizedBox(width: 6),
+                                                Text(
+                                                  'Override Update',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.orange,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              'Quantity adjusted from ${request.originalQuantity} to ${request.quantity} units.',
+                                              style: const TextStyle(fontSize: 13),
+                                            ),
+                                            if (request.overrideReason != null && request.overrideReason!.isNotEmpty) ...[
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Reason: ${request.overrideReason}',
+                                                style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
