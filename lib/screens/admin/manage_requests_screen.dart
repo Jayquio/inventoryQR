@@ -160,38 +160,124 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.edit_note, color: AppTheme.primaryColor),
-            SizedBox(width: 8),
-            Text('Override Quantity'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Request by: ${req.studentName}'),
-            Text('Instrument: ${req.instrumentName}'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'New Quantity',
-                border: OutlineInputBorder(),
-                helperText:
-                    'Enter a lower quantity to allow other users to borrow units.',
-              ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: AppTheme.primaryColor,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
-          ],
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.edit_note, color: Colors.white, size: 28),
+              SizedBox(width: 12),
+              Text(
+                'Override Quantity',
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ],
+          ),
         ),
+        content: Container(
+          width: 400, // Fixed width for better web presentation
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.person_outline,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Student: ${req.studentName}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.inventory_2_outlined,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Instrument: ${req.instrumentName}',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Adjustment',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'New Allocated Quantity',
+                  prefixIcon: const Icon(Icons.add_task),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  helperText:
+                      'Allocating a lower amount frees up units for other students.',
+                  helperStyle: const TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            ),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () async {
               final newQty = int.tryParse(controller.text);
               if (newQty == null || newQty <= 0) {
@@ -214,6 +300,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
                 _showMessage(
                   const SnackBar(
                     content: Text('Quantity overridden successfully.'),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               } catch (e) {
@@ -223,15 +311,23 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
                     content: Text(
                       'Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}',
                     ),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
+            icon: const Icon(Icons.check),
+            label: const Text('Save Changes'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
             ),
-            child: const Text('Save Override'),
           ),
         ],
       ),
@@ -541,12 +637,25 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
           ),
           child: const Text('Reject'),
         );
-        final override = OutlinedButton.icon(
-          onPressed: () => _showOverrideQuantityDialog(request),
-          icon: const Icon(Icons.edit_note, size: 20),
-          label: const Text('Override Qty'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppTheme.primaryColor,
+        final override = Tooltip(
+          message: 'Update the quantity for this request before approving.',
+          child: ElevatedButton.icon(
+            onPressed: () => _showOverrideQuantityDialog(request),
+            icon: const Icon(Icons.edit_note, size: 20),
+            label: const Text(
+              'Override Qty',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+              foregroundColor: AppTheme.primaryColor,
+              elevation: 0,
+              side: const BorderSide(color: AppTheme.primaryColor, width: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         );
         final delete = OutlinedButton.icon(
@@ -580,13 +689,13 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            SizedBox(width: 120, child: approve),
+            SizedBox(width: 140, child: approve),
             const SizedBox(width: 8),
-            SizedBox(width: 120, child: reject),
+            SizedBox(width: 140, child: reject),
             const SizedBox(width: 8),
-            SizedBox(width: 140, child: override),
+            SizedBox(width: 180, child: override),
             const SizedBox(width: 8),
-            SizedBox(width: 120, child: delete),
+            SizedBox(width: 130, child: delete),
           ],
         );
       },
