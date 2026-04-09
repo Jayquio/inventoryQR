@@ -136,7 +136,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
     } catch (e) {
       if (context.mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e.toString().replaceFirst('Exception: ', '');
           _isLoading = false;
         });
       }
@@ -200,8 +200,32 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
             const SizedBox(height: 12),
             Text(
               'Failed to load dashboard',
-              style: TextStyle(color: Colors.red.shade700, fontSize: 16),
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.1)),
+                ),
+                child: Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.red.shade900,
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             ElevatedButton.icon(
               onPressed: _loadDashboardData,
