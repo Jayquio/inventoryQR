@@ -34,5 +34,9 @@ try {
 
     json_out(['ok' => true, 'data' => $formatted]);
 } catch (PDOException $e) {
+    // Graceful Bypass: If the table doesn't exist, return an empty list instead of crashing.
+    if ($e->getCode() == '42S02') {
+        json_out(['ok' => true, 'data' => []]);
+    }
     json_out(['ok' => false, 'error' => $e->getMessage()], 500);
 }
