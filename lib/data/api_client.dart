@@ -216,9 +216,15 @@ class ApiClient {
     required String id,
     required int quantity,
     required String user,
+    String? reason,
   }) async {
     final uri = Uri.parse('${_baseUrl()}/requests_update_quantity.php');
-    final payload = {'id': id, 'quantity': quantity, 'user': user};
+    final payload = {
+      'id': id,
+      'quantity': quantity,
+      'user': user,
+      if (reason != null && reason.isNotEmpty) 'reason': reason,
+    };
     final res = await http
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));

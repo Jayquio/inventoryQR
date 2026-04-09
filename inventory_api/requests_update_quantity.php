@@ -5,6 +5,7 @@ $in = json_input();
 $id = (int)($in['id'] ?? 0);
 $new_quantity = (int)($in['quantity'] ?? 0);
 $user = trim($in['user'] ?? 'system');
+$reason = trim($in['reason'] ?? '');
 
 if ($id <= 0 || $new_quantity <= 0) {
   json_out(['error' => 'invalid_input'], 400);

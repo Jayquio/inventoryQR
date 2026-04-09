@@ -6,6 +6,7 @@ import '../../models/request.dart';
 import '../../widgets/search_bar.dart';
 import '../../data/api_client.dart';
 import '../../data/auth_service.dart';
+import '../../data/notification_service.dart';
 import '../../core/theme.dart';
 
 class ManageRequestsScreen extends StatefulWidget {
@@ -156,7 +157,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
   }
 
   void _showOverrideQuantityDialog(Request req) {
-    final controller = TextEditingController(text: req.quantity.toString());
+    final qtyController = TextEditingController(text: req.quantity.toString());
+    final reasonController = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -183,88 +185,125 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
           ),
         ),
         content: Container(
-          width: 400, // Fixed width for better web presentation
+          width: 450, // Slightly wider for reason field
           padding: const EdgeInsets.only(top: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline,
-                          size: 18,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Student: ${req.studentName}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.inventory_2_outlined,
-                          size: 18,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Instrument: ${req.instrumentName}',
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Adjustment',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'New Quantity',
-                  prefixIcon: const Icon(Icons.add_task),
-                  border: OutlineInputBorder(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  helperText: 'Lower quantity to free up stock.',
-                  helperStyle: const TextStyle(fontStyle: FontStyle.italic),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.person_outline,
+                            size: 18,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Student: ${req.studentName}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.inventory_2_outlined,
+                            size: 18,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Instrument: ${req.instrumentName}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 24),
+                const Text(
+                  'Adjustment',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: qtyController,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'New Quantity',
+                    prefixIcon: const Icon(Icons.add_task),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    helperText: 'Lower quantity to free up stock.',
+                    helperStyle: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Communication',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Reason (optional)',
+                    alignLabelWithHint: true,
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(bottom: 24),
+                      child: Icon(Icons.comment_outlined),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    hintText:
+                        'e.g., Reallocating units for another laboratory session.',
+                    filled: true,
+                    fillColor: Colors.white,
+                    helperText:
+                        'This will be shown to the user in their notification.',
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -278,7 +317,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
           ),
           ElevatedButton.icon(
             onPressed: () async {
-              final newQty = int.tryParse(controller.text);
+              final newQty = int.tryParse(qtyController.text);
+              final reason = reasonController.text.trim();
               if (newQty == null || newQty <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -293,12 +333,30 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
                   id: req.id,
                   quantity: newQty,
                   user: AuthService.instance.currentUsername,
+                  reason: reason,
                 );
+
+                // Add notification for the user
+                final reasonMsg = reason.isNotEmpty ? '\nReason: $reason' : '';
+                NotificationService.instance.add(
+                  NotificationItem(
+                    id: 'override_${DateTime.now().microsecondsSinceEpoch}',
+                    title: 'Request Updated (Admin Override)',
+                    message:
+                        'Your request for ${req.instrumentName} has been updated to $newQty units.$reasonMsg',
+                    type: 'info',
+                    timestamp: DateTime.now().toIso8601String(),
+                    recipient:
+                        'Student', // In a real app, this would be specific to the student ID
+                    priority: 'high',
+                  ),
+                );
+
                 await _loadData();
                 if (!mounted) return;
                 _showMessage(
                   const SnackBar(
-                    content: Text('Quantity overridden successfully.'),
+                    content: Text('Quantity overridden and user notified.'),
                     backgroundColor: Colors.green,
                     behavior: SnackBarBehavior.floating,
                   ),
