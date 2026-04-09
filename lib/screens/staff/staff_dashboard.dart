@@ -217,6 +217,7 @@ class _StaffDashboardState extends State<StaffDashboard> with RouteAware {
         IconButton(
           icon: const Icon(Icons.logout),
           onPressed: () {
+            NotificationService.instance.clear(persist: true);
             ModuleSearchController.instance.setQuery('');
             Navigator.pushNamedAndRemoveUntil(
               context,

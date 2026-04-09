@@ -215,6 +215,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         IconButton(
           icon: const Icon(Icons.logout),
           onPressed: () {
+            NotificationService.instance.clear(persist: true);
             ModuleSearchController.instance.setQuery('');
             Navigator.pushNamedAndRemoveUntil(
               context,

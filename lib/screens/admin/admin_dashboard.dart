@@ -35,6 +35,7 @@ class AdminDashboard extends StatelessWidget {
               icon: const Icon(Icons.logout),
               onPressed: () {
                 final navigator = Navigator.of(context);
+                NotificationService.instance.clear(persist: true);
                 ModuleSearchController.instance.setQuery('');
                 navigator.pushNamedAndRemoveUntil('/login', (route) => false);
               },
@@ -579,6 +580,7 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
       animation: NotificationService.instance,
       builder: (context, _) {
         final base = NotificationService.instance.notifications
+            .where((n) => n.recipient == 'Admin' || n.recipient == 'All')
             .take(20)
             .toList();
         final notifications = searchTerm.isEmpty

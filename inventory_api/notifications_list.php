@@ -6,11 +6,14 @@ $limit = (int)($_GET['limit'] ?? 50);
 
 try {
     if ($recipient === 'All') {
-        $stmt = $pdo->prepare("SELECT * FROM notifications ORDER BY created_at DESC LIMIT ?");
-        $stmt->execute([$limit]);
+        $stmt = $pdo->prepare("SELECT * FROM notifications ORDER BY created_at DESC LIMIT :limit");
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
     } else {
-        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient = ? OR recipient = 'All' ORDER BY created_at DESC LIMIT ?");
-        $stmt->execute([$recipient, $limit]);
+        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient = :recipient OR recipient = 'All' ORDER BY created_at DESC LIMIT :limit");
+        $stmt->bindValue(':recipient', $recipient, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
     }
     
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
