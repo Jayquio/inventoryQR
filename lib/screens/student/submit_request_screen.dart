@@ -27,11 +27,16 @@ class _RequestedItem {
   String name;
   int quantity;
   String serialNumber;
+  final TextEditingController quantityController;
   _RequestedItem({
     required this.name,
     required this.quantity,
     required this.serialNumber,
-  });
+  }) : quantityController = TextEditingController(text: quantity.toString());
+
+  void dispose() {
+    quantityController.dispose();
+  }
 }
 
 class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
@@ -74,6 +79,14 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     _neededAt = widget.preSelectedDate;
     _studentName = AuthService.instance.currentUsername;
     _load();
+  }
+
+  @override
+  void dispose() {
+    for (final item in _requestedItems) {
+      item.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -337,8 +350,13 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                         ),
                         if (_requestedItems.length > 1)
                           IconButton(
-                            onPressed: () =>
-                                setState(() => _requestedItems.removeAt(index)),
+                            onPressed: () {
+                              final removedItem = _requestedItems.removeAt(
+                                index,
+                              );
+                              removedItem.dispose();
+                              setState(() {});
+                            },
                             icon: const Icon(
                               Icons.delete_outline,
                               color: Colors.red,
@@ -434,21 +452,29 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     final selected = _instrumentByName(item.name);
     // If we have a serial number selected, quantity is usually 1,
     // but we can allow more if it's a generic item or reagent.
-    final maxQty = selected?.available ?? 10;
-    final qtyOptions = List.generate(
-      maxQty > 0 ? (maxQty > 20 ? 20 : maxQty) : 1,
-      (i) => i + 1,
-    );
+    final maxQty = selected?.available ?? 0;
 
-    return DropdownButtonFormField<int>(
-      initialValue: qtyOptions.contains(item.quantity)
-          ? item.quantity
-          : qtyOptions.first,
-      decoration: _inputDecoration('Qty', null),
-      items: qtyOptions
-          .map((q) => DropdownMenuItem(value: q, child: Text(q.toString())))
-          .toList(),
-      onChanged: (value) => setState(() => item.quantity = value ?? 1),
+    return TextFormField(
+      controller: item.quantityController,
+      decoration: _inputDecoration(
+        'Qty',
+        null,
+      ).copyWith(hintText: '1', suffixText: '/ $maxQty'),
+      keyboardType: TextInputType.number,
+      style: const TextStyle(fontSize: 13),
+      validator: (value) {
+        if (value == null || value.isEmpty) return 'Required';
+        final n = int.tryParse(value);
+        if (n == null || n <= 0) return '> 0';
+        if (n > maxQty) return 'Max $maxQty';
+        return null;
+      },
+      onChanged: (value) {
+        final n = int.tryParse(value);
+        if (n != null) {
+          setState(() => item.quantity = n);
+        }
+      },
     );
   }
 

@@ -921,17 +921,6 @@ class _InstrumentFormContent extends StatelessWidget {
     'Unserviceable',
   ];
 
-  static const List<String> _locationOptions = [
-    'Lab A',
-    'Lab B',
-    'Lab C',
-    'Storage Room',
-    'Chemistry Cabinet',
-    'Biology Cabinet',
-    'Physics Cabinet',
-    'Front Desk',
-  ];
-
   List<String> _optionsWithCurrent(List<String> options, String current) {
     final normalizedCurrent = current.trim();
     if (normalizedCurrent.isEmpty || options.contains(normalizedCurrent)) {

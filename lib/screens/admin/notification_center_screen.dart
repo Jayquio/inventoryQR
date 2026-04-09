@@ -19,7 +19,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   String _selectedFilter = 'All';
   bool _showUnreadOnly = false;
   String _recipientFilter = 'All';
-  String _courseFilter = 'All';
 
   @override
   void initState() {
@@ -46,7 +45,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     filtered = _filterByRole(filtered);
     filtered = _filterByType(filtered);
     filtered = _filterByRecipient(filtered);
-    filtered = _filterByCourse(filtered);
     filtered = _filterByReadStatus(filtered);
     filtered = _filterBySearch(filtered);
 
@@ -80,10 +78,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     return items.where((n) => n.recipient == _recipientFilter).toList();
   }
 
-  List<NotificationItem> _filterByCourse(List<NotificationItem> items) {
-    return items;
-  }
-
   List<NotificationItem> _filterByReadStatus(List<NotificationItem> items) {
     if (!_showUnreadOnly) return items;
     return items.where((n) => !n.read).toList();
@@ -98,19 +92,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           n.recipient.toLowerCase().contains(searchTerm) ||
           n.priority.toLowerCase().contains(searchTerm);
     }).toList();
-  }
-
-  String _parseCourse(String message) {
-    final idx = message.toLowerCase().indexOf('course:');
-    if (idx == -1) return '';
-    final substr = message.substring(idx + 7).trim();
-    final stopIdx = substr.indexOf('•');
-    final raw = (stopIdx >= 0 ? substr.substring(0, stopIdx) : substr).trim();
-    return raw;
-  }
-
-  List<String> _courseOptions() {
-    return ['All'];
   }
 
   Color _getTypeColor(String type) {

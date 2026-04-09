@@ -195,9 +195,11 @@ class NotificationService extends ChangeNotifier {
     await prefs.setString('notifications', json.encode(raw));
   }
 
-  void connectWebSocket({
-    String url = 'ws://localhost:${AppNetwork.apiPort}/notifications',
-  }) {
+  void connectWebSocket({String? url}) {
+    if (url == null || url.isEmpty || url.contains('localhost')) {
+      // Don't connect to localhost WebSocket in production
+      return;
+    }
     try {
       _channel?.sink.close();
       _channel = WebSocketChannel.connect(Uri.parse(url));
@@ -227,7 +229,8 @@ class NotificationService extends ChangeNotifier {
 
   void startAutoRefresh() {
     _autoRefreshTimer?.cancel();
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+    // Poll more frequently for "near real-time" feel (5 seconds)
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       fetchFromServer();
     });
   }

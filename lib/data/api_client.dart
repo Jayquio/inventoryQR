@@ -379,8 +379,9 @@ class ApiClient {
     String recipient = 'All',
     int limit = 50,
   }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
     final url =
-        '${_baseUrl()}/notifications_list.php?recipient=$recipient&limit=$limit';
+        '${_baseUrl()}/notifications_list.php?recipient=$recipient&limit=$limit&_=$timestamp';
     final uri = Uri.parse(url);
     final res = await http
         .get(uri, headers: _authHeaders)
