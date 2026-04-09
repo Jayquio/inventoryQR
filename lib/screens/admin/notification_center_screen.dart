@@ -81,13 +81,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   }
 
   List<NotificationItem> _filterByCourse(List<NotificationItem> items) {
-    if (_courseFilter == 'All') return items;
-    return items.where((n) {
-      final c = n.course?.trim().isNotEmpty == true
-          ? n.course!
-          : _parseCourse(n.message);
-      return c.toLowerCase() == _courseFilter.toLowerCase();
-    }).toList();
+    return items;
   }
 
   List<NotificationItem> _filterByReadStatus(List<NotificationItem> items) {
@@ -116,15 +110,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   }
 
   List<String> _courseOptions() {
-    final courses = <String>{};
-    for (final n in NotificationService.instance.notifications) {
-      final c = n.course?.trim().isNotEmpty == true
-          ? n.course!
-          : _parseCourse(n.message);
-      if (c.isNotEmpty) courses.add(c);
-    }
-    final list = ['All', ...courses.toList()..sort()];
-    return list;
+    return ['All'];
   }
 
   Color _getTypeColor(String type) {

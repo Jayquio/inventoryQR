@@ -97,6 +97,22 @@ if ($status === 'returned') {
       $upd->execute([$status, $id]);
     }
 
+    // Create User Notification for Return
+    try {
+      $notifSql = "INSERT INTO notifications (title, message, type, recipient, priority) VALUES (?, ?, ?, ?, ?)";
+      $notifStmt = $pdo->prepare($notifSql);
+      $msg = "Instrument '$instrument' has been successfully returned and confirmed by admin on $now.";
+      $notifStmt->execute([
+        'Instrument Returned',
+        $msg,
+        'success',
+        'Student', // Assuming student for now, could be dynamic based on user role
+        'medium'
+      ]);
+    } catch (Throwable $e) {
+      // Silently fail if notifications table is not ready
+    }
+
     $pdo->commit();
   } catch (Throwable $e) {
     $pdo->rollBack();
