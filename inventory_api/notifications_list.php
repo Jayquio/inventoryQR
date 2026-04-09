@@ -1,18 +1,17 @@
 <?php
 require __DIR__ . '/db.php';
+ensure_notifications_table($pdo);
 
 $recipient = $_GET['recipient'] ?? 'All';
 $limit = (int)($_GET['limit'] ?? 50);
 
 try {
     if ($recipient === 'All') {
-        $stmt = $pdo->prepare("SELECT * FROM notifications ORDER BY created_at DESC LIMIT :limit");
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt = $pdo->prepare("SELECT * FROM notifications ORDER BY created_at DESC LIMIT $limit");
         $stmt->execute();
     } else {
-        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient = :recipient OR recipient = 'All' ORDER BY created_at DESC LIMIT :limit");
+        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient = :recipient OR recipient = 'All' ORDER BY created_at DESC LIMIT $limit");
         $stmt->bindValue(':recipient', $recipient, PDO::PARAM_STR);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
     }
     
