@@ -9,7 +9,8 @@ class NotificationCenterScreen extends StatefulWidget {
   const NotificationCenterScreen({super.key});
 
   @override
-  State<NotificationCenterScreen> createState() => _NotificationCenterScreenState();
+  State<NotificationCenterScreen> createState() =>
+      _NotificationCenterScreenState();
 }
 
 class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
@@ -39,7 +40,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   }
 
   List<NotificationItem> get _filteredNotifications {
-    List<NotificationItem> filtered = NotificationService.instance.notifications;
+    List<NotificationItem> filtered =
+        NotificationService.instance.notifications;
 
     filtered = _filterByRole(filtered);
     filtered = _filterByType(filtered);
@@ -54,7 +56,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   List<NotificationItem> _filterByRole(List<NotificationItem> items) {
     final role = AuthService.instance.currentRole;
     if (role == UserRole.teacher) {
-      return items.where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff').toList();
+      return items
+          .where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff')
+          .toList();
     } else if (role == UserRole.student) {
       return items.where((n) => n.recipient == 'Student').toList();
     }
@@ -69,7 +73,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   List<NotificationItem> _filterByRecipient(List<NotificationItem> items) {
     if (_recipientFilter == 'All') return items;
     if (_recipientFilter == 'Teacher') {
-      return items.where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff').toList();
+      return items
+          .where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff')
+          .toList();
     }
     return items.where((n) => n.recipient == _recipientFilter).toList();
   }
@@ -77,7 +83,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   List<NotificationItem> _filterByCourse(List<NotificationItem> items) {
     if (_courseFilter == 'All') return items;
     return items.where((n) {
-      final c = n.course?.trim().isNotEmpty == true ? n.course! : _parseCourse(n.message);
+      final c = n.course?.trim().isNotEmpty == true
+          ? n.course!
+          : _parseCourse(n.message);
       return c.toLowerCase() == _courseFilter.toLowerCase();
     }).toList();
   }
@@ -110,7 +118,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   List<String> _courseOptions() {
     final courses = <String>{};
     for (final n in NotificationService.instance.notifications) {
-      final c = n.course?.trim().isNotEmpty == true ? n.course! : _parseCourse(n.message);
+      final c = n.course?.trim().isNotEmpty == true
+          ? n.course!
+          : _parseCourse(n.message);
       if (c.isNotEmpty) courses.add(c);
     }
     final list = ['All', ...courses.toList()..sort()];
@@ -208,24 +218,26 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notification Center'),
-      ),
-      body: AnimatedBuilder(
-        animation: NotificationService.instance,
-        builder: (context, _) {
-          return Column(
-            children: [
-              _buildSearchSection(),
-              const SizedBox(height: 12),
-              _buildFilterSection(),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _buildNotificationList(),
-              ),
-            ],
-          );
-        },
+      appBar: AppBar(title: const Text('Notification Center')),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: AnimatedBuilder(
+            animation: NotificationService.instance,
+            builder: (context, _) {
+              return Column(
+                children: [
+                  const SizedBox(height: 16),
+                  _buildSearchSection(),
+                  const SizedBox(height: 12),
+                  _buildFilterSection(),
+                  const SizedBox(height: 16),
+                  Expanded(child: _buildNotificationList()),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -256,8 +268,16 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
               Expanded(
                 child: _buildDropdown(
                   value: _selectedFilter,
-                  items: ['All', 'request', 'error', 'warning', 'success', 'info'],
-                  onChanged: (value) => setState(() => _selectedFilter = value!),
+                  items: [
+                    'All',
+                    'request',
+                    'error',
+                    'warning',
+                    'success',
+                    'info',
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _selectedFilter = value!),
                 ),
               ),
               if (showRecipientFilter) ...[
@@ -266,18 +286,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                   child: _buildDropdown(
                     value: _recipientFilter,
                     items: ['All', 'Admin', 'Teacher', 'Student'],
-                    onChanged: (value) => setState(() => _recipientFilter = value!),
+                    onChanged: (value) =>
+                        setState(() => _recipientFilter = value!),
                   ),
                 ),
               ],
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDropdown(
-                  value: _courseFilter,
-                  items: _courseOptions(),
-                  onChanged: (v) => setState(() => _courseFilter = v ?? 'All'),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -302,7 +315,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
       items: items.map((filter) {
-        return DropdownMenuItem(value: filter, child: Text(filter.toUpperCase()));
+        return DropdownMenuItem(
+          value: filter,
+          child: Text(filter.toUpperCase()),
+        );
       }).toList(),
       onChanged: onChanged,
     );
@@ -345,23 +361,42 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   }
 
   Widget _buildNotificationItem(NotificationItem notification) {
-    final bgColor = notification.read ? Colors.white : Colors.blue.shade50;
+    final bgColor = notification.read
+        ? Colors.white
+        : Colors.blue.withValues(alpha: 0.05);
+    final borderColor = notification.read
+        ? Colors.grey.shade200
+        : Colors.blue.withValues(alpha: 0.2);
+
     return InkWell(
       onTap: () => _markAsRead(notification.id),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            if (!notification.read)
+              BoxShadow(
+                color: Colors.blue.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLeadingIcon(notification),
-            const SizedBox(width: 10),
+            const SizedBox(width: 16),
             Expanded(child: _buildNotificationBody(notification)),
-            if (!notification.read) _buildUnreadIndicator(),
+            if (!notification.read)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: _buildUnreadIndicator(),
+              ),
           ],
         ),
       ),
@@ -370,10 +405,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   Widget _buildLeadingIcon(NotificationItem n) {
     final color = _getTypeColor(n.type);
-    return CircleAvatar(
-      radius: 18,
-      backgroundColor: color.withValues(alpha: 0.1),
-      child: Icon(_getTypeIcon(n.type), color: color),
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(_getTypeIcon(n.type), color: color, size: 20),
     );
   }
 
@@ -387,8 +425,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
               child: Text(
                 n.title,
                 style: TextStyle(
-                  fontWeight: n.read ? FontWeight.w500 : FontWeight.bold,
-                  fontSize: 14,
+                  fontWeight: n.read ? FontWeight.w600 : FontWeight.bold,
+                  fontSize: 15,
                   color: n.read ? Colors.black87 : Colors.black,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -397,33 +435,41 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
             const SizedBox(width: 8),
             Text(
               _formatDate(n.timestamp),
-              style: const TextStyle(color: Colors.grey, fontSize: 11),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           n.message,
-          style: const TextStyle(fontSize: 13, color: Colors.black87),
+          style: TextStyle(
+            fontSize: 13,
+            color: n.read ? Colors.black54 : Colors.black87,
+            height: 1.4,
+          ),
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
         if (n.isOverride) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              color: Colors.orange.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 14, color: Colors.orange),
-                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.info_outline,
+                      size: 14,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(width: 6),
                     Text(
                       'OVERRIDE DETAILS',
                       style: TextStyle(
@@ -435,23 +481,31 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   'Original: ${n.originalQuantity} units → Updated: ${n.overrideQuantity} units',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                if (n.overrideReason != null && n.overrideReason!.isNotEmpty) ...[
+                if (n.overrideReason != null &&
+                    n.overrideReason!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     'Reason: ${n.overrideReason}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade800, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade800,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ],
               ],
             ),
           ),
         ],
-        const SizedBox(height: 4),
+        const SizedBox(height: 10),
         _buildBottomInfo(n),
       ],
     );
@@ -480,7 +534,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       ),
       child: Text(
         priority.toUpperCase(),
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -489,7 +547,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     return Container(
       width: 10,
       height: 10,
-      decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+      decoration: const BoxDecoration(
+        color: Colors.blue,
+        shape: BoxShape.circle,
+      ),
     );
   }
 

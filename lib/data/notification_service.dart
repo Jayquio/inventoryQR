@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
 import '../core/constants.dart';
+import '../data/api_client.dart';
+import '../data/auth_service.dart';
 
 class NotificationItem {
   NotificationItem({
@@ -44,15 +46,73 @@ class NotificationService extends ChangeNotifier {
   final List<NotificationItem> _notifications = [];
   WebSocketChannel? _channel;
   Timer? _autoRefreshTimer;
+  bool _isFetching = false;
 
   List<NotificationItem> get notifications => List.unmodifiable(_notifications);
 
   int get unreadCount => _notifications.where((n) => !n.read).length;
 
   void add(NotificationItem item) {
+    // Avoid duplicates by ID
+    if (_notifications.any((n) => n.id == item.id)) return;
+
     _notifications.insert(0, item);
+    // Sort by timestamp descending
+    _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
     notifyListeners();
     _persist();
+  }
+
+  Future<void> fetchFromServer() async {
+    if (_isFetching) return;
+    _isFetching = true;
+    try {
+      final role = AuthService.instance.currentRole;
+      String recipient = 'All';
+      if (role == UserRole.admin || role == UserRole.superadmin) {
+        recipient = 'Admin';
+      } else if (role == UserRole.teacher) {
+        recipient = 'Teacher';
+      } else if (role == UserRole.student) {
+        recipient = 'Student';
+      }
+
+      final list = await ApiClient.instance.fetchNotifications(
+        recipient: recipient,
+      );
+
+      bool changed = false;
+      for (final map in list) {
+        final id = map['id'].toString();
+        if (!_notifications.any((n) => n.id == id)) {
+          _notifications.add(
+            NotificationItem(
+              id: id,
+              title: map['title'] ?? 'Update',
+              message: map['message'] ?? '',
+              type: map['type'] ?? 'info',
+              timestamp: map['timestamp'] ?? DateTime.now().toIso8601String(),
+              recipient: map['recipient'] ?? 'All',
+              course: map['course'],
+              read: map['read'] ?? false,
+              priority: map['priority'] ?? 'medium',
+            ),
+          );
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        notifyListeners();
+        _persist();
+      }
+    } catch (e) {
+      debugPrint('Error fetching notifications: $e');
+    } finally {
+      _isFetching = false;
+    }
   }
 
   Future<void> clear({bool persist = false}) async {
@@ -64,20 +124,12 @@ class NotificationService extends ChangeNotifier {
   }
 
   void markAsRead(String id) {
-    final n = _notifications.firstWhere(
-      (e) => e.id == id,
-      orElse: () => NotificationItem(
-        id: id,
-        title: 'Unknown',
-        message: '',
-        type: 'info',
-        timestamp: DateTime.now().toIso8601String(),
-        recipient: 'All',
-      ),
-    );
-    n.read = true;
-    notifyListeners();
-    _persist();
+    final idx = _notifications.indexWhere((e) => e.id == id);
+    if (idx != -1) {
+      _notifications[idx].read = true;
+      notifyListeners();
+      _persist();
+    }
   }
 
   void markAllAsRead() {
@@ -98,7 +150,7 @@ class NotificationService extends ChangeNotifier {
         ..addAll(
           raw.map(
             (e) => NotificationItem(
-              id: e['id'],
+              id: e['id'].toString(),
               title: e['title'],
               message: e['message'],
               type: e['type'],
@@ -114,6 +166,7 @@ class NotificationService extends ChangeNotifier {
             ),
           ),
         );
+      _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       notifyListeners();
     }
   }
@@ -155,7 +208,7 @@ class NotificationService extends ChangeNotifier {
             add(
               NotificationItem(
                 id:
-                    data['id'] ??
+                    data['id']?.toString() ??
                     DateTime.now().microsecondsSinceEpoch.toString(),
                 title: data['title'] ?? 'Update',
                 message: data['message'] ?? '',
@@ -174,11 +227,8 @@ class NotificationService extends ChangeNotifier {
 
   void startAutoRefresh() {
     _autoRefreshTimer?.cancel();
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      try {
-        _channel?.sink.add('ping');
-      } catch (_) {}
-      notifyListeners();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      fetchFromServer();
     });
   }
 

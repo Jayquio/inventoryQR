@@ -48,9 +48,17 @@ class ApiClient {
     } catch (e) {
       // If not JSON, return a helpful error map
       if (body.contains('<br />') || body.contains('<b>')) {
-        return {'error': 'Server Error (PHP): ' + body.replaceAll(RegExp(r'<[^>]*>'), ' ').trim()};
+        return {
+          'error':
+              'Server Error (PHP): ' +
+              body.replaceAll(RegExp(r'<[^>]*>'), ' ').trim(),
+        };
       }
-      return {'error': 'Invalid server response: ' + body.substring(0, body.length > 100 ? 100 : body.length)};
+      return {
+        'error':
+            'Invalid server response: ' +
+            body.substring(0, body.length > 100 ? 100 : body.length),
+      };
     }
   }
 
@@ -365,5 +373,27 @@ class ApiClient {
           : 'delete_failed';
       throw Exception(msg.toString());
     }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchNotifications({
+    String recipient = 'All',
+    int limit = 50,
+  }) async {
+    final url =
+        '${_baseUrl()}/notifications_list.php?recipient=$recipient&limit=$limit';
+    final uri = Uri.parse(url);
+    final res = await http
+        .get(uri, headers: _authHeaders)
+        .timeout(const Duration(seconds: 15));
+    final body = _safeDecode(res.body);
+    if (res.statusCode == 200 && body is Map && body['ok'] == true) {
+      final data = (body['data'] as List? ?? []);
+      return data
+          .whereType<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList();
+    }
+    final msg = body is Map ? (body['error'] ?? 'load_failed') : 'load_failed';
+    throw Exception(msg.toString());
   }
 }

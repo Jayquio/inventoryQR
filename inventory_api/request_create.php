@@ -60,5 +60,23 @@ if ($serialNumber !== '' && $instrumentType !== 'reagent') {
 $sql = 'INSERT INTO requests (student_name, instrument_name, quantity, purpose, course, needed_at) VALUES (?, ?, ?, ?, ?, ?)';
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$student, $instrument, $quantity, $purpose ?: null, $course ?: null, $neededAt ?: null]);
+$requestId = $pdo->lastInsertId();
 
-json_out(['ok' => true, 'request_id' => $pdo->lastInsertId()]);
+// Create Admin Notification
+try {
+    $notifSql = "INSERT INTO notifications (title, message, type, recipient, course, priority) VALUES (?, ?, ?, ?, ?, ?)";
+    $notifStmt = $pdo->prepare($notifSql);
+    $msg = "$student requested $quantity unit(s) of $instrument. Purpose: $purpose";
+    $notifStmt->execute([
+        'New Borrow Request',
+        $msg,
+        'request',
+        'Admin',
+        $course ?: null,
+        'medium'
+    ]);
+} catch (Throwable $e) {
+    // Silently fail if notifications table is not ready yet
+}
+
+json_out(['ok' => true, 'request_id' => $requestId]);

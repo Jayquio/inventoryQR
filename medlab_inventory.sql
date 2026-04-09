@@ -133,6 +133,25 @@ INSERT INTO `instrument_qr` (`id`, `instrument_name`, `type`, `payload`, `create
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `type` enum('request','error','warning','success','info') NOT NULL DEFAULT 'info',
+  `recipient` enum('Admin','Teacher','Student','All') NOT NULL DEFAULT 'All',
+  `course` varchar(128) DEFAULT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT 0,
+  `priority` enum('high','medium','low') NOT NULL DEFAULT 'medium',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `requests`
 --
 
