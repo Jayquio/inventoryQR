@@ -25,6 +25,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   List<Request> _requests = [];
   bool _loading = true;
   bool _initialized = false;
+
   /// From dashboard "Returns" / Approved stat — show approved (out) items only.
   bool _returnQueueFocus = false;
 
@@ -51,7 +52,10 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
 
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    _onlyPending = prefs.getBool('teacher_show_pending_only') ?? prefs.getBool('staff_show_pending_only') ?? false;
+    _onlyPending =
+        prefs.getBool('teacher_show_pending_only') ??
+        prefs.getBool('staff_show_pending_only') ??
+        false;
     if (!mounted) return;
     setState(() {});
   }
@@ -83,29 +87,39 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       RequestStatus.pending => 'pending',
     };
     ApiClient.instance
-        .updateRequestStatus(id: req.id, status: newStatusStr, user: AuthService.instance.currentUsername)
-        .then((_) {
-      if (!mounted) return;
-      setState(() {
-        _requests[index] = Request(
+        .updateRequestStatus(
           id: req.id,
-          studentName: req.studentName,
-          instrumentName: req.instrumentName,
-          purpose: req.purpose,
-          status: status,
-        );
-      });
-    }).catchError((e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
-      );
-    });
+          status: newStatusStr,
+          user: AuthService.instance.currentUsername,
+        )
+        .then((_) {
+          if (!mounted) return;
+          setState(() {
+            _requests[index] = Request(
+              id: req.id,
+              studentName: req.studentName,
+              instrumentName: req.instrumentName,
+              purpose: req.purpose,
+              status: status,
+            );
+          });
+        })
+        .catchError((e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceFirst(_exceptionPrefix, '')),
+            ),
+          );
+        });
     NotificationService.instance.add(
       NotificationItem(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
-        title: status == RequestStatus.approved ? 'Request Approved' : 'Request Rejected',
-        message: '${req.studentName} ${status == RequestStatus.approved ? 'approved' : 'rejected'} for ${req.instrumentName}.',
+        title: status == RequestStatus.approved
+            ? 'Request Approved'
+            : 'Request Rejected',
+        message:
+            '${req.studentName} ${status == RequestStatus.approved ? 'approved' : 'rejected'} for ${req.instrumentName}.',
         type: status == RequestStatus.approved ? 'success' : 'error',
         timestamp: DateTime.now().toIso8601String(),
         recipient: 'Teacher',
@@ -115,8 +129,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     NotificationService.instance.add(
       NotificationItem(
         id: 'student_${DateTime.now().microsecondsSinceEpoch}',
-        title: status == RequestStatus.approved ? 'Request Approved' : 'Request Rejected',
-        message: 'Your request for ${req.instrumentName} has been ${status == RequestStatus.approved ? 'approved' : 'rejected'}.',
+        title: status == RequestStatus.approved
+            ? 'Request Approved'
+            : 'Request Rejected',
+        message:
+            'Your request for ${req.instrumentName} has been ${status == RequestStatus.approved ? 'approved' : 'rejected'}.',
         type: status == RequestStatus.approved ? 'success' : 'error',
         timestamp: DateTime.now().toIso8601String(),
         recipient: 'Student',
@@ -131,9 +148,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Request'),
-        content: Text('Delete request for ${req.instrumentName} by ${req.studentName}?'),
+        content: Text(
+          'Delete request for ${req.instrumentName} by ${req.studentName}?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -149,7 +171,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   NotificationItem(
                     id: 'student_${DateTime.now().microsecondsSinceEpoch}',
                     title: 'Request Removed',
-                    message: 'Your request for ${req.instrumentName} was removed by Teacher.',
+                    message:
+                        'Your request for ${req.instrumentName} was removed by Teacher.',
                     type: 'info',
                     timestamp: DateTime.now().toIso8601String(),
                     recipient: 'Student',
@@ -164,7 +187,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                 if (!mounted) return;
                 setState(() => _loading = false);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+                  SnackBar(
+                    content: Text(
+                      e.toString().replaceFirst(_exceptionPrefix, ''),
+                    ),
+                  ),
                 );
               }
             },
@@ -178,12 +205,18 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   Future<void> _markReturned(Request req) async {
     if (req.instrumentType == 'reagent') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reagents are consumables and cannot be returned.')),
+        const SnackBar(
+          content: Text('Reagents are consumables and cannot be returned.'),
+        ),
       );
       return;
     }
     if (req.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot mark return: missing request id.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot mark return: missing request id.'),
+        ),
+      );
       return;
     }
     setState(() => _loading = true);
@@ -196,7 +229,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       if (!mounted) return;
       await _load();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked as returned.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Marked as returned.')));
       NotificationService.instance.add(
         NotificationItem(
           id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -211,7 +246,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        SnackBar(
+          content: Text(e.toString().replaceFirst(_exceptionPrefix, '')),
+        ),
       );
     } finally {
       if (mounted) {
@@ -236,23 +273,30 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   @override
   Widget build(BuildContext context) {
     final searchTerm = _searchController.text.toLowerCase();
-    final filteredRequests = _requests.where((req) {
-      if (searchTerm.isEmpty) return true;
-      return req.studentName.toLowerCase().contains(searchTerm) ||
-          req.instrumentName.toLowerCase().contains(searchTerm) ||
-          req.purpose.toLowerCase().contains(searchTerm) ||
-          req.status.name.toLowerCase().contains(searchTerm);
-    }).where((req) {
-      if (_returnQueueFocus) return req.status == RequestStatus.approved && req.instrumentType != 'reagent';
-      if (_onlyPending) return req.status == RequestStatus.pending;
-      return true;
-    }).toList();
+    final filteredRequests = _requests
+        .where((req) {
+          if (searchTerm.isEmpty) return true;
+          return req.studentName.toLowerCase().contains(searchTerm) ||
+              req.instrumentName.toLowerCase().contains(searchTerm) ||
+              req.purpose.toLowerCase().contains(searchTerm) ||
+              req.status.name.toLowerCase().contains(searchTerm);
+        })
+        .where((req) {
+          if (_returnQueueFocus)
+            return req.status == RequestStatus.approved &&
+                req.instrumentType != 'reagent';
+          if (_onlyPending) return req.status == RequestStatus.pending;
+          return true;
+        })
+        .toList();
 
     return RoleGuard(
       allowed: const {UserRole.superadmin, UserRole.admin},
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_returnQueueFocus ? 'Awaiting return' : 'Manage Requests'),
+          title: Text(
+            _returnQueueFocus ? 'Awaiting return' : 'Manage Requests',
+          ),
         ),
         body: Column(
           children: [
@@ -262,9 +306,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                 child: LinearProgressIndicator(),
               ),
             _buildSearchBar(),
-            Expanded(
-              child: _buildRequestList(filteredRequests),
-            ),
+            Expanded(child: _buildRequestList(filteredRequests)),
           ],
         ),
       ),
@@ -283,7 +325,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: InputChip(
-                  label: const Text('Approved / out — mark returned when items are back'),
+                  label: const Text(
+                    'Approved / out — mark returned when items are back',
+                  ),
                   deleteIcon: const Icon(Icons.close, size: 18),
                   onDeleted: () => setState(() => _returnQueueFocus = false),
                 ),
@@ -341,7 +385,10 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           children: [
             Text(
               request.studentName,
-              style: TextStyle(fontSize: R.text(18, w), fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: R.text(18, w),
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 6),
             Text("Instrument: ${request.instrumentName}"),
@@ -365,13 +412,21 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         builder: (context, constraints) {
           final narrow = constraints.maxWidth < 480;
           final approve = ElevatedButton(
-            onPressed: () => _updateRequestStatus(originalIndex, RequestStatus.approved),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            onPressed: () =>
+                _updateRequestStatus(originalIndex, RequestStatus.approved),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Approve'),
           );
           final reject = ElevatedButton(
-            onPressed: () => _updateRequestStatus(originalIndex, RequestStatus.rejected),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () =>
+                _updateRequestStatus(originalIndex, RequestStatus.rejected),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Reject'),
           );
           final delete = OutlinedButton.icon(
@@ -422,7 +477,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
               label: const Text('Delete'),
               style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
             ),
-          ]
+          ],
         );
       }
       return LayoutBuilder(
@@ -447,11 +502,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           if (narrow) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                returned,
-                const SizedBox(height: 8),
-                delete,
-              ],
+              children: [returned, const SizedBox(height: 8), delete],
             );
           }
           return Row(
@@ -483,14 +534,22 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 24 + MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              24 + MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   request.instrumentName,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text('Student: ${request.studentName}'),
@@ -516,11 +575,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
 }
 
 class _HoverListCard extends StatefulWidget {
-  const _HoverListCard({
-    required this.child,
-    this.onTap,
-    this.margin,
-  });
+  const _HoverListCard({required this.child, this.onTap, this.margin});
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry? margin;
@@ -542,13 +597,14 @@ class _HoverListCardState extends State<_HoverListCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
-          transform: Matrix4.diagonal3Values(_hover ? 1.01 : 1.0, _hover ? 1.01 : 1.0, 1.0),
+          transform: Matrix4.diagonal3Values(
+            _hover ? 1.01 : 1.0,
+            _hover ? 1.01 : 1.0,
+            1.0,
+          ),
           child: Card(
             elevation: _hover ? 8 : 6,
-            child: InkWell(
-              onTap: widget.onTap,
-              child: widget.child,
-            ),
+            child: InkWell(onTap: widget.onTap, child: widget.child),
           ),
         ),
       ),

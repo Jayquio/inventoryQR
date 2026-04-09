@@ -30,7 +30,7 @@ if ($status === 'returned') {
   // Also (best-effort) increment instrument availability and record a transaction.
   $pdo->beginTransaction();
   try {
-    $selReq = $pdo->prepare('SELECT r.instrument_name, r.status, COALESCE(i.type, "instrument") AS instrument_type FROM requests r LEFT JOIN instruments i ON i.name = r.instrument_name WHERE r.id = ? FOR UPDATE');
+    $selReq = $pdo->prepare('SELECT r.instrument_name, r.status, r.quantity as req_qty, COALESCE(i.type, "instrument") AS instrument_type FROM requests r LEFT JOIN instruments i ON i.name = r.instrument_name WHERE r.id = ? FOR UPDATE');
     $selReq->execute([$id]);
     $reqRow = $selReq->fetch();
     if (!$reqRow) {
@@ -51,6 +51,7 @@ if ($status === 'returned') {
     }
 
     $instrument = $reqRow['instrument_name'];
+    $reqQty = (int)($reqRow['req_qty'] ?? 1);
     $instrumentType = strtolower(trim((string)($reqRow['instrument_type'] ?? 'instrument')));
     if ($instrumentType === 'reagent') {
       $pdo->rollBack();
@@ -69,7 +70,8 @@ if ($status === 'returned') {
     $qty = (int)$instRow['quantity'];
     $avail = (int)$instRow['available'];
     if ($avail < $qty) {
-      $avail++;
+      $avail += $reqQty;
+      if ($avail > $qty) $avail = $qty;
       $updInst = $pdo->prepare('UPDATE instruments SET available = ? WHERE name = ?');
       $updInst->execute([$avail, $instrument]);
     }
@@ -103,7 +105,7 @@ if ($status === 'returned') {
 } elseif ($status === 'approved') {
   $pdo->beginTransaction();
   try {
-    $selReq = $pdo->prepare('SELECT instrument_name, status FROM requests WHERE id = ? FOR UPDATE');
+    $selReq = $pdo->prepare('SELECT instrument_name, status, quantity FROM requests WHERE id = ? FOR UPDATE');
     $selReq->execute([$id]);
     $reqRow = $selReq->fetch();
     if (!$reqRow) { $pdo->rollBack(); json_out(['error' => 'not_found'], 404); }
@@ -111,6 +113,7 @@ if ($status === 'returned') {
     // ONLY decrement if moving FROM 'pending' TO 'approved'
     if ($reqRow['status'] === 'pending') {
       $instrument = $reqRow['instrument_name'];
+      $reqQty = (int)($reqRow['quantity'] ?? 1);
       $selInst = $pdo->prepare('SELECT available FROM instruments WHERE name = ? FOR UPDATE');
       $selInst->execute([$instrument]);
       $instRow = $selInst->fetch();
@@ -119,8 +122,8 @@ if ($status === 'returned') {
         json_out(['error' => 'instrument_not_found'], 404);
       }
       $avail = (int)$instRow['available'];
-      if ($avail > 0) {
-        $avail--;
+      if ($avail >= $reqQty) {
+        $avail -= $reqQty;
         $updInst = $pdo->prepare('UPDATE instruments SET available = ? WHERE name = ?');
         $updInst->execute([$avail, $instrument]);
       } else {

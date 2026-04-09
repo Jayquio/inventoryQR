@@ -15,12 +15,13 @@ class ManageRequestsScreen extends StatefulWidget {
   State<ManageRequestsScreen> createState() => _ManageRequestsScreenState();
 }
 
-class _ManageRequestsScreenState extends State<ManageRequestsScreen> with SingleTickerProviderStateMixin {
+class _ManageRequestsScreenState extends State<ManageRequestsScreen>
+    with SingleTickerProviderStateMixin {
   static const String _exceptionPrefix = 'Exception: ';
 
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<Request> _requests = [];
   bool _loading = true;
   bool _initialized = false;
@@ -35,9 +36,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
   Future<void> _loadData() async {
     try {
       final reqRows = await ApiClient.instance.fetchRequests();
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _requests = reqRows.map((e) => Request.fromJson(e)).toList();
         _loading = false;
@@ -72,14 +73,22 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
 
   Future<void> _markReturned(Request req) async {
     if (req.instrumentType == 'reagent') {
-      _showMessage(const SnackBar(content: Text('Reagents are consumables and cannot be returned.')));
+      _showMessage(
+        const SnackBar(
+          content: Text('Reagents are consumables and cannot be returned.'),
+        ),
+      );
       return;
     }
     if (req.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot sync return: request id is missing.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot sync return: request id is missing.'),
+        ),
+      );
       return;
     }
-    
+
     try {
       // Stock + transaction are applied in requests_update_status.php (returned).
       await ApiClient.instance.updateRequestStatus(
@@ -87,7 +96,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
         status: 'returned',
         user: AuthService.instance.currentUsername,
       );
-      
+
       // Refresh both requests and instruments to ensure stock is correct
       await _loadData();
 
@@ -97,7 +106,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
     } catch (e) {
       if (!mounted) return;
       _showMessage(
-        SnackBar(content: Text('Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+        SnackBar(
+          content: Text(
+            'Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}',
+          ),
+        ),
       );
     }
   }
@@ -111,10 +124,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
       );
       await _loadData();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request approved!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Request approved!')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -127,11 +144,98 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
       );
       await _loadData();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request rejected.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Request rejected.')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+  }
+
+  void _showOverrideQuantityDialog(Request req) {
+    final controller = TextEditingController(text: req.quantity.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.edit_note, color: AppTheme.primaryColor),
+            SizedBox(width: 8),
+            Text('Override Quantity'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Request by: ${req.studentName}'),
+            Text('Instrument: ${req.instrumentName}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'New Quantity',
+                border: OutlineInputBorder(),
+                helperText:
+                    'Enter a lower quantity to allow other users to borrow units.',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newQty = int.tryParse(controller.text);
+              if (newQty == null || newQty <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a valid quantity.'),
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(ctx);
+              try {
+                await ApiClient.instance.updateRequestQuantity(
+                  id: req.id,
+                  quantity: newQty,
+                  user: AuthService.instance.currentUsername,
+                );
+                await _loadData();
+                if (!mounted) return;
+                _showMessage(
+                  const SnackBar(
+                    content: Text('Quantity overridden successfully.'),
+                  ),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                _showMessage(
+                  SnackBar(
+                    content: Text(
+                      'Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}',
+                    ),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save Override'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _confirmDelete(Request req) {
@@ -145,9 +249,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
             Text('Confirm Delete'),
           ],
         ),
-        content: Text('Are you sure you want to delete this request for ${req.instrumentName}?'),
+        content: Text(
+          'Are you sure you want to delete this request for ${req.instrumentName}?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -160,11 +269,18 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
               } catch (e) {
                 if (!mounted) return;
                 _showMessage(
-                  SnackBar(content: Text('Error deleting: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+                  SnackBar(
+                    content: Text(
+                      'Error deleting: ${e.toString().replaceFirst(_exceptionPrefix, '')}',
+                    ),
+                  ),
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -192,30 +308,30 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
             ],
           ),
         ),
-        body: _loading 
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: DebouncedSearchBar(
-                    controller: _searchController,
-                    hintText: 'Search by student or instrument...',
-                    onChanged: (_) => setState(() {}),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: DebouncedSearchBar(
+                      controller: _searchController,
+                      hintText: 'Search by student or instrument...',
+                      onChanged: (_) => setState(() {}),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildTabContent(RequestStatus.pending),
-                      _buildTabContent(RequestStatus.approved),
-                      _buildTabContent(null), // All logs
-                    ],
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildTabContent(RequestStatus.pending),
+                        _buildTabContent(RequestStatus.approved),
+                        _buildTabContent(null), // All logs
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
       ),
     );
   }
@@ -223,12 +339,15 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
   Widget _buildTabContent(RequestStatus? filterStatus) {
     final searchTerm = _searchController.text.toLowerCase();
     final filtered = _requests.where((req) {
-      final matchesSearch = req.studentName.toLowerCase().contains(searchTerm) || 
-                           req.instrumentName.toLowerCase().contains(searchTerm);
+      final matchesSearch =
+          req.studentName.toLowerCase().contains(searchTerm) ||
+          req.instrumentName.toLowerCase().contains(searchTerm);
       if (filterStatus == null) return matchesSearch;
       final matchesStatus = req.status == filterStatus;
       if (filterStatus == RequestStatus.approved) {
-        return matchesSearch && matchesStatus && req.instrumentType != 'reagent';
+        return matchesSearch &&
+            matchesStatus &&
+            req.instrumentType != 'reagent';
       }
       return matchesSearch && matchesStatus;
     }).toList();
@@ -247,12 +366,13 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.assignment_outlined, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              emptyMessage,
-              style: const TextStyle(color: Colors.grey),
+            Icon(
+              Icons.assignment_outlined,
+              size: 64,
+              color: Colors.grey.shade300,
             ),
+            const SizedBox(height: 16),
+            Text(emptyMessage, style: const TextStyle(color: Colors.grey)),
           ],
         ),
       );
@@ -284,10 +404,22 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(request.instrumentName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text(
+                  request.instrumentName,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('Student: ${request.studentName}', style: const TextStyle(fontSize: 16)),
-                Text('Purpose: ${request.purpose}', style: const TextStyle(color: Colors.grey)),
+                Text(
+                  'Student: ${request.studentName}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                Text(
+                  'Purpose: ${request.purpose}',
+                  style: const TextStyle(color: Colors.grey),
+                ),
                 const Divider(height: 32),
                 _buildActions(request),
               ],
@@ -300,7 +432,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
 
   Widget _buildRequestCard(Request request) {
     final statusColor = _getStatusColor(request.status);
-    
+
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
@@ -316,18 +448,28 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
                 Expanded(
                   child: Text(
                     request.studentName,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     request.status.name.toUpperCase(),
-                    style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 10),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
               ],
@@ -336,12 +478,30 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: Text('Instrument: ${request.instrumentName}', style: const TextStyle(fontWeight: FontWeight.w600))),
-                Text('Qty: ${request.quantity}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                Expanded(
+                  child: Text(
+                    'Instrument: ${request.instrumentName}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Text(
+                  'Qty: ${request.quantity}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
               ],
             ),
-            Text('Purpose: ${request.purpose}', style: const TextStyle(color: Colors.grey)),
-            if (request.course != null) Text('Course: ${request.course}', style: const TextStyle(color: Colors.grey)),
+            Text(
+              'Purpose: ${request.purpose}',
+              style: const TextStyle(color: Colors.grey),
+            ),
+            if (request.course != null)
+              Text(
+                'Course: ${request.course}',
+                style: const TextStyle(color: Colors.grey),
+              ),
             const SizedBox(height: 16),
             _buildActions(request),
           ],
@@ -363,16 +523,31 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
   Widget _buildPendingActions(Request request) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 480;
+        final narrow =
+            constraints.maxWidth < 600; // Increased to accommodate new button
         final approve = ElevatedButton(
           onPressed: () => _approveRequest(request),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+          ),
           child: const Text('Approve'),
         );
         final reject = ElevatedButton(
           onPressed: () => _rejectRequest(request),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
           child: const Text('Reject'),
+        );
+        final override = OutlinedButton.icon(
+          onPressed: () => _showOverrideQuantityDialog(request),
+          icon: const Icon(Icons.edit_note, size: 20),
+          label: const Text('Override Qty'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.primaryColor,
+          ),
         );
         final delete = OutlinedButton.icon(
           onPressed: () => _confirmDelete(request),
@@ -392,16 +567,24 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
                 ],
               ),
               const SizedBox(height: 8),
-              delete,
+              Row(
+                children: [
+                  Expanded(child: override),
+                  const SizedBox(width: 8),
+                  Expanded(child: delete),
+                ],
+              ),
             ],
           );
         }
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            SizedBox(width: 140, child: approve),
+            SizedBox(width: 120, child: approve),
             const SizedBox(width: 8),
-            SizedBox(width: 140, child: reject),
+            SizedBox(width: 120, child: reject),
+            const SizedBox(width: 8),
+            SizedBox(width: 140, child: override),
             const SizedBox(width: 8),
             SizedBox(width: 120, child: delete),
           ],
@@ -448,11 +631,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
         if (narrow) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              returned,
-              const SizedBox(height: 8),
-              delete,
-            ],
+            children: [returned, const SizedBox(height: 8), delete],
           );
         }
         return Row(
@@ -492,10 +671,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> with Single
 
   Color _getStatusColor(RequestStatus status) {
     switch (status) {
-      case RequestStatus.pending: return Colors.orange;
-      case RequestStatus.approved: return Colors.green;
-      case RequestStatus.rejected: return Colors.red;
-      case RequestStatus.returned: return Colors.blue;
+      case RequestStatus.pending:
+        return Colors.orange;
+      case RequestStatus.approved:
+        return Colors.green;
+      case RequestStatus.rejected:
+        return Colors.red;
+      case RequestStatus.returned:
+        return Colors.blue;
     }
   }
 }

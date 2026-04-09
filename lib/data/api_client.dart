@@ -212,6 +212,25 @@ class ApiClient {
     }
   }
 
+  Future<void> updateRequestQuantity({
+    required String id,
+    required int quantity,
+    required String user,
+  }) async {
+    final uri = Uri.parse('${_baseUrl()}/requests_update_quantity.php');
+    final payload = {'id': id, 'quantity': quantity, 'user': user};
+    final res = await http
+        .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) {
+      final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+      final msg = body is Map
+          ? (body['error'] ?? 'update_failed')
+          : 'update_failed';
+      throw Exception(msg.toString());
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchRequests({
     String? studentName,
   }) async {
