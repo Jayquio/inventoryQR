@@ -253,15 +253,14 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
                   fontWeight: FontWeight.bold,
                 ),
                 decoration: InputDecoration(
-                  labelText: 'New Allocated Quantity',
+                  labelText: 'New Quantity',
                   prefixIcon: const Icon(Icons.add_task),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
                   fillColor: Colors.white,
-                  helperText:
-                      'Allocating a lower amount frees up units for other students.',
+                  helperText: 'Lower quantity to free up stock.',
                   helperStyle: const TextStyle(fontStyle: FontStyle.italic),
                 ),
               ),
@@ -626,6 +625,10 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: const Text('Approve'),
         );
@@ -634,35 +637,40 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red,
             foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: const Text('Reject'),
         );
         final override = Tooltip(
-          message: 'Update the quantity for this request before approving.',
-          child: ElevatedButton.icon(
+          message: 'Update quantity before approving.',
+          child: ElevatedButton(
             onPressed: () => _showOverrideQuantityDialog(request),
-            icon: const Icon(Icons.edit_note, size: 20),
-            label: const Text(
-              'Override Qty',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-              foregroundColor: AppTheme.primaryColor,
-              elevation: 0,
-              side: const BorderSide(color: AppTheme.primaryColor, width: 2),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
+            child: const Text('Override'),
           ),
         );
-        final delete = OutlinedButton.icon(
+        final delete = ElevatedButton(
           onPressed: () => _confirmDelete(request),
-          icon: const Icon(Icons.delete_outline, size: 20),
-          label: const Text('Delete'),
-          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.red,
+            side: const BorderSide(color: Colors.red),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text('Delete'),
         );
         if (narrow) {
           return Column(
@@ -689,13 +697,13 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            SizedBox(width: 140, child: approve),
+            SizedBox(width: 100, child: approve),
             const SizedBox(width: 8),
-            SizedBox(width: 140, child: reject),
+            SizedBox(width: 100, child: reject),
             const SizedBox(width: 8),
-            SizedBox(width: 180, child: override),
+            SizedBox(width: 100, child: override),
             const SizedBox(width: 8),
-            SizedBox(width: 130, child: delete),
+            SizedBox(width: 100, child: delete),
           ],
         );
       },
