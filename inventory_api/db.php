@@ -1,8 +1,15 @@
 <?php
+// 1. Force JSON header immediately
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+// 2. Suppress HTML error display (CRITICAL to prevent the "<br />" error)
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(E_ALL);
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 // Ensure all server-side timestamps use Philippine time
@@ -31,7 +38,7 @@ try {
   // Clear any output buffer (like PHP warnings)
   if (ob_get_length()) ob_clean();
   http_response_code(500);
-  echo json_encode(['error' => 'db_error', 'details' => $e->getMessage()]);
+  echo json_encode(['ok' => false, 'error' => 'db_error', 'details' => $e->getMessage()]);
   exit;
 }
 
@@ -46,6 +53,11 @@ function json_out($data, int $code = 200) {
   if (ob_get_length()) ob_clean();
   http_response_code($code);
   header('Content-Type: application/json');
-  echo json_encode($data);
+  $out = json_encode($data);
+  if ($out === false) {
+      echo json_encode(['ok' => false, 'error' => 'json_encode_error', 'details' => json_last_error_msg()]);
+  } else {
+      echo $out;
+  }
   exit;
 }

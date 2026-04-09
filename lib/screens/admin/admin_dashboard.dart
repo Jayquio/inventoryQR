@@ -283,6 +283,16 @@ class _AdminDashboardBodyState extends State<_AdminDashboardBody> {
                 _buildTransactionNotificationsCard(context, searchTerm),
                 const SizedBox(height: 24),
                 _buildRecentActivityCard(),
+                const SizedBox(height: 40),
+                Center(
+                  child: Text(
+                    'Build Version: 2026-04-09.01',
+                    style: TextStyle(
+                      color: Colors.grey.withValues(alpha: 0.5),
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
