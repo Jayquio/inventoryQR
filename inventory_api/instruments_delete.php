@@ -1,16 +1,37 @@
 <?php
-require __DIR__ . '/db.php';
-$in = json_input();
-$name = trim($in['name'] ?? '');
+require_once 'db.php';
 
-if ($name === '') {
-    json_out(['error' => 'invalid_name'], 400);
+// Only allow POST requests for deletion
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    json_out(['ok' => false, 'error' => 'Method not allowed'], 405);
 }
 
-// Optional: check if related transactions or requests exist. 
-// We will just do a standard delete or a cascading delete if foreign keys are set.
-$del = $pdo->prepare('DELETE FROM instruments WHERE name = ?');
-$del->execute([$name]);
+$input = json_input();
+$name = $input['name'] ?? '';
 
-if ($del->rowCount() === 0) json_out(['error' => 'not_found'], 404);
-json_out(['ok' => true]);
+if (empty($name)) {
+    json_out(['ok' => false, 'error' => 'Missing instrument name'], 400);
+}
+
+try {
+    // 1. Check if the instrument exists
+    $stmt = $pdo->prepare("SELECT id FROM instruments WHERE name = ?");
+    $stmt->execute([$name]);
+    $instrument = $stmt->fetch();
+
+    if (!$instrument) {
+        json_out(['ok' => false, 'error' => 'Instrument not found'], 404);
+    }
+
+    // 2. Optional: Check if there are active requests for this instrument
+    // For now, we'll just delete it. In a real system, you might want to prevent 
+    // deleting instruments that are currently borrowed.
+    
+    // 3. Delete the instrument
+    $stmt = $pdo->prepare("DELETE FROM instruments WHERE name = ?");
+    $stmt->execute([$name]);
+
+    json_out(['ok' => true, 'message' => 'Instrument removed successfully']);
+} catch (Throwable $e) {
+    json_out(['ok' => false, 'error' => 'delete_failed', 'details' => $e->getMessage()], 500);
+}

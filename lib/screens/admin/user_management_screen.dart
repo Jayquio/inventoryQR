@@ -32,11 +32,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       if (!mounted) return;
       setState(() {
         _users = data
-            .map((e) => {
-                  'id': e['id']?.toString() ?? '',
-                  'username': e['username']?.toString() ?? '',
-                  'role': (e['role']?.toString() ?? '').toLowerCase(),
-                })
+            .map(
+              (e) => {
+                'id': e['id']?.toString() ?? '',
+                'username': e['username']?.toString() ?? '',
+                'role': (e['role']?.toString() ?? '').toLowerCase(),
+              },
+            )
             .toList();
         _loading = false;
       });
@@ -44,7 +46,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+        SnackBar(
+          content: Text(e.toString().replaceFirst(_exceptionPrefix, '')),
+        ),
       );
     }
   }
@@ -96,23 +100,33 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }) async {
     if (username.isEmpty || password.isEmpty) {
       if (dialogContext.mounted) {
-        ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('All fields are required')));
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
+          const SnackBar(content: Text('All fields are required')),
+        );
       }
       return;
     }
 
     setSubmitting(true);
     try {
-      await ApiClient.instance.createUser(username: username, password: password, role: role);
+      await ApiClient.instance.createUser(
+        username: username,
+        password: password,
+        role: role,
+      );
       if (dialogContext.mounted) {
         Navigator.of(dialogContext).pop();
-        ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('User created')));
+        ScaffoldMessenger.of(
+          dialogContext,
+        ).showSnackBar(const SnackBar(content: Text('User created')));
         _loadUsers();
       }
     } catch (e) {
       if (dialogContext.mounted) {
         ScaffoldMessenger.of(dialogContext).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+          SnackBar(
+            content: Text(e.toString().replaceFirst(_exceptionPrefix, '')),
+          ),
         );
       }
     } finally {
@@ -146,7 +160,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 dialogContext: context,
                 username: user['username'],
                 role: selectedRole.toLowerCase(),
-                password: passwordController.text.trim().isEmpty ? null : passwordController.text.trim(),
+                password: passwordController.text.trim().isEmpty
+                    ? null
+                    : passwordController.text.trim(),
                 setSubmitting: (v) => setStateDialog(() => submitting = v),
               ),
               submitLabel: 'Save',
@@ -166,23 +182,33 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }) async {
     if (username.isEmpty) {
       if (dialogContext.mounted) {
-        ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Username is required')));
+        ScaffoldMessenger.of(
+          dialogContext,
+        ).showSnackBar(const SnackBar(content: Text('Username is required')));
       }
       return;
     }
 
     setSubmitting(true);
     try {
-      await ApiClient.instance.updateUser(username: username, password: password, role: role);
+      await ApiClient.instance.updateUser(
+        username: username,
+        password: password,
+        role: role,
+      );
       if (dialogContext.mounted) {
         Navigator.of(dialogContext).pop();
-        ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('User updated')));
+        ScaffoldMessenger.of(
+          dialogContext,
+        ).showSnackBar(const SnackBar(content: Text('User updated')));
         _loadUsers();
       }
     } catch (e) {
       if (dialogContext.mounted) {
         ScaffoldMessenger.of(dialogContext).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+          SnackBar(
+            content: Text(e.toString().replaceFirst(_exceptionPrefix, '')),
+          ),
         );
       }
     } finally {
@@ -230,14 +256,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     _users.removeAt(index);
                   });
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('User deleted')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('User deleted')));
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString().replaceFirst(_exceptionPrefix, ''))),
+                    SnackBar(
+                      content: Text(
+                        e.toString().replaceFirst(_exceptionPrefix, ''),
+                      ),
+                    ),
                   );
                 }
               }
@@ -293,18 +323,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             if (_loading)
               const Padding(
                 padding: EdgeInsets.only(right: 12),
-                child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))),
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
               ),
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: _addUser,
-              tooltip: 'Add User',
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadUsers,
-              tooltip: 'Refresh',
-            ),
+            IconButton(icon: const Icon(Icons.add), onPressed: _addUser),
           ],
         ),
         body: LayoutBuilder(
@@ -326,9 +353,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       ),
                     ),
                     _buildSummaryCards(),
-                    Expanded(
-                      child: _buildUserList(filteredUsers),
-                    ),
+                    Expanded(child: _buildUserList(filteredUsers)),
                   ],
                 ),
               ),
@@ -373,10 +398,30 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             spacing: 10,
             runSpacing: 10,
             children: [
-              SizedBox(width: width, child: _summaryCard(totalCount, 'Total Users')),
-              SizedBox(width: width, child: _summaryCard(adminCount, 'Admins', color: Colors.red)),
-              SizedBox(width: width, child: _summaryCard(teacherCount, 'Teachers', color: Colors.blue)),
-              SizedBox(width: width, child: _summaryCard(studentCount, 'Students', color: Colors.green)),
+              SizedBox(
+                width: width,
+                child: _summaryCard(totalCount, 'Total Users'),
+              ),
+              SizedBox(
+                width: width,
+                child: _summaryCard(adminCount, 'Admins', color: Colors.red),
+              ),
+              SizedBox(
+                width: width,
+                child: _summaryCard(
+                  teacherCount,
+                  'Teachers',
+                  color: Colors.blue,
+                ),
+              ),
+              SizedBox(
+                width: width,
+                child: _summaryCard(
+                  studentCount,
+                  'Students',
+                  color: Colors.green,
+                ),
+              ),
             ],
           );
         },
@@ -393,7 +438,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           children: [
             Text(
               value,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
             Text(label),
           ],
@@ -428,11 +477,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 children: [
                   Text(
                     user['username'],
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: _getRoleColor(user['role']).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -492,37 +547,33 @@ class _UserFormContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!isEdit && usernameController != null) ...[
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            const SizedBox(height: 8),
-          ],
-          DropdownButtonFormField<String>(
-            initialValue: selectedRole,
-            decoration: const InputDecoration(labelText: 'Role'),
-            items: const [
-              DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-              DropdownMenuItem(value: 'Teacher', child: Text('Teacher')),
-              DropdownMenuItem(value: 'Student', child: Text('Student')),
-            ],
-            onChanged: onRoleChanged,
-          ),
-          const SizedBox(height: 8),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!isEdit)
           TextField(
-            controller: passwordController,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: isEdit ? 'New Password (optional)' : 'Password',
-            ),
+            controller: usernameController,
+            decoration: const InputDecoration(labelText: 'Username'),
           ),
-        ],
-      ),
+        TextField(
+          controller: passwordController,
+          decoration: InputDecoration(
+            labelText: isEdit ? 'New Password (optional)' : 'Password',
+          ),
+          obscureText: true,
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: selectedRole,
+          decoration: const InputDecoration(labelText: 'Role'),
+          items: [
+            'Student',
+            'Teacher',
+            'Admin',
+          ].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+          onChanged: onRoleChanged,
+        ),
+      ],
     );
   }
 }

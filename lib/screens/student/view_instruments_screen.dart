@@ -1,5 +1,3 @@
-// lib/screens/student/view_instruments_screen.dart
-
 import 'package:flutter/material.dart';
 import '../../data/api_client.dart';
 import '../../models/instrument.dart';

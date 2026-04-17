@@ -1,13 +1,9 @@
 // lib/screens/common/settings_screen.dart
 
 import 'package:flutter/material.dart';
-import '../../data/api_client.dart';
 import '../../data/auth_service.dart';
-import '../../data/app_config_service.dart';
-import '../../data/theme_service.dart';
 import '../../data/notification_service.dart';
 import '../../core/theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String userRole;

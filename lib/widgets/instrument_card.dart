@@ -8,11 +8,13 @@ class InstrumentCard extends StatefulWidget {
     required this.instrument,
     this.onTap,
     this.highlight,
+    this.userRole = 'Student',
   });
 
   final Instrument instrument;
   final VoidCallback? onTap;
   final String? highlight;
+  final String userRole;
 
   @override
   State<InstrumentCard> createState() => _InstrumentCardState();
@@ -93,8 +95,6 @@ class _InstrumentCardState extends State<InstrumentCard> {
       ),
     );
   }
-
-  
 
   Widget _placeholder() {
     return Container(

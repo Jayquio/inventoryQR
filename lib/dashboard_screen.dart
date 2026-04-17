@@ -68,7 +68,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _requests.where((r) => (r['status'] ?? '') == 'pending').length;
     final availableInstruments =
         _instruments.where((i) => i.available > 0 && i.status.toLowerCase() == 'active').length;
-    final unreadNotifs = NotificationService.instance.unreadCount;
 
     final stats = [
       _StatItem('Total Instruments', _instruments.length, Icons.science,

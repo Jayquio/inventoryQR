@@ -158,7 +158,12 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  Widget _buildDeleteButton(BuildContext context, Instrument instrument, int index, double width) {
+  Widget _buildDeleteButton(
+    BuildContext context,
+    Instrument instrument,
+    int index,
+    double width,
+  ) {
     return SizedBox(
       width: width,
       child: TextButton.icon(
@@ -169,11 +174,11 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         ),
         onPressed: () {
           Navigator.pop(context);
-          _confirmDeleteInstrument(instrument, index);
+          _confirmDelete(instrument, index);
         },
-        icon: const Icon(Icons.delete),
+        icon: const Icon(Icons.delete_outline),
         label: const Text(
-          'Delete',
+          'Remove',
           softWrap: false,
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
@@ -182,42 +187,54 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  void _confirmDeleteInstrument(Instrument instrument, int index) {
+  void _confirmDelete(Instrument instrument, int index) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Instrument?'),
-        content: Text('Are you sure you want to completely delete "${instrument.name}"? This action cannot be undone.'),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Instrument?'),
+        content: Text(
+          'Are you sure you want to remove "${instrument.name}" from the inventory? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              try {
-                await ApiClient.instance.deleteInstrument(name: instrument.name);
-                if (!mounted) return;
-                setState(() {
-                  _instruments.removeAt(index);
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Deleted "${instrument.name}".')),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
-                );
-              }
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteInstrument(instrument, index);
             },
-            child: const Text('Delete'),
+            child: const Text('Remove'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteInstrument(Instrument instrument, int index) async {
+    try {
+      await ApiClient.instance.deleteInstrument(name: instrument.name);
+      if (!mounted) return;
+      setState(() {
+        _instruments.removeAt(index);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"${instrument.name}" removed successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to remove instrument: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildUpdateButton(BuildContext context, int index, double width) {
