@@ -35,11 +35,28 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   String _course = '';
   String _neededAt = '';
 
+  // --- Borrow list ---
+  final List<Map<String, dynamic>> _borrowList = [];
+  List<String> _submitResults = [];
+
+  // Controllers so we can clear them after adding to borrow list
+  final _quantityController = TextEditingController(text: '1');
+  final _purposeController = TextEditingController();
+  final _courseController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _selectedInstrument = widget.preSelectedInstrument;
     _load();
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    _purposeController.dispose();
+    _courseController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -57,6 +74,94 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     }
   }
 
+  void _addToBorrowList() {
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+
+    if (_selectedInstrument == null || _selectedInstrument!.isEmpty) return;
+    if (_purpose.isEmpty) return;
+
+    setState(() {
+      _borrowList.add({
+        'instrumentName': _selectedInstrument!,
+        'quantity': _quantity,
+        'purpose': _purpose,
+        'course': _course,
+        'neededAt': _neededAt,
+      });
+      // Reset form fields for next item
+      _selectedInstrument = null;
+      _quantity = 1;
+      _purpose = '';
+      _neededAt = '';
+      // Keep course as it's likely the same
+      _quantityController.text = '1';
+      _purposeController.clear();
+    });
+    // Reset form validation state
+    _formKey.currentState!.reset();
+    _quantityController.text = '1';
+  }
+
+  void _removeFromBorrowList(int index) {
+    setState(() => _borrowList.removeAt(index));
+  }
+
+  Future<void> _submitAll() async {
+    if (_borrowList.isEmpty) return;
+
+    setState(() => _submitting = true);
+
+    final results = <String>[];
+    int successCount = 0;
+
+    for (final item in _borrowList) {
+      try {
+        await ApiClient.instance.submitRequest(
+          studentName: AuthService.instance.currentUsername,
+          instrumentName: item['instrumentName'],
+          quantity: item['quantity'],
+          purpose: item['purpose'],
+          course: item['course'] ?? '',
+          neededAtIso: (item['neededAt'] ?? '').toString().isNotEmpty
+              ? item['neededAt']
+              : null,
+        );
+        results.add('✓ ${item['instrumentName']} (x${item['quantity']})');
+        successCount++;
+      } catch (e) {
+        results.add(
+            '✗ ${item['instrumentName']} — ${e.toString().replaceFirst('Exception: ', '')}');
+      }
+    }
+
+    // Add notification
+    if (successCount > 0) {
+      final nowIso = DateTime.now().toIso8601String();
+      NotificationService.instance.add(
+        NotificationItem(
+          id: 'student_${DateTime.now().microsecondsSinceEpoch}',
+          title: 'Requests Submitted',
+          message:
+              'You submitted $successCount borrow request${successCount > 1 ? 's' : ''}',
+          type: 'success',
+          timestamp: nowIso,
+          recipient: 'Student',
+          course: _course,
+          priority: 'low',
+        ),
+      );
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _submitting = false;
+      _success = true;
+      _submitResults = results;
+    });
+  }
+
+  // Legacy single submit (for when user submits directly without using the list)
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
@@ -96,6 +201,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       setState(() {
         _submitting = false;
         _success = true;
+        _submitResults = ['✓ $_selectedInstrument (x$_quantity)'];
       });
     } catch (e) {
       if (!mounted) return;
@@ -120,7 +226,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 400),
+                constraints: const BoxConstraints(maxWidth: 440),
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -136,19 +242,53 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                           color: Colors.green.shade600, size: 32),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Request Submitted!',
-                      style: TextStyle(
+                    Text(
+                      _submitResults.length > 1
+                          ? 'Requests Submitted!'
+                          : 'Request Submitted!',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF111827),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Your request has been submitted and is pending review.',
+                    Text(
+                      _submitResults.length > 1
+                          ? '${_submitResults.where((r) => r.startsWith('✓')).length} of ${_submitResults.length} requests submitted successfully.'
+                          : 'Your request has been submitted and is pending review.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF6B7280)),
+                      style: const TextStyle(color: Color(0xFF6B7280)),
+                    ),
+                    const SizedBox(height: 12),
+                    // Show results summary
+                    Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(maxHeight: 160),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _submitResults
+                              .map((r) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Text(
+                                      r,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: r.startsWith('✓')
+                                            ? Colors.green.shade700
+                                            : Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -177,6 +317,11 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                 _purpose = '';
                                 _course = '';
                                 _neededAt = '';
+                                _borrowList.clear();
+                                _submitResults.clear();
+                                _quantityController.text = '1';
+                                _purposeController.clear();
+                                _courseController.clear();
                               });
                             },
                             style: ElevatedButton.styleFrom(
@@ -234,6 +379,24 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const Spacer(),
+                if (_borrowList.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_borrowList.length} item${_borrowList.length > 1 ? 's' : ''}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -245,184 +408,331 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
-                  child: Card(
-                    elevation: 0.5,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Request Details',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF374151),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
+                  child: Column(
+                    children: [
+                      // --- Borrow List Summary ---
+                      if (_borrowList.isNotEmpty) ...[
+                        _buildBorrowListCard(),
+                        const SizedBox(height: 16),
+                      ],
 
-                            // Instrument dropdown
-                            const Text('Instrument *',
-                                style: TextStyle(fontSize: 13)),
-                            const SizedBox(height: 4),
-                            _buildInstrumentDropdown(),
-                            const SizedBox(height: 16),
-
-                            // Quantity
-                            const Text('Quantity *',
-                                style: TextStyle(fontSize: 13)),
-                            const SizedBox(height: 4),
-                            TextFormField(
-                              initialValue: '1',
-                              keyboardType: TextInputType.number,
-                              decoration: _inputDecor(''),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Required';
-                                final n = int.tryParse(v);
-                                if (n == null || n <= 0) return '> 0';
-                                return null;
-                              },
-                              onSaved: (v) =>
-                                  _quantity = int.tryParse(v ?? '1') ?? 1,
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Purpose
-                            const Text('Purpose *',
-                                style: TextStyle(fontSize: 13)),
-                            const SizedBox(height: 4),
-                            TextFormField(
-                              maxLines: 3,
-                              decoration: _inputDecor(
-                                  'Describe why you need this instrument...'),
-                              validator: (v) =>
-                                  v == null || v.isEmpty ? 'Required' : null,
-                              onSaved: (v) => _purpose = v ?? '',
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Course + Needed By
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                if (constraints.maxWidth > 400) {
-                                  return Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text('Course / Subject',
-                                                style: TextStyle(
-                                                    fontSize: 13)),
-                                            const SizedBox(height: 4),
-                                            TextFormField(
-                                              decoration:
-                                                  _inputDecor('e.g. Biology 101'),
-                                              onSaved: (v) =>
-                                                  _course = v ?? '',
-                                            ),
-                                          ],
-                                        ),
+                      // --- Request Form ---
+                      Card(
+                        elevation: 0.5,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Request Details',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF374151),
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text('Needed By',
-                                                style: TextStyle(
-                                                    fontSize: 13)),
-                                            const SizedBox(height: 4),
-                                            GestureDetector(
-                                              onTap: _pickDate,
-                                              child: AbsorbPointer(
-                                                child: TextFormField(
-                                                  decoration: _inputDecor(
-                                                      _neededAt.isEmpty
-                                                          ? 'Select date'
-                                                          : _neededAt),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                    ),
+                                    if (_borrowList.isNotEmpty) ...[
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryColor
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          'Adding item #${_borrowList.length + 1}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppTheme.primaryColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                     ],
-                                  );
-                                }
-                                return Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Instrument dropdown
+                                const Text('Instrument *',
+                                    style: TextStyle(fontSize: 13)),
+                                const SizedBox(height: 4),
+                                _buildInstrumentDropdown(),
+                                const SizedBox(height: 16),
+
+                                // Quantity
+                                const Text('Quantity *',
+                                    style: TextStyle(fontSize: 13)),
+                                const SizedBox(height: 4),
+                                TextFormField(
+                                  controller: _quantityController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: _inputDecor(''),
+                                  validator: (v) {
+                                    if (v == null || v.isEmpty) return 'Required';
+                                    final n = int.tryParse(v);
+                                    if (n == null || n <= 0) return '> 0';
+                                    if (_selectedInstrument != null && _selectedInstrument!.isNotEmpty) {
+                                      try {
+                                        final inst = _instruments.firstWhere((i) => i.name == _selectedInstrument);
+                                        if (n > inst.available) return 'Max available: ${inst.available}';
+                                      } catch (_) {}
+                                    }
+                                    return null;
+                                  },
+                                  onSaved: (v) =>
+                                      _quantity = int.tryParse(v ?? '1') ?? 1,
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Purpose
+                                const Text('Purpose *',
+                                    style: TextStyle(fontSize: 13)),
+                                const SizedBox(height: 4),
+                                TextFormField(
+                                  controller: _purposeController,
+                                  maxLines: 3,
+                                  decoration: _inputDecor(
+                                      'Describe why you need this instrument...'),
+                                  validator: (v) =>
+                                      v == null || v.isEmpty ? 'Required' : null,
+                                  onSaved: (v) => _purpose = v ?? '',
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Course + Needed By
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    if (constraints.maxWidth > 400) {
+                                      return Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const Text('Course / Subject',
+                                                    style: TextStyle(
+                                                        fontSize: 13)),
+                                                const SizedBox(height: 4),
+                                                TextFormField(
+                                                  controller: _courseController,
+                                                  decoration:
+                                                      _inputDecor('e.g. Biology 101'),
+                                                  onSaved: (v) =>
+                                                      _course = v ?? '',
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const Text('Needed By',
+                                                    style: TextStyle(
+                                                        fontSize: 13)),
+                                                const SizedBox(height: 4),
+                                                GestureDetector(
+                                                  onTap: _pickDate,
+                                                  child: AbsorbPointer(
+                                                    child: TextFormField(
+                                                      decoration: _inputDecor(
+                                                          _neededAt.isEmpty
+                                                              ? 'Select date'
+                                                              : _neededAt),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Course / Subject',
+                                            style: TextStyle(fontSize: 13)),
+                                        const SizedBox(height: 4),
+                                        TextFormField(
+                                          controller: _courseController,
+                                          decoration:
+                                              _inputDecor('e.g. Biology 101'),
+                                          onSaved: (v) => _course = v ?? '',
+                                        ),
+                                        const SizedBox(height: 16),
+                                        const Text('Needed By',
+                                            style: TextStyle(fontSize: 13)),
+                                        const SizedBox(height: 4),
+                                        GestureDetector(
+                                          onTap: _pickDate,
+                                          child: AbsorbPointer(
+                                            child: TextFormField(
+                                              decoration: _inputDecor(
+                                                  _neededAt.isEmpty
+                                                      ? 'Select date'
+                                                      : _neededAt),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Buttons: Add to Borrow + Submit (if only 1 item)
+                                Row(
                                   children: [
-                                    const Text('Course / Subject',
-                                        style: TextStyle(fontSize: 13)),
-                                    const SizedBox(height: 4),
-                                    TextFormField(
-                                      decoration:
-                                          _inputDecor('e.g. Biology 101'),
-                                      onSaved: (v) => _course = v ?? '',
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Text('Needed By',
-                                        style: TextStyle(fontSize: 13)),
-                                    const SizedBox(height: 4),
-                                    GestureDetector(
-                                      onTap: _pickDate,
-                                      child: AbsorbPointer(
-                                        child: TextFormField(
-                                          decoration: _inputDecor(
-                                              _neededAt.isEmpty
-                                                  ? 'Select date'
-                                                  : _neededAt),
+                                    // Add to Borrow button
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 44,
+                                        child: OutlinedButton.icon(
+                                          onPressed: (_selectedInstrument ==
+                                                      null ||
+                                                  _selectedInstrument!.isEmpty)
+                                              ? null
+                                              : _addToBorrowList,
+                                          icon: const Icon(Icons.add_shopping_cart,
+                                              size: 18),
+                                          label: const Text('Add to Borrow',
+                                              style: TextStyle(fontSize: 14)),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor:
+                                                AppTheme.primaryColor,
+                                            side: BorderSide(
+                                                color: AppTheme.primaryColor
+                                                    .withValues(alpha: 0.5)),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ],
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Submit
-                            SizedBox(
-                              width: double.infinity,
-                              height: 44,
-                              child: ElevatedButton(
-                                onPressed: (_submitting ||
-                                        _selectedInstrument == null ||
-                                        _selectedInstrument!.isEmpty)
-                                    ? null
-                                    : _submit,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryColor,
-                                  foregroundColor: Colors.white,
-                                  disabledBackgroundColor:
-                                      AppTheme.primaryColor.withValues(alpha: 0.5),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: _submitting
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
+                                    // Show direct submit only when borrow list is empty
+                                    if (_borrowList.isEmpty) ...[
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: SizedBox(
+                                          height: 44,
+                                          child: ElevatedButton(
+                                            onPressed: (_submitting ||
+                                                    _selectedInstrument ==
+                                                        null ||
+                                                    _selectedInstrument!
+                                                        .isEmpty)
+                                                ? null
+                                                : _submit,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  AppTheme.primaryColor,
+                                              foregroundColor: Colors.white,
+                                              disabledBackgroundColor:
+                                                  AppTheme.primaryColor
+                                                      .withValues(alpha: 0.5),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            child: _submitting
+                                                ? const SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                                  )
+                                                : const Text('Submit Request',
+                                                    style: TextStyle(
+                                                        fontSize: 14)),
+                                          ),
                                         ),
-                                      )
-                                    : const Text('Submit Request',
-                                        style: TextStyle(fontSize: 15)),
-                              ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // --- Proceed (Submit All) button pinned at bottom ---
+          if (_borrowList.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _submitting ? null : _submitAll,
+                        icon: _submitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.send, size: 18),
+                        label: Text(
+                          _submitting
+                              ? 'Submitting...'
+                              : 'Submit ${_borrowList.length} Request${_borrowList.length > 1 ? 's' : ''}',
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade600,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                              Colors.green.shade600.withValues(alpha: 0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
@@ -430,8 +740,133 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                 ),
               ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+
+  // --- Borrow List Card ---
+  Widget _buildBorrowListCard() {
+    return Card(
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.list_alt,
+                    size: 18, color: AppTheme.primaryColor),
+                const SizedBox(width: 8),
+                const Text(
+                  'Borrow List',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_borrowList.length} item${_borrowList.length > 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...List.generate(_borrowList.length, (index) {
+              final item = _borrowList[index];
+              return Container(
+                margin: EdgeInsets.only(
+                    bottom: index < _borrowList.length - 1 ? 8 : 0),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color:
+                            AppTheme.primaryColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['instrumentName'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: Color(0xFF111827),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Qty: ${item['quantity']} · ${item['purpose']}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7280),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _removeFromBorrowList(index),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(Icons.close,
+                            size: 16, color: Colors.red.shade600),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -441,7 +876,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       return const LinearProgressIndicator();
     }
     return DropdownButtonFormField<String>(
-      value: _selectedInstrument != null &&
+      initialValue: _selectedInstrument != null &&
               _instruments.any((i) => i.name == _selectedInstrument)
           ? _selectedInstrument
           : null,

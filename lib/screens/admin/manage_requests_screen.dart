@@ -53,6 +53,156 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     if (mounted) setState(() => _actioning = null);
   }
 
+  void _showOverrideDialog(Map<String, dynamic> req) {
+    final id = (req['id'] ?? '').toString();
+    final currentQty = int.tryParse((req['quantity'] ?? '1').toString()) ?? 1;
+    final instrumentName = (req['instrumentName'] ?? '').toString();
+    final studentName = (req['studentName'] ?? '').toString();
+    final qtyController = TextEditingController(text: currentQty.toString());
+    final reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.edit, size: 20, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            const Text('Edit Request Quantity', style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        content: SizedBox(
+          width: 380,
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Instrument: $instrumentName',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text('Requested by: $studentName',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 2),
+                      Text('Current Qty: $currentQty',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // New quantity
+                const Text('New Quantity *', style: TextStyle(fontSize: 13)),
+                const SizedBox(height: 4),
+                TextFormField(
+                  controller: qtyController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: 'Enter new quantity',
+                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    final n = int.tryParse(v);
+                    if (n == null || n <= 0) return 'Must be > 0';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Reason
+                const Text('Reason / Comment', style: TextStyle(fontSize: 13)),
+                const SizedBox(height: 4),
+                TextFormField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Optional: reason for the override...',
+                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.save, size: 16),
+            label: const Text('Save Override'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange.shade700,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final newQty = int.tryParse(qtyController.text) ?? currentQty;
+              final reason = reasonController.text.trim();
+              Navigator.pop(dialogContext);
+              try {
+                await ApiClient.instance.updateRequestQuantity(
+                  id: id,
+                  quantity: newQty,
+                  user: AuthService.instance.currentUsername,
+                  reason: reason,
+                );
+                await _load();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Quantity updated from $currentQty to $newQty')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString().replaceFirst("Exception: ", "")}')),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmDeleteRequest(String id) {
     showDialog(
       context: context,
@@ -167,7 +317,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                                   )
                                 : ListView.separated(
                                     itemCount: filtered.length,
-                                    separatorBuilder: (_, __) =>
+                                    separatorBuilder: (_, _) =>
                                         const SizedBox(height: 12),
                                     itemBuilder: (context, index) =>
                                         _buildRequestCard(filtered[index]),
@@ -312,6 +462,43 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   style:
                       const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                 ),
+                // Override info
+                if (isOverride) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 13, color: Colors.orange.shade700),
+                            const SizedBox(width: 4),
+                            Text('Override', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.orange.shade700)),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Qty changed from ${req['originalQuantity'] ?? '?'} → ${req['quantity'] ?? '?'}',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                        ),
+                        if ((req['overrideReason'] ?? '').toString().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              'Reason: ${req['overrideReason']}',
+                              style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Color(0xFF6B7280)),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
                 if ((req['purpose'] ?? '').toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -384,6 +571,20 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                         Colors.red.shade600,
                         borderColor: Colors.red.shade300,
                       ),
+                      // Edit Qty / Override button
+                      SizedBox(
+                        height: 32,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showOverrideDialog(req),
+                          icon: Icon(Icons.edit, size: 14, color: Colors.orange.shade700),
+                          label: Text('Edit Qty', style: TextStyle(fontSize: 12, color: Colors.orange.shade700)),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.orange.shade300),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                        ),
+                      ),
                     ],
                     if (status == 'approved')
                       _buildActionButton(
@@ -395,15 +596,17 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                         Colors.blue.shade600,
                         borderColor: Colors.blue.shade300,
                       ),
-                    OutlinedButton.icon(
-                      onPressed: () => _confirmDeleteRequest(id),
-                      icon: Icon(Icons.delete, size: 14, color: Colors.red.shade600),
-                      label: Text('Delete', style: TextStyle(fontSize: 12, color: Colors.red.shade600)),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.red.shade300),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        minimumSize: const Size(0, 32),
+                    SizedBox(
+                      height: 32,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _confirmDeleteRequest(id),
+                        icon: Icon(Icons.delete, size: 14, color: Colors.red.shade600),
+                        label: Text('Delete', style: TextStyle(fontSize: 12, color: Colors.red.shade600)),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.red.shade300),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
                       ),
                     ),
                   ],
