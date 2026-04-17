@@ -298,102 +298,33 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: _addUser,
-              tooltip: 'Add User',
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadUsers,
-              tooltip: 'Refresh',
             ),
           ],
         ),
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.all(16),
               child: DebouncedSearchBar(
                 controller: _searchController,
                 hintText: 'Search users...',
                 onChanged: (value) => setState(() {}),
               ),
             ),
-            _buildSummaryCards(),
             Expanded(
-              child: _buildUserList(filteredUsers),
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filteredUsers.length,
+                      itemBuilder: (context, index) {
+                        return _userCard(filteredUsers[index], _users.indexOf(filteredUsers[index]));
+                      },
+                    ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSummaryCards() {
-    final totalCount = _users.length.toString();
-    final adminCount = _users
-        .where((u) {
-          final r = (u['role'] as String).toLowerCase();
-          return r == 'admin' || r == 'superadmin';
-        })
-        .length
-        .toString();
-    final teacherCount = _users
-        .where((u) {
-          final r = (u['role'] as String).toLowerCase();
-          return r == 'teacher' || r == 'staff';
-        })
-        .length
-        .toString();
-    final studentCount = _users
-        .where((u) {
-          final r = (u['role'] as String).toLowerCase();
-          return r == 'student';
-        })
-        .length
-        .toString();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
-        children: [
-          Expanded(child: _summaryCard(totalCount, 'Total Users')),
-          const SizedBox(width: 10),
-          Expanded(child: _summaryCard(adminCount, 'Admins', color: Colors.red)),
-          const SizedBox(width: 10),
-          Expanded(child: _summaryCard(teacherCount, 'Teachers', color: Colors.blue)),
-          const SizedBox(width: 10),
-          Expanded(child: _summaryCard(studentCount, 'Students', color: Colors.green)),
-        ],
-      ),
-    );
-  }
-
-  Widget _summaryCard(String value, String label, {Color? color}) {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
-            ),
-            Text(label),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserList(List<Map<String, dynamic>> filteredUsers) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredUsers.length,
-      itemBuilder: (context, index) {
-        final user = filteredUsers[index];
-        final originalIndex = _users.indexOf(user);
-        return _userCard(user, originalIndex);
-      },
     );
   }
 
@@ -475,37 +406,29 @@ class _UserFormContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!isEdit && usernameController != null) ...[
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            const SizedBox(height: 8),
-          ],
-          DropdownButtonFormField<String>(
-            initialValue: selectedRole,
-            decoration: const InputDecoration(labelText: 'Role'),
-            items: const [
-              DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-              DropdownMenuItem(value: 'Teacher', child: Text('Teacher')),
-              DropdownMenuItem(value: 'Student', child: Text('Student')),
-            ],
-            onChanged: onRoleChanged,
-          ),
-          const SizedBox(height: 8),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!isEdit)
           TextField(
-            controller: passwordController,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: isEdit ? 'New Password (optional)' : 'Password',
-            ),
+            controller: usernameController,
+            decoration: const InputDecoration(labelText: 'Username'),
           ),
-        ],
-      ),
+        TextField(
+          controller: passwordController,
+          decoration: InputDecoration(
+            labelText: isEdit ? 'New Password (optional)' : 'Password',
+          ),
+          obscureText: true,
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: selectedRole,
+          decoration: const InputDecoration(labelText: 'Role'),
+          items: ['Student', 'Teacher', 'Admin'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+          onChanged: onRoleChanged,
+        ),
+      ],
     );
   }
 }

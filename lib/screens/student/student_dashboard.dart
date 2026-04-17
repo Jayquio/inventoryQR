@@ -606,31 +606,29 @@ class _StudentDashboardState extends State<StudentDashboard> {
       onTap: onTap,
       child: Container(
         width: 100,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 6),
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
             Text(
               value,
               style: TextStyle(
-                color: color,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
-            const SizedBox(height: 2),
             Text(
               label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+              style: TextStyle(
+                fontSize: 12,
+                color: color.withValues(alpha: 0.8),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

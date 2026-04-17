@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
-import '../core/constants.dart';
 import '../data/api_client.dart';
 import '../data/auth_service.dart';
+import '../core/constants.dart';
 
 class NotificationItem {
   NotificationItem({

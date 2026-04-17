@@ -299,6 +299,20 @@ class ApiClient {
     }
   }
 
+  Future<void> deleteInstrument({required String name}) async {
+    final uri = Uri.parse('${_baseUrl()}/instruments_delete.php');
+    final res = await http
+        .post(uri, headers: _jsonHeaders, body: jsonEncode({'name': name}))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) {
+      final body = _safeDecode(res.body);
+      final msg = body is Map
+          ? (body['error'] ?? 'delete_failed')
+          : 'delete_failed';
+      throw Exception(msg.toString());
+    }
+  }
+
   Future<void> submitRequest({
     required String studentName,
     required String instrumentName,
