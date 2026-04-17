@@ -1,16 +1,13 @@
 // lib/screens/student/view_instruments_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_application_inventorymanagement/data/api_client.dart';
-import 'package:flutter_application_inventorymanagement/models/instrument.dart';
-import '../../widgets/search_bar.dart';
-import '../../widgets/instrument_card.dart';
-import '../../core/constants.dart';
+import '../../data/api_client.dart';
+import '../../models/instrument.dart';
 import '../../core/theme.dart';
+import '../../core/constants.dart';
 
 class ViewInstrumentsScreen extends StatefulWidget {
   final String userRole;
-
   const ViewInstrumentsScreen({super.key, this.userRole = 'Student'});
 
   @override
@@ -18,12 +15,10 @@ class ViewInstrumentsScreen extends StatefulWidget {
 }
 
 class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  int _page = 0;
-  final int _perPage = 6;
   List<Instrument> _instruments = [];
+  String _search = '';
+  String _category = 'all';
   bool _loading = true;
-  String _typeFilter = 'All';
 
   @override
   void initState() {
@@ -33,397 +28,133 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
 
   Future<void> _load() async {
     try {
-      final items = await ApiClient.instance.fetchInstruments();
+      final data = await ApiClient.instance.fetchInstruments();
       if (!mounted) return;
       setState(() {
-        _instruments = items;
+        _instruments = data;
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
     }
   }
 
-  void _showInstrumentDetails(BuildContext context, Instrument instrument) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInstrumentHeader(instrument),
-            const SizedBox(height: 12),
-            _buildInstrumentDetailsList(instrument),
-            const SizedBox(height: 12),
-            _buildActionButtons(context, instrument),
-          ],
-        ),
-      ),
-    );
+  List<String> get _categories {
+    final cats =
+        _instruments.map((i) => i.category).where((c) => c.isNotEmpty).toSet();
+    return ['all', ...cats];
   }
 
-  Widget _buildInstrumentHeader(Instrument instrument) {
-    return Row(
-      children: [
-        CircleAvatar(
-          backgroundColor: Colors.teal.shade100,
-          child: const Icon(Icons.science, color: Colors.teal),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            instrument.name,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInstrumentDetailsList(Instrument instrument) {
-    return Column(
-      children: [
-        _buildDetailRow('Category', instrument.category),
-        if (instrument.serialNumber != null &&
-            instrument.serialNumber!.isNotEmpty)
-          _buildDetailRow('Serial Number', instrument.serialNumber!),
-        _buildDetailRow(
-          'Available',
-          '${instrument.available}/${instrument.quantity}',
-        ),
-        _buildDetailRow('Status', instrument.status),
-        _buildDetailRow('Condition', instrument.condition),
-        _buildDetailRow('Location', instrument.location),
-        _buildDetailRow('Last Maintenance', instrument.lastMaintenance),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context, Instrument instrument) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _getOnPressedAction(context, instrument),
-            icon: const Icon(Icons.assignment),
-            label: Text(_getActionButtonLabel()),
-          ),
-        ),
-      ],
-    );
-  }
-
-  VoidCallback? _getOnPressedAction(
-    BuildContext context,
-    Instrument instrument,
-  ) {
-    final bool isUser =
-        widget.userRole == 'Student' || widget.userRole == 'Teacher';
-    final bool isAdmin = widget.userRole == 'Admin';
-
-    if (isUser) {
-      if (instrument.available > 0) {
-        return () {
-          Navigator.pop(context);
-          Navigator.pushNamed(
-            context,
-            '/submit_request',
-            arguments: instrument.name,
-          );
-        };
-      }
-      return null;
-    }
-
-    if (isAdmin) {
-      return () {
-        Navigator.pop(context);
-        Navigator.pushNamed(
-          context,
-          '/log_maintenance',
-          arguments: instrument.name,
-        );
-      };
-    }
-
-    return null;
-  }
-
-  String _getActionButtonLabel() {
-    final bool isUser =
-        widget.userRole == 'Student' || widget.userRole == 'Teacher';
-    final bool isAdmin = widget.userRole == 'Admin';
-
-    if (isUser) return 'Request This';
-    if (isAdmin) return 'Log Maintenance';
-    return 'Update';
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    final w = MediaQuery.of(context).size.width;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white70, size: 18),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: R.text(18, w),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(color: Colors.white70, fontSize: R.text(10, w)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatDivider() {
-    return Container(height: 30, width: 1, color: Colors.white24);
+  List<Instrument> get _filtered {
+    return _instruments.where((i) {
+      final matchSearch = _search.isEmpty ||
+          i.name.toLowerCase().contains(_search.toLowerCase()) ||
+          (i.serialNumber?.toLowerCase().contains(_search.toLowerCase()) ??
+              false);
+      final matchCat =
+          _category == 'all' || i.category == _category;
+      return matchSearch && matchCat;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    final searchTerm = _searchController.text.toLowerCase();
-
-    final totalInstruments = _instruments.length;
-    final availableInstruments = _instruments
-        .where((i) => i.available > 0)
-        .length;
-    final categories = _instruments.map((i) => i.category).toSet().length;
-
-    final filteredInstruments = _instruments.where((instrument) {
-      if (_typeFilter != 'All' &&
-          instrument.type.toLowerCase() != _typeFilter.toLowerCase()) {
-        return false;
-      }
-      if (searchTerm.isEmpty) return true;
-      return instrument.name.toLowerCase().contains(searchTerm) ||
-          (instrument.serialNumber?.toLowerCase().contains(searchTerm) ??
-              false) ||
-          instrument.category.toLowerCase().contains(searchTerm) ||
-          instrument.status.toLowerCase().contains(searchTerm) ||
-          instrument.condition.toLowerCase().contains(searchTerm) ||
-          instrument.location.toLowerCase().contains(searchTerm);
-    }).toList();
+    final filtered = _filtered;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Available Instruments')),
+      backgroundColor: const Color(0xFFF9FAFB),
       body: Column(
         children: [
-          const SizedBox(height: 12),
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: LinearProgressIndicator(),
-            ),
-          // Quick Overview Container
+          // Header
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+            color: AppTheme.primaryColor,
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 12,
+              left: 16,
+              right: 16,
+              bottom: 16,
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem(
-                  context,
-                  'Total',
-                  totalInstruments.toString(),
-                  Icons.inventory_2_outlined,
-                ),
-                _buildStatDivider(),
-                _buildStatItem(
-                  context,
-                  'Available',
-                  availableInstruments.toString(),
-                  Icons.check_circle_outline,
-                ),
-                _buildStatDivider(),
-                _buildStatItem(
-                  context,
-                  'Categories',
-                  categories.toString(),
-                  Icons.category_outlined,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DebouncedSearchBar(
-                    controller: _searchController,
-                    hintText: 'Search instruments...',
-                    onChanged: (value) => setState(() {
-                      _page = 0;
-                    }),
-                  ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back,
+                      color: Colors.white70, size: 22),
                 ),
                 const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: _typeFilter,
-                  items: const [
-                    DropdownMenuItem(value: 'All', child: Text('All Types')),
-                    DropdownMenuItem(
-                      value: 'instrument',
-                      child: Text('Instrument'),
-                    ),
-                    DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
-                  ],
-                  onChanged: (v) => setState(() {
-                    _typeFilter = v ?? 'All';
-                    _page = 0;
-                  }),
+                const Icon(Icons.science, color: Colors.white, size: 22),
+                const SizedBox(width: 8),
+                const Text(
+                  'Lab Instruments',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
           ),
+
+          // Body
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: LayoutBuilder(
-                key: ValueKey('${_searchController.text}_$_page'),
-                builder: (context, constraints) {
-                  final int crossAxisCount = R.columns(
-                    constraints.maxWidth,
-                    xs: 2,
-                    sm: 3,
-                    md: 4,
-                    lg: 5,
-                  );
-                  const double spacing = 6.0;
-                  const double totalPadding = 32.0; // 16 * 2
-                  final double itemWidth =
-                      (constraints.maxWidth -
-                          totalPadding -
-                          (spacing * (crossAxisCount - 1))) /
-                      crossAxisCount;
-
-                  // Ultra-compact height calculation:
-                  // Image (16:9 aspect) -> itemWidth / 1.77
-                  // Title + Status + Pills + Spacing
-                  // 14 (Title) + 12 (Status) + 18 (Pills) + 12 (Spacings) + 8 (Internal Padding)
-                  const double fixedContentHeight = 64;
-                  final double cellHeight =
-                      (itemWidth / 1.77) + fixedContentHeight;
-                  final double childAspectRatio = (itemWidth / cellHeight)
-                      .clamp(0.5, 1.0);
-
-                  final totalPages = (filteredInstruments.length / _perPage)
-                      .ceil();
-                  final start = (_page * _perPage).clamp(
-                    0,
-                    filteredInstruments.length,
-                  );
-                  final end = (start + _perPage).clamp(
-                    0,
-                    filteredInstruments.length,
-                  );
-                  final pageItems = filteredInstruments.sublist(start, end);
-
-                  if (pageItems.isEmpty) {
-                    return const Center(child: Text('No instruments found'));
-                  }
-
-                  return Column(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: Column(
                     children: [
+                      // Search + Category Filter
+                      _buildSearchFilter(),
+                      const SizedBox(height: 16),
+
+                      // Content
                       Expanded(
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                mainAxisSpacing: spacing,
-                                crossAxisSpacing: spacing,
-                                childAspectRatio: childAspectRatio,
-                              ),
-                          itemCount: pageItems.length,
-                          itemBuilder: (context, index) {
-                            return InstrumentCard(
-                              instrument: pageItems[index],
-                              highlight: _searchController.text,
-                              onTap: () => _showInstrumentDetails(
-                                context,
-                                pageItems[index],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Page ${_page + 1} of ${totalPages == 0 ? 1 : totalPages}',
-                              style: TextStyle(fontSize: R.text(12, w)),
-                            ),
-                            const SizedBox(width: 12),
-                            OutlinedButton(
-                              onPressed: _page > 0
-                                  ? () => setState(() => _page--)
-                                  : null,
-                              child: const Text('Prev'),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: _page < totalPages - 1
-                                  ? () => setState(() => _page++)
-                                  : null,
-                              child: const Text('Next'),
-                            ),
-                          ],
-                        ),
+                        child: _loading
+                            ? const Center(
+                                child: Text(
+                                  'Loading instruments...',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              )
+                            : filtered.isEmpty
+                                ? const Center(
+                                    child: Text(
+                                      'No instruments found',
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
+                                  )
+                                : LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final cols = R.columns(
+                                        constraints.maxWidth,
+                                        xs: 2,
+                                        sm: 2,
+                                        md: 3,
+                                        lg: 4,
+                                      );
+                                      return GridView.builder(
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: cols,
+                                          crossAxisSpacing: 12,
+                                          mainAxisSpacing: 12,
+                                          childAspectRatio: 0.58,
+                                        ),
+                                        itemCount: filtered.length,
+                                        itemBuilder: (context, index) {
+                                          return _buildInstrumentCard(
+                                              filtered[index]);
+                                        },
+                                      );
+                                    },
+                                  ),
                       ),
                     ],
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ),
@@ -432,9 +163,253 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Widget _buildSearchFilter() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth > 500) {
+          return Row(
+            children: [
+              Expanded(child: _buildSearchField()),
+              const SizedBox(width: 12),
+              SizedBox(width: 180, child: _buildCategoryDropdown()),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            _buildSearchField(),
+            const SizedBox(height: 12),
+            _buildCategoryDropdown(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      decoration: InputDecoration(
+        prefixIcon:
+            const Icon(Icons.search, size: 18, color: Color(0xFF9CA3AF)),
+        hintText: 'Search instruments...',
+        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+      ),
+      style: const TextStyle(fontSize: 14),
+      onChanged: (v) => setState(() => _search = v),
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _category,
+          isExpanded: true,
+          style: const TextStyle(fontSize: 14, color: Color(0xFF374151)),
+          items: _categories
+              .map((c) => DropdownMenuItem(
+                    value: c,
+                    child:
+                        Text(c == 'all' ? 'All Categories' : c),
+                  ))
+              .toList(),
+          onChanged: (v) => setState(() => _category = v ?? 'all'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstrumentCard(Instrument inst) {
+    return Card(
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top row: icon + status badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.science,
+                      color: AppTheme.primaryColor, size: 22),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _buildStatusBadge(inst.status),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Name
+            Text(
+              inst.name,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Color(0xFF111827),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (inst.serialNumber != null &&
+                inst.serialNumber!.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                'S/N: ${inst.serialNumber}',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+              ),
+            ],
+            const SizedBox(height: 4),
+            Text(
+              '${inst.category} · ${inst.location}',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+
+            // Available count + condition
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 4,
+              runSpacing: 8,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.inventory_2_outlined,
+                        size: 16, color: Color(0xFF9CA3AF)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${inst.available}/${inst.quantity} avail',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF4B5563),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                _buildConditionBadge(inst.condition),
+              ],
+            ),
+
+            const Spacer(),
+
+            // Request button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/submit_request',
+                    arguments: inst.name,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                child: const Text('Request', style: TextStyle(fontSize: 13)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    final map = {
+      'active': (Colors.green.shade50, Colors.green.shade700),
+      'available': (Colors.green.shade50, Colors.green.shade700),
+      'inactive': (const Color(0xFFF3F4F6), const Color(0xFF4B5563)),
+      'maintenance': (Colors.amber.shade50, Colors.amber.shade700),
+    };
+    final pair = map[status.toLowerCase()] ??
+        (Colors.green.shade50, Colors.green.shade700);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: pair.$1,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        status.isNotEmpty
+            ? '${status[0].toUpperCase()}${status.substring(1).toLowerCase()}'
+            : '',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: pair.$2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConditionBadge(String condition) {
+    final map = {
+      'good': (Colors.green.shade50, Colors.green.shade700),
+      'excellent': (Colors.green.shade50, Colors.green.shade700),
+      'fair': (Colors.yellow.shade50, Colors.yellow.shade800),
+      'poor': (Colors.red.shade50, Colors.red.shade700),
+    };
+    final pair = map[condition.toLowerCase()] ??
+        (Colors.green.shade50, Colors.green.shade700);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: pair.$1,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        condition.isNotEmpty
+            ? '${condition[0].toUpperCase()}${condition.substring(1).toLowerCase()}'
+            : '',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: pair.$2,
+        ),
+      ),
+    );
   }
 }

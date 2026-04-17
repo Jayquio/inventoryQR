@@ -347,17 +347,14 @@ class _LoginScreenState extends State<LoginScreen> {
     AuthService.instance.setRole(role);
     if (email != null) AuthService.instance.setEmail(email);
 
-    NotificationService.instance.add(
-      NotificationItem(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        title: 'User Login',
-        message: '$username logged in',
-        type: 'login',
-        timestamp: DateTime.now().toIso8601String(),
-        recipient: 'Admin',
-        priority: 'low',
-      ),
-    );
+    // Send to backend so admins can see it
+    ApiClient.instance.createNotification(
+      title: 'User Login',
+      message: '$username logged in',
+      type: 'login',
+      recipient: 'Admin',
+      priority: 'low',
+    ).catchError((_) {}); // Ignore failure for notifications
 
     if (mounted) {
       ScaffoldMessenger.of(

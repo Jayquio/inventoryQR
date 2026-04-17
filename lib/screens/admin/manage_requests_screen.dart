@@ -1,12 +1,8 @@
 // lib/screens/admin/manage_requests_screen.dart
 
 import 'package:flutter/material.dart';
-import '../../widgets/role_guard.dart';
-import '../../models/request.dart';
-import '../../widgets/search_bar.dart';
 import '../../data/api_client.dart';
 import '../../data/auth_service.dart';
-import '../../data/notification_service.dart';
 import '../../core/theme.dart';
 
 class ManageRequestsScreen extends StatefulWidget {
@@ -16,427 +12,74 @@ class ManageRequestsScreen extends StatefulWidget {
   State<ManageRequestsScreen> createState() => _ManageRequestsScreenState();
 }
 
-class _ManageRequestsScreenState extends State<ManageRequestsScreen>
-    with SingleTickerProviderStateMixin {
-  static const String _exceptionPrefix = 'Exception: ';
-
-  late TabController _tabController;
-  final TextEditingController _searchController = TextEditingController();
-
-  List<Request> _requests = [];
+class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
+  List<Map<String, dynamic>> _requests = [];
+  String _search = '';
+  String _filter = 'all';
   bool _loading = true;
-  bool _initialized = false;
+  String? _actioning;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _loadData();
+    _load();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _load() async {
     try {
-      final reqRows = await ApiClient.instance.fetchRequests();
-
+      final data = await ApiClient.instance.fetchRequests();
       if (!mounted) return;
-
       setState(() {
-        _requests = reqRows.map((e) => Request.fromJson(e)).toList();
+        _requests = data;
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: ${e.toString()}')),
-      );
     }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initialized) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      if (args == 'Return Queue') {
-        _tabController.index = 1; // Go to "To Return" tab
-      }
-      _initialized = true;
-    }
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _markReturned(Request req) async {
-    if (req.instrumentType == 'reagent') {
-      _showMessage(
-        const SnackBar(
-          content: Text('Reagents are consumables and cannot be returned.'),
-        ),
-      );
-      return;
-    }
-    if (req.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot sync return: request id is missing.'),
-        ),
-      );
-      return;
-    }
-
-    try {
-      // Stock + transaction are applied in requests_update_status.php (returned).
-      await ApiClient.instance.updateRequestStatus(
-        id: req.id,
-        status: 'returned',
-        user: AuthService.instance.currentUsername,
-      );
-
-      // Refresh both requests and instruments to ensure stock is correct
-      await _loadData();
-
-      if (!mounted) return;
-      _closeCurrentRouteIfPossible();
-      _showMessage(const SnackBar(content: Text('Item marked as returned.')));
-    } catch (e) {
-      if (!mounted) return;
-      _showMessage(
-        SnackBar(
-          content: Text(
-            'Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _approveRequest(Request req) async {
+  Future<void> _action(String id, String status) async {
+    setState(() => _actioning = '$id$status');
+    final name = AuthService.instance.currentUsername;
     try {
       await ApiClient.instance.updateRequestStatus(
-        id: req.id,
-        status: 'approved',
-        user: AuthService.instance.currentUsername,
+        id: id,
+        status: status,
+        user: name,
       );
-      await _loadData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Request approved!')));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
+      await _load();
+    } catch (_) {}
+    if (mounted) setState(() => _actioning = null);
   }
 
-  Future<void> _rejectRequest(Request req) async {
-    try {
-      await ApiClient.instance.updateRequestStatus(
-        id: req.id,
-        status: 'rejected',
-        user: AuthService.instance.currentUsername,
-      );
-      await _loadData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Request rejected.')));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
-  }
-
-  void _showOverrideQuantityDialog(Request req) {
-    final qtyController = TextEditingController(text: req.quantity.toString());
-    final reasonController = TextEditingController();
+  void _confirmDeleteRequest(String id) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titlePadding: EdgeInsets.zero,
-        title: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.edit_note, color: Colors.white, size: 28),
-              SizedBox(width: 12),
-              Text(
-                'Override Quantity',
-                style: TextStyle(color: Colors.white, fontSize: 20),
-              ),
-            ],
-          ),
-        ),
-        content: Container(
-          width: 450, // Slightly wider for reason field
-          padding: const EdgeInsets.only(top: 8),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.person_outline,
-                            size: 18,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Student: ${req.studentName}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.inventory_2_outlined,
-                            size: 18,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Instrument: ${req.instrumentName}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Adjustment',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: qtyController,
-                  keyboardType: TextInputType.number,
-                  autofocus: true,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'New Quantity',
-                    prefixIcon: const Icon(Icons.add_task),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    helperText: 'Lower quantity to free up stock.',
-                    helperStyle: const TextStyle(fontStyle: FontStyle.italic),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Communication',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: reasonController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: 'Reason (optional)',
-                    alignLabelWithHint: true,
-                    prefixIcon: const Padding(
-                      padding: EdgeInsets.only(bottom: 24),
-                      child: Icon(Icons.comment_outlined),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    hintText:
-                        'e.g., Reallocating units for another laboratory session.',
-                    filled: true,
-                    fillColor: Colors.white,
-                    helperText:
-                        'This will be shown to the user in their notification.',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Request?'),
+        content: const Text('Are you sure you want to delete this request record? This cannot be undone.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            ),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final newQty = int.tryParse(qtyController.text);
-              final reason = reasonController.text.trim();
-              if (newQty == null || newQty <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a valid quantity.'),
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(ctx);
-              try {
-                await ApiClient.instance.updateRequestQuantity(
-                  id: req.id,
-                  quantity: newQty,
-                  user: AuthService.instance.currentUsername,
-                  reason: reason,
-                );
-
-                // Add notification for the user
-                final originalQty = req.quantity;
-                NotificationService.instance.add(
-                  NotificationItem(
-                    id: 'override_${DateTime.now().microsecondsSinceEpoch}',
-                    title: 'Override Update',
-                    message:
-                        'Your request for ${req.instrumentName} has been updated from $originalQty to $newQty units.',
-                    type: 'info',
-                    timestamp: DateTime.now().toIso8601String(),
-                    recipient: 'Student', // In a real app, this would be specific to the student ID
-                    priority: 'high',
-                    isOverride: true,
-                    originalQuantity: originalQty,
-                    overrideQuantity: newQty,
-                    overrideReason: reason,
-                  ),
-                );
-
-                await _loadData();
-                if (!mounted) return;
-                _showMessage(
-                  const SnackBar(
-                    content: Text('Quantity overridden and user notified.'),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                _showMessage(
-                  SnackBar(
-                    content: Text(
-                      'Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}',
-                    ),
-                    backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            icon: const Icon(Icons.check),
-            label: const Text('Save Changes'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDelete(Request req) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Confirm Delete'),
-          ],
-        ),
-        content: Text(
-          'Are you sure you want to delete this request for ${req.instrumentName}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () async {
-              Navigator.pop(ctx);
+              Navigator.pop(dialogContext);
               try {
-                await ApiClient.instance.deleteRequest(id: req.id);
-                await _loadData();
-                if (!mounted) return;
-                _closeCurrentRouteIfPossible();
-                _showMessage(const SnackBar(content: Text('Request deleted.')));
+                await ApiClient.instance.deleteRequest(id: id);
+                await _load();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request deleted.')));
+                }
               } catch (e) {
-                if (!mounted) return;
-                _showMessage(
-                  SnackBar(
-                    content: Text(
-                      'Error deleting: ${e.toString().replaceFirst(_exceptionPrefix, '')}',
-                    ),
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
             child: const Text('Delete'),
           ),
         ],
@@ -444,419 +87,418 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
     );
   }
 
+  List<Map<String, dynamic>> get _filtered {
+    return _requests.where((r) {
+      final status = (r['status'] ?? '').toString().toLowerCase();
+      final matchStatus = _filter == 'all' || status == _filter;
+      final studentName = (r['studentName'] ?? '').toString().toLowerCase();
+      final instrumentName =
+          (r['instrumentName'] ?? '').toString().toLowerCase();
+      final matchSearch = _search.isEmpty ||
+          studentName.contains(_search.toLowerCase()) ||
+          instrumentName.contains(_search.toLowerCase());
+      return matchStatus && matchSearch;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return RoleGuard(
-      allowed: const {UserRole.admin, UserRole.superadmin},
-      webOnly: true,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Manage Requests'),
-          bottom: TabBar(
-            controller: _tabController,
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            tabs: const [
-              Tab(text: 'Pending', icon: Icon(Icons.hourglass_empty)),
-              Tab(text: 'To Return', icon: Icon(Icons.keyboard_return)),
-              Tab(text: 'All Logs', icon: Icon(Icons.history)),
-            ],
-          ),
-        ),
-        body: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: DebouncedSearchBar(
-                      controller: _searchController,
-                      hintText: 'Search by student or instrument...',
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildTabContent(RequestStatus.pending),
-                        _buildTabContent(RequestStatus.approved),
-                        _buildTabContent(null), // All logs
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
+    final filtered = _filtered;
 
-  Widget _buildTabContent(RequestStatus? filterStatus) {
-    final searchTerm = _searchController.text.toLowerCase();
-    final filtered = _requests.where((req) {
-      final matchesSearch =
-          req.studentName.toLowerCase().contains(searchTerm) ||
-          req.instrumentName.toLowerCase().contains(searchTerm);
-      if (filterStatus == null) return matchesSearch;
-      final matchesStatus = req.status == filterStatus;
-      if (filterStatus == RequestStatus.approved) {
-        return matchesSearch &&
-            matchesStatus &&
-            req.instrumentType != 'reagent';
-      }
-      return matchesSearch && matchesStatus;
-    }).toList();
-
-    if (filtered.isEmpty) {
-      String emptyMessage;
-      if (filterStatus == RequestStatus.pending) {
-        emptyMessage = 'No pending requests.';
-      } else if (filterStatus == RequestStatus.approved) {
-        emptyMessage = 'No instruments to be returned.';
-      } else {
-        emptyMessage = 'No requests found.';
-      }
-
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.assignment_outlined,
-              size: 64,
-              color: Colors.grey.shade300,
-            ),
-            const SizedBox(height: 16),
-            Text(emptyMessage, style: const TextStyle(color: Colors.grey)),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        final req = filtered[index];
-        return InkWell(
-          onTap: () => _showRequestDetails(req),
-          child: _buildRequestCard(req),
-        );
-      },
-    );
-  }
-
-  void _showRequestDetails(Request request) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  request.instrumentName,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Student: ${request.studentName}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                Text(
-                  'Purpose: ${request.purpose}',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                const Divider(height: 32),
-                _buildActions(request),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRequestCard(Request request) {
-    final statusColor = _getStatusColor(request.status);
-
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    request.studentName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    request.status.name.toUpperCase(),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Instrument: ${request.instrumentName}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                Text(
-                  'Qty: ${request.quantity}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              'Purpose: ${request.purpose}',
-              style: const TextStyle(color: Colors.grey),
-            ),
-            if (request.course != null)
-              Text(
-                'Course: ${request.course}',
-                style: const TextStyle(color: Colors.grey),
-              ),
-            const SizedBox(height: 16),
-            _buildActions(request),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActions(Request request) {
-    if (request.status == RequestStatus.pending) {
-      return _buildPendingActions(request);
-    }
-    if (request.status == RequestStatus.approved) {
-      return _buildApprovedActions(request);
-    }
-    return _buildDeleteOnlyAction(request);
-  }
-
-  Widget _buildPendingActions(Request request) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow =
-            constraints.maxWidth < 600; // Increased to accommodate new button
-        final approve = ElevatedButton(
-          onPressed: () => _approveRequest(request),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('Approve'),
-        );
-        final reject = ElevatedButton(
-          onPressed: () => _rejectRequest(request),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('Reject'),
-        );
-        final override = Tooltip(
-          message: 'Update quantity before approving.',
-          child: ElevatedButton(
-            onPressed: () => _showOverrideQuantityDialog(request),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Override'),
-          ),
-        );
-        final delete = ElevatedButton(
-          onPressed: () => _confirmDelete(request),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.red,
-            side: const BorderSide(color: Colors.red),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('Delete'),
-        );
-        if (narrow) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: approve),
-                  const SizedBox(width: 8),
-                  Expanded(child: reject),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(child: override),
-                  const SizedBox(width: 8),
-                  Expanded(child: delete),
-                ],
-              ),
-            ],
-          );
-        }
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            SizedBox(width: 100, child: approve),
-            const SizedBox(width: 8),
-            SizedBox(width: 100, child: reject),
-            const SizedBox(width: 8),
-            SizedBox(width: 100, child: override),
-            const SizedBox(width: 8),
-            SizedBox(width: 100, child: delete),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildApprovedActions(Request request) {
-    if (request.instrumentType == 'reagent') {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: Column(
         children: [
-          const Chip(label: Text('Consumable - no return')),
-          const SizedBox(width: 8),
-          OutlinedButton.icon(
-            onPressed: () => _confirmDelete(request),
-            icon: const Icon(Icons.delete_outline, size: 20),
-            label: const Text('Delete'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+          // Header
+          Container(
+            color: AppTheme.primaryColor,
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 12,
+              left: 16,
+              right: 16,
+              bottom: 16,
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back,
+                      color: Colors.white70, size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Icon(Icons.assignment, color: Colors.white, size: 22),
+                const SizedBox(width: 8),
+                const Text(
+                  'Manage Requests',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Body
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: Column(
+                    children: [
+                      // Search + Filter
+                      _buildSearchFilter(),
+                      const SizedBox(height: 16),
+
+                      // Content
+                      Expanded(
+                        child: _loading
+                            ? const Center(
+                                child: Text('Loading requests...',
+                                    style: TextStyle(color: Colors.grey)),
+                              )
+                            : filtered.isEmpty
+                                ? const Center(
+                                    child: Text('No requests found',
+                                        style: TextStyle(color: Colors.grey)),
+                                  )
+                                : ListView.separated(
+                                    itemCount: filtered.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) =>
+                                        _buildRequestCard(filtered[index]),
+                                  ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
-      );
-    }
+      ),
+    );
+  }
+
+  Widget _buildSearchFilter() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 360;
-        final returned = ElevatedButton.icon(
-          onPressed: () => _markReturned(request),
-          icon: const Icon(Icons.assignment_return),
-          label: const Text('Returned'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.secondaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-        );
-        final delete = OutlinedButton.icon(
-          onPressed: () => _confirmDelete(request),
-          icon: const Icon(Icons.delete_outline, size: 20),
-          label: const Text('Delete'),
-          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-        );
-        if (narrow) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [returned, const SizedBox(height: 8), delete],
+        if (constraints.maxWidth > 500) {
+          return Row(
+            children: [
+              Expanded(child: _buildSearchField()),
+              const SizedBox(width: 12),
+              SizedBox(width: 160, child: _buildFilterDropdown()),
+            ],
           );
         }
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+        return Column(
           children: [
-            SizedBox(width: 200, child: returned),
-            const SizedBox(width: 8),
-            SizedBox(width: 120, child: delete),
+            _buildSearchField(),
+            const SizedBox(height: 12),
+            _buildFilterDropdown(),
           ],
         );
       },
     );
   }
 
-  Widget _buildDeleteOnlyAction(Request request) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: OutlinedButton.icon(
-        onPressed: () => _confirmDelete(request),
-        icon: const Icon(Icons.delete_outline, size: 18),
-        label: const Text('Delete'),
-        style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+  Widget _buildSearchField() {
+    return TextField(
+      decoration: InputDecoration(
+        prefixIcon:
+            const Icon(Icons.search, size: 18, color: Color(0xFF9CA3AF)),
+        hintText: 'Search by student or instrument...',
+        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+      ),
+      style: const TextStyle(fontSize: 14),
+      onChanged: (v) => setState(() => _search = v),
+    );
+  }
+
+  Widget _buildFilterDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _filter,
+          isExpanded: true,
+          style: const TextStyle(fontSize: 14, color: Color(0xFF374151)),
+          items: const [
+            DropdownMenuItem(value: 'all', child: Text('All Status')),
+            DropdownMenuItem(value: 'pending', child: Text('Pending')),
+            DropdownMenuItem(value: 'approved', child: Text('Approved')),
+            DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
+            DropdownMenuItem(value: 'returned', child: Text('Returned')),
+          ],
+          onChanged: (v) => setState(() => _filter = v ?? 'all'),
+        ),
       ),
     );
   }
 
-  void _closeCurrentRouteIfPossible() {
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-    }
+  Widget _buildRequestCard(Map<String, dynamic> req) {
+    final id = (req['id'] ?? '').toString();
+    final status = (req['status'] ?? '').toString().toLowerCase();
+    final isOverride = req['isOverride'] == 1 || req['isOverride'] == true;
+
+    return Card(
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top: Name + Status + Override
+                Wrap(
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      (req['instrumentName'] ?? '').toString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    _buildStatusBadge(status),
+                    if (isOverride)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Override',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.purple.shade700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${req['studentName'] ?? ''} · Qty: ${req['quantity'] ?? 1}',
+                  style:
+                      const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                ),
+                if ((req['purpose'] ?? '').toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Purpose: ${req['purpose']}',
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF9CA3AF)),
+                    ),
+                  ),
+                if ((req['course'] ?? '').toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Course: ${req['course']}',
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF9CA3AF)),
+                    ),
+                  ),
+                if ((req['neededAt'] ?? '').toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Needed by: ${req['neededAt']}',
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF9CA3AF)),
+                    ),
+                  ),
+                if ((req['approvedBy'] ?? '').toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Approved by: ${req['approvedBy']}',
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.green.shade600),
+                    ),
+                  ),
+                if ((req['rejectedBy'] ?? '').toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Rejected by: ${req['rejectedBy']}',
+                      style:
+                          TextStyle(fontSize: 11, color: Colors.red.shade500),
+                    ),
+                  ),
+
+                const SizedBox(height: 12),
+
+                // Action buttons
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (status == 'pending') ...[
+                      _buildActionButton(
+                        id,
+                        'approved',
+                        'Approve',
+                        Icons.check_circle,
+                        Colors.green.shade600,
+                        Colors.white,
+                        filled: true,
+                      ),
+                      _buildActionButton(
+                        id,
+                        'rejected',
+                        'Reject',
+                        Icons.cancel,
+                        Colors.red.shade600,
+                        Colors.red.shade600,
+                        borderColor: Colors.red.shade300,
+                      ),
+                    ],
+                    if (status == 'approved')
+                      _buildActionButton(
+                        id,
+                        'returned',
+                        'Mark Returned',
+                        Icons.replay,
+                        Colors.blue.shade600,
+                        Colors.blue.shade600,
+                        borderColor: Colors.blue.shade300,
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: () => _confirmDeleteRequest(id),
+                      icon: Icon(Icons.delete, size: 14, color: Colors.red.shade600),
+                      label: Text('Delete', style: TextStyle(fontSize: 12, color: Colors.red.shade600)),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.red.shade300),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        minimumSize: const Size(0, 32),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 
-  void _showMessage(SnackBar snackBar) {
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  Widget _buildActionButton(
+    String id,
+    String newStatus,
+    String label,
+    IconData icon,
+    Color color,
+    Color textColor, {
+    bool filled = false,
+    Color? borderColor,
+  }) {
+    final isProcessing = _actioning == '$id$newStatus';
+    return SizedBox(
+      height: 32,
+      child: filled
+          ? ElevatedButton.icon(
+              onPressed: isProcessing ? null : () => _action(id, newStatus),
+              icon: isProcessing
+                  ? SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: textColor),
+                    )
+                  : Icon(icon, size: 14),
+              label: Text(label, style: const TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: textColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            )
+          : OutlinedButton.icon(
+              onPressed: isProcessing ? null : () => _action(id, newStatus),
+              icon: isProcessing
+                  ? SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: textColor),
+                    )
+                  : Icon(icon, size: 14),
+              label: Text(label, style: const TextStyle(fontSize: 12)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: textColor,
+                side: BorderSide(color: borderColor ?? Colors.grey.shade300),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+    );
   }
 
-  Color _getStatusColor(RequestStatus status) {
-    switch (status) {
-      case RequestStatus.pending:
-        return Colors.orange;
-      case RequestStatus.approved:
-        return Colors.green;
-      case RequestStatus.rejected:
-        return Colors.red;
-      case RequestStatus.returned:
-        return Colors.blue;
-    }
+  Widget _buildStatusBadge(String status) {
+    final map = {
+      'pending': (Colors.amber.shade100, Colors.amber.shade700),
+      'approved': (Colors.green.shade100, Colors.green.shade700),
+      'rejected': (Colors.red.shade100, Colors.red.shade700),
+      'returned': (const Color(0xFFF3F4F6), const Color(0xFF374151)),
+    };
+    final pair = map[status] ??
+        (const Color(0xFFF3F4F6), const Color(0xFF374151));
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: pair.$1,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        status.isNotEmpty
+            ? '${status[0].toUpperCase()}${status.substring(1)}'
+            : '',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: pair.$2,
+        ),
+      ),
+    );
   }
 }

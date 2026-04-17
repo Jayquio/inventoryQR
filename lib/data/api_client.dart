@@ -233,6 +233,19 @@ class ApiClient {
     }
   }
 
+  Future<void> deleteInstrument({required String name}) async {
+    final uri = Uri.parse('${_baseUrl()}/instruments_delete.php');
+    final res = await http
+        .post(uri, headers: _jsonHeaders, body: jsonEncode({'name': name}))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) {
+      final body = _safeDecode(res.body);
+      final msg = body is Map
+          ? (body['error'] ?? 'delete_failed')
+          : 'delete_failed';
+      throw Exception(msg.toString());
+    }
+  }
   Future<void> updateRequestQuantity({
     required String id,
     required int quantity,
@@ -396,5 +409,30 @@ class ApiClient {
     }
     final msg = body is Map ? (body['error'] ?? 'load_failed') : 'load_failed';
     throw Exception(msg.toString());
+  }
+
+  Future<void> createNotification({
+    required String title,
+    required String message,
+    required String type,
+    String recipient = 'All',
+    String priority = 'medium',
+  }) async {
+    final uri = Uri.parse('${_baseUrl()}/notifications_create.php');
+    final payload = {
+      'title': title,
+      'message': message,
+      'type': type,
+      'recipient': recipient,
+      'priority': priority,
+    };
+    final res = await http
+        .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) {
+      final body = _safeDecode(res.body);
+      final msg = body is Map ? (body['error'] ?? 'failed') : 'failed';
+      throw Exception(msg.toString());
+    }
   }
 }

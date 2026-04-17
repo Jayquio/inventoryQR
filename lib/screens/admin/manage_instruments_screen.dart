@@ -28,7 +28,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   late List<Instrument> _instruments;
   final TextEditingController _searchController = TextEditingController();
   int _page = 0;
-  final int _perPage = 6;
+  final int _perPage = 30; // Increased to show more instruments per page
   bool _loading = true;
   String _typeFilter = 'All';
 
@@ -151,9 +151,72 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
             _buildUpdateButton(context, index, bw),
             _buildQrButton(context, instrument, bw),
             _buildReturnButton(context, instrument, index, bw),
+            _buildDeleteButton(context, instrument, index, bw),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildDeleteButton(BuildContext context, Instrument instrument, int index, double width) {
+    return SizedBox(
+      width: width,
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          foregroundColor: Colors.red,
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        onPressed: () {
+          Navigator.pop(context);
+          _confirmDeleteInstrument(instrument, index);
+        },
+        icon: const Icon(Icons.delete),
+        label: const Text(
+          'Delete',
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteInstrument(Instrument instrument, int index) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Instrument?'),
+        content: Text('Are you sure you want to completely delete "${instrument.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await ApiClient.instance.deleteInstrument(name: instrument.name);
+                if (!mounted) return;
+                setState(() {
+                  _instruments.removeAt(index);
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Deleted "${instrument.name}".')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: ${e.toString().replaceFirst(_exceptionPrefix, '')}')),
+                );
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 

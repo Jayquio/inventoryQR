@@ -307,21 +307,33 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: DebouncedSearchBar(
-                controller: _searchController,
-                hintText: 'Search users...',
-                onChanged: (value) => setState(() {}),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 900,
+                  maxHeight: constraints.maxHeight,
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: DebouncedSearchBar(
+                        controller: _searchController,
+                        hintText: 'Search users...',
+                        onChanged: (value) => setState(() {}),
+                      ),
+                    ),
+                    _buildSummaryCards(),
+                    Expanded(
+                      child: _buildUserList(filteredUsers),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            _buildSummaryCards(),
-            Expanded(
-              child: _buildUserList(filteredUsers),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -353,16 +365,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
-        children: [
-          Expanded(child: _summaryCard(totalCount, 'Total Users')),
-          const SizedBox(width: 10),
-          Expanded(child: _summaryCard(adminCount, 'Admins', color: Colors.red)),
-          const SizedBox(width: 10),
-          Expanded(child: _summaryCard(teacherCount, 'Teachers', color: Colors.blue)),
-          const SizedBox(width: 10),
-          Expanded(child: _summaryCard(studentCount, 'Students', color: Colors.green)),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cols = constraints.maxWidth > 600 ? 4 : 2;
+          final width = (constraints.maxWidth - (cols - 1) * 10) / cols;
+          return Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              SizedBox(width: width, child: _summaryCard(totalCount, 'Total Users')),
+              SizedBox(width: width, child: _summaryCard(adminCount, 'Admins', color: Colors.red)),
+              SizedBox(width: width, child: _summaryCard(teacherCount, 'Teachers', color: Colors.blue)),
+              SizedBox(width: width, child: _summaryCard(studentCount, 'Students', color: Colors.green)),
+            ],
+          );
+        },
       ),
     );
   }

@@ -1,13 +1,13 @@
 // lib/screens/common/settings_screen.dart
 
 import 'package:flutter/material.dart';
-import '../../data/app_config_service.dart';
 import '../../data/api_client.dart';
-import '../../data/theme_service.dart';
 import '../../data/auth_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/app_config_service.dart';
+import '../../data/theme_service.dart';
 import '../../data/notification_service.dart';
-import '../../core/constants.dart';
+import '../../core/theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String userRole;
@@ -18,692 +18,291 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final _nameController = TextEditingController();
+  bool _saving = false;
+  bool _saved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.text = AuthService.instance.currentUsername;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    // In a real app you'd call an API to update the name
+    await Future.delayed(const Duration(milliseconds: 500));
+    AuthService.instance.setUsername(_nameController.text);
+    if (!mounted) return;
+    setState(() {
+      _saving = false;
+      _saved = true;
+    });
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _saved = false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final role = widget.userRole;
+    final role = AuthService.instance.currentRole.name;
+    final email = AuthService.instance.currentUserEmail;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/login',
-              (route) => false,
-            ),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: Column(
         children: [
-          // API settings are now always visible for Admin/Superadmin
-          if (role == 'Admin') ...[
-            _buildApiServerCard(),
-            const SizedBox(height: 8),
-            _buildDetectApiCard(),
-            const SizedBox(height: 8),
-            _buildTestConnectionCard(),
-            const SizedBox(height: 16),
-          ],
-          _buildProfileCard(),
-          const SizedBox(height: 16),
-          _buildNotificationCard(),
-          const SizedBox(height: 16),
-          _buildSecurityCard(),
-          const SizedBox(height: 16),
-          if (role == 'Admin') ...[
-            _buildAdminToolsCard(),
-            const SizedBox(height: 16),
-          ],
-          if (role == 'Teacher') ...[
-            _buildStaffToolsCard(),
-            const SizedBox(height: 16),
-          ],
-          if (role == 'Student') ...[
-            _buildStudentToolsCard(),
-            const SizedBox(height: 16),
-          ],
-          _buildAppearanceCard(),
-          const SizedBox(height: 16),
-          _buildHelpCard(),
-          const SizedBox(height: 16),
-          _buildAboutCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildApiServerCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.cloud, color: Colors.blueGrey),
-        title: const Text('API Server'),
-        subtitle: Text(
-          AppConfigService.instance.baseUrl.isEmpty
-              ? 'Default URL'
-              : AppConfigService.instance.baseUrl,
-        ),
-        trailing: const Icon(Icons.edit),
-        onTap: _showApiUrlDialog,
-      ),
-    );
-  }
-
-  Future<void> _showApiUrlDialog() async {
-    final baseUrl = AppConfigService.instance.baseUrl.isEmpty
-        ? 'https://medtechinventorysystem.org'
-        : AppConfigService.instance.baseUrl;
-    final controller = TextEditingController(text: baseUrl);
-    controller.selection = TextSelection.collapsed(offset: baseUrl.length);
-
-    final newUrl = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Set API Base URL'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'https://medtechinventorysystem.org',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    if (newUrl != null && newUrl.trim().isNotEmpty) {
-      await AppConfigService.instance.setBaseUrl(newUrl);
-      ApiClient.setBaseUrl(AppConfigService.instance.baseUrl);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('API set to ${AppConfigService.instance.baseUrl}'),
-        ),
-      );
-    }
-  }
-
-  Widget _buildDetectApiCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.search, color: Colors.green),
-        title: const Text('Detect API Server'),
-        subtitle: const Text('Auto-detect and prefill LAN URL'),
-        onTap: () async {
-          final ok = await AppConfigService.instance.detectAndApply();
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                ok
-                    ? 'Detected: ${AppConfigService.instance.baseUrl}'
-                    : 'No server detected; set URL manually',
-              ),
+          // Header
+          Container(
+            color: AppTheme.primaryColor,
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 12,
+              left: 16,
+              right: 16,
+              bottom: 16,
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTestConnectionCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.wifi_tethering, color: Colors.teal),
-        title: const Text('Test API Connection'),
-        subtitle: const Text('Call ping.php and show status'),
-        onTap: () async {
-          final ok = await ApiClient.instance.ping();
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(ok ? 'API reachable' : 'API not reachable')),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildProfileCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.person, color: Colors.blue),
-        title: const Text('Profile Settings'),
-        subtitle: const Text('Your account information'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          final uname = AuthService.instance.currentUsername;
-          final role = AuthService.instance.currentRole.name;
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Account'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Username: $uname'),
-                  Text('Role: ${role[0].toUpperCase()}${role.substring(1)}'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Close'),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back,
+                      color: Colors.white70, size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Icon(Icons.settings, color: Colors.white, size: 22),
+                const SizedBox(width: 8),
+                const Text(
+                  'Settings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildNotificationCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.notifications, color: Colors.orange),
-        title: const Text('Notifications'),
-        subtitle: const Text('Configure notification preferences'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: _showNotificationSettingsDialog,
-      ),
-    );
-  }
-
-  Future<void> _showNotificationSettingsDialog() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool enabled = prefs.getBool('notifications_enabled') ?? true;
-    bool autoRefresh = prefs.getBool('notifications_auto_refresh') ?? true;
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text('Notification Settings'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SwitchListTile(
-                value: enabled,
-                title: const Text('Enable notifications'),
-                onChanged: (v) => setStateDialog(() => enabled = v),
-              ),
-              SwitchListTile(
-                value: autoRefresh,
-                title: const Text('Auto-refresh every 30s'),
-                onChanged: (v) => setStateDialog(() => autoRefresh = v),
-              ),
-            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                await prefs.setBool('notifications_enabled', enabled);
-                await prefs.setBool('notifications_auto_refresh', autoRefresh);
-                if (autoRefresh) {
-                  NotificationService.instance.startAutoRefresh();
-                } else {
-                  NotificationService.instance.stopAutoRefresh();
-                }
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notification settings saved')),
-                );
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildSecurityCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.security, color: Colors.green),
-        title: const Text('Security'),
-        subtitle: const Text('Change password and security settings'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: _showChangePasswordDialog,
-      ),
-    );
-  }
+          // Body
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Column(
+                    children: [
+                      // Profile Card
+                      Card(
+                        elevation: 0.5,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.person,
+                                      size: 18, color: Colors.grey.shade600),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Profile',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF374151),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
 
-  void _showChangePasswordDialog() {
-    final newPwController = TextEditingController();
-    final confirmPwController = TextEditingController();
-    bool submitting = false;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text('Change Password'),
-          content: _buildPasswordDialogContent(
-            newPwController,
-            confirmPwController,
+                              // Full Name
+                              const Text('Full Name',
+                                  style: TextStyle(fontSize: 13)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: _nameController,
+                                decoration: _inputDecor('Your name'),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Email
+                              const Text('Email',
+                                  style: TextStyle(fontSize: 13)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                enabled: false,
+                                decoration: _inputDecor(
+                                    email.isNotEmpty ? email : 'No email'),
+                                style:
+                                    const TextStyle(color: Color(0xFF9CA3AF)),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Role
+                              const Text('Role',
+                                  style: TextStyle(fontSize: 13)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                enabled: false,
+                                decoration: _inputDecor(
+                                    '${role[0].toUpperCase()}${role.substring(1)}'),
+                                style:
+                                    const TextStyle(color: Color(0xFF9CA3AF)),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Save button
+                              SizedBox(
+                                height: 40,
+                                child: ElevatedButton.icon(
+                                  onPressed: _saving ? null : _save,
+                                  icon: _saving
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : _saved
+                                          ? const Icon(Icons.check_circle,
+                                              size: 16)
+                                          : const Icon(Icons.save, size: 16),
+                                  label: Text(
+                                      _saved ? 'Saved!' : 'Save Changes',
+                                      style: const TextStyle(fontSize: 13)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // About Card
+                      Card(
+                        elevation: 0.5,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'About',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF374151),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildAboutRow('App', 'MedLab Inventory'),
+                              const SizedBox(height: 8),
+                              _buildAboutRow('Version', '1.0.0'),
+                              const SizedBox(height: 8),
+                              _buildAboutRow(
+                                'Role',
+                                '${role[0].toUpperCase()}${role.substring(1)}',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Sign Out
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            NotificationService.instance.clear(persist: true);
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/login',
+                              (route) => false,
+                            );
+                          },
+                          icon: Icon(Icons.logout,
+                              size: 18, color: Colors.red.shade600),
+                          label: Text(
+                            'Sign Out',
+                            style: TextStyle(color: Colors.red.shade600),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.red.shade200),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: submitting ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: submitting
-                  ? null
-                  : () => _handleChangePassword(
-                      ctx,
-                      setStateDialog,
-                      newPwController,
-                      confirmPwController,
-                      (val) => submitting = val,
-                    ),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildPasswordDialogContent(
-    TextEditingController p1,
-    TextEditingController p2,
-  ) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+  Widget _buildAboutRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        TextField(
-          controller: p1,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'New Password'),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: p2,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'Confirm Password'),
-        ),
+        Text(label,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+        Text(value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF374151),
+            )),
       ],
     );
   }
 
-  Future<void> _handleChangePassword(
-    BuildContext ctx,
-    StateSetter setStateDialog,
-    TextEditingController p1Controller,
-    TextEditingController p2Controller,
-    ValueChanged<bool> setSubmitting,
-  ) async {
-    final p1 = p1Controller.text.trim();
-    final p2 = p2Controller.text.trim();
-
-    if (!_validatePasswords(p1, p2)) return;
-
-    setStateDialog(() => setSubmitting(true));
-    try {
-      await ApiClient.instance.updateUser(
-        username: AuthService.instance.currentUsername,
-        password: p1,
-      );
-      if (!mounted) return;
-      if (ctx.mounted) Navigator.pop(ctx);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Password updated')));
-    } catch (e) {
-      setStateDialog(() => setSubmitting(false));
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
-    }
-  }
-
-  bool _validatePasswords(String p1, String p2) {
-    if (p1.isEmpty || p2.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Enter both fields')));
-      return false;
-    }
-    if (p1 != p2) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
-      return false;
-    }
-    return true;
-  }
-
-  Widget _buildAdminToolsCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.admin_panel_settings, color: Colors.purple),
-        title: const Text('System Administration'),
-        subtitle: const Text('Advanced system configuration'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () => _showAdminBottomSheet(context),
+  InputDecoration _inputDecor(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+      filled: true,
+      fillColor: const Color(0xFFF9FAFB),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade300),
       ),
-    );
-  }
-
-  void _showAdminBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => ListView(
-        children: [
-          _buildBottomSheetItem(
-            ctx,
-            Icons.people,
-            'User Management',
-            '/user_management',
-          ),
-          _buildBottomSheetItem(
-            ctx,
-            Icons.inventory,
-            'Manage Instruments',
-            '/manage_instruments',
-          ),
-          _buildBottomSheetItem(
-            ctx,
-            Icons.receipt_long,
-            'Transaction Logs',
-            '/transaction_logs',
-          ),
-          _buildBottomSheetItem(
-            ctx,
-            Icons.notifications_active,
-            'Notification Center',
-            '/notification_center',
-          ),
-          _buildBottomSheetItem(
-            ctx,
-            Icons.bar_chart,
-            'Generate Reports',
-            '/generate_reports',
-          ),
-        ],
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade300),
       ),
-    );
-  }
-
-  Widget _buildBottomSheetItem(
-    BuildContext ctx,
-    IconData icon,
-    String title,
-    String route,
-  ) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      onTap: () {
-        Navigator.pop(ctx);
-        Navigator.pushNamed(context, route);
-      },
-    );
-  }
-
-  Widget _buildStaffToolsCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.work, color: Colors.teal),
-        title: const Text('Work Preferences'),
-        subtitle: const Text('Configure work options'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: _showStaffPreferencesDialog,
-      ),
-    );
-  }
-
-  Future<void> _showStaffPreferencesDialog() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool onlyPending =
-        prefs.getBool('teacher_show_pending_only') ??
-        prefs.getBool('staff_show_pending_only') ??
-        true;
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text('Work Preferences'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SwitchListTile(
-                value: onlyPending,
-                title: const Text('Show only pending requests'),
-                onChanged: (v) => setStateDialog(() => onlyPending = v),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                await prefs.setBool('teacher_show_pending_only', onlyPending);
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Work preferences saved')),
-                  );
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStudentToolsCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.school, color: Colors.indigo),
-        title: const Text('Student Tools'),
-        subtitle: const Text('Shortcuts to student features'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () => _showStudentBottomSheet(context),
-      ),
-    );
-  }
-
-  void _showStudentBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => ListView(
-        children: [
-          _buildBottomSheetItem(
-            ctx,
-            Icons.inventory,
-            'View Instruments',
-            AppRoutes.viewInstruments,
-          ),
-          _buildBottomSheetItem(
-            ctx,
-            Icons.add,
-            'Submit Request',
-            '/submit_request',
-          ),
-          _buildBottomSheetItem(
-            ctx,
-            Icons.track_changes,
-            'Track Status',
-            AppRoutes.trackStatus,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppearanceCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.palette, color: Colors.pink),
-        title: const Text('Appearance'),
-        subtitle: const Text('Theme and display preferences'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: _showThemeDialog,
-      ),
-    );
-  }
-
-  void _showThemeDialog() {
-    ThemeMode picked = ThemeService.instance.mode;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text('Theme'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildThemeOption(
-                ThemeMode.light,
-                Icons.light_mode,
-                'Light',
-                picked,
-                (v) => setStateDialog(() => picked = v),
-              ),
-              _buildThemeOption(
-                ThemeMode.dark,
-                Icons.dark_mode,
-                'Dark',
-                picked,
-                (v) => setStateDialog(() => picked = v),
-              ),
-              _buildThemeOption(
-                ThemeMode.system,
-                Icons.phone_android,
-                'System',
-                picked,
-                (v) => setStateDialog(() => picked = v),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                await ThemeService.instance.setMode(picked);
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Apply'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildThemeOption(
-    ThemeMode mode,
-    IconData icon,
-    String title,
-    ThemeMode current,
-    ValueChanged<ThemeMode> onPicked,
-  ) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      trailing: current == mode
-          ? const Icon(Icons.check, color: Colors.green)
-          : null,
-      onTap: () => onPicked(mode),
-    );
-  }
-
-  Widget _buildHelpCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.help, color: Colors.blue),
-        title: const Text('Help & Support'),
-        subtitle: const Text('Get help and contact support'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          final api = AppConfigService.instance.baseUrl.isEmpty
-              ? 'Default URL'
-              : AppConfigService.instance.baseUrl;
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Help & Support'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'For assistance, contact your system administrator.',
-                  ),
-                  const SizedBox(height: 8),
-                  Text('API: $api'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Close'),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAboutCard() {
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: const Icon(Icons.info, color: Colors.grey),
-        title: const Text('About'),
-        subtitle: const Text('App version and information'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          showAboutDialog(
-            context: context,
-            applicationName: 'MedLab Inventory System',
-            applicationVersion: '1.0.0',
-            applicationLegalese: '© 2024 JMCFI MedLab',
-          );
-        },
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade200),
       ),
     );
   }

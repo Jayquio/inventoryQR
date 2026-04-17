@@ -336,7 +336,17 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         : Colors.blue.withValues(alpha: 0.2);
 
     return InkWell(
-      onTap: () => _markAsRead(notification.id),
+      onTap: () {
+        _markAsRead(notification.id);
+        if (notification.type == 'request') {
+          final role = AuthService.instance.currentRole;
+          if (role == UserRole.admin || role == UserRole.superadmin) {
+            Navigator.pushNamed(context, '/manage_requests');
+          } else {
+            Navigator.pushNamed(context, '/track_status');
+          }
+        }
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
