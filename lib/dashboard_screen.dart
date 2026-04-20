@@ -64,46 +64,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingRequests =
-        _requests.where((r) => (r['status'] ?? '') == 'pending').length;
-    final availableInstruments =
-        _instruments.where((i) => i.available > 0 && i.status.toLowerCase() == 'active').length;
+    final pendingRequests = _requests
+        .where((r) => (r['status'] ?? '') == 'pending')
+        .length;
+    final totalItems = _instruments.length;
+    final availableItems = _instruments.where((i) => i.available > 0).length;
 
     final stats = [
-      _StatItem('Total Instruments', _instruments.length, Icons.science,
-          AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.08), onTap: () {
-        if (_isAdmin) {
-          Navigator.pushNamed(context, AppRoutes.manageInstruments);
-        } else {
-          Navigator.pushNamed(context, AppRoutes.viewInstruments,
-              arguments: AuthService.instance.currentRole == UserRole.teacher ? 'Teacher' : 'Student');
-        }
-      }),
-      _StatItem('Available', availableInstruments, Icons.inventory_2,
-          Colors.green.shade600, Colors.green.shade50, onTap: () {
-        if (_isAdmin) {
-          Navigator.pushNamed(context, AppRoutes.manageInstruments);
-        } else {
-          Navigator.pushNamed(context, AppRoutes.viewInstruments,
-              arguments: AuthService.instance.currentRole == UserRole.teacher ? 'Teacher' : 'Student');
-        }
-      }),
-      _StatItem('Pending Requests', pendingRequests, Icons.access_time,
-          Colors.amber.shade700, Colors.amber.shade50, onTap: () {
-        if (_isAdmin) {
-          Navigator.pushNamed(context, AppRoutes.manageRequests);
-        } else {
-          Navigator.pushNamed(context, AppRoutes.trackStatus);
-        }
-      }),
+      _StatItem(
+        'Total Items',
+        totalItems,
+        Icons.inventory,
+        AppTheme.primaryColor,
+        AppTheme.primaryColor.withValues(alpha: 0.1),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments),
+      ),
+      _StatItem(
+        'Available',
+        availableItems,
+        Icons.check_circle,
+        AppTheme.secondaryColor,
+        AppTheme.secondaryColor.withValues(alpha: 0.1),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.viewInstruments),
+      ),
+      _StatItem(
+        'Pending',
+        pendingRequests,
+        Icons.pending_actions,
+        Colors.amber.shade700,
+        Colors.amber.shade50,
+        onTap: () => Navigator.pushNamed(
+          context,
+          _isAdmin ? AppRoutes.manageRequests : AppRoutes.trackStatus,
+        ),
+      ),
     ];
 
     // Role-based navigation links
     final links = _isAdmin
         ? _adminLinks
         : AuthService.instance.currentRole == UserRole.teacher
-            ? _teacherLinks
-            : _studentLinks;
+        ? _teacherLinks
+        : _studentLinks;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -127,7 +129,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.science, color: Colors.white, size: 24),
+                  child: const Icon(
+                    Icons.science,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -158,8 +164,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 // Role badge
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -172,11 +180,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 8),
                 // Notification Bell
                 GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.notificationCenter),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.notificationCenter,
+                  ),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      Icon(Icons.notifications, color: Colors.white.withValues(alpha: 0.8), size: 20),
+                      Icon(
+                        Icons.notifications,
+                        color: Colors.white.withValues(alpha: 0.8),
+                        size: 20,
+                      ),
                       if (NotificationService.instance.unreadCount > 0)
                         Positioned(
                           right: -4,
@@ -189,7 +204,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             child: Text(
                               '${NotificationService.instance.unreadCount}',
-                              style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -199,25 +218,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 12),
                 // Settings
                 GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.settings,
-                      arguments: _isAdmin
-                          ? 'Admin'
-                          : AuthService.instance.currentRole == UserRole.teacher
-                              ? 'Teacher'
-                              : 'Student'),
-                  child: Icon(Icons.settings,
-                      color: Colors.white.withValues(alpha: 0.8), size: 20),
-                ),
-                const SizedBox(width: 12),
-                // Logout
-                GestureDetector(
-                  onTap: () {
-                    NotificationService.instance.clear(persist: true);
-                    Navigator.pushNamedAndRemoveUntil(
-                        context, '/login', (route) => false);
-                  },
-                  child: Icon(Icons.logout,
-                      color: Colors.white.withValues(alpha: 0.8), size: 20),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.settings,
+                    arguments: _isAdmin
+                        ? 'Admin'
+                        : AuthService.instance.currentRole == UserRole.teacher
+                        ? 'Teacher'
+                        : 'Student',
+                  ),
+                  child: Icon(
+                    Icons.settings,
+                    color: Colors.white.withValues(alpha: 0.8),
+                    size: 20,
+                  ),
                 ),
               ],
             ),
@@ -253,19 +267,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      floatingActionButton: _isAdmin ? null : FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(
-          context,
-          AppRoutes.qrScanner,
-          arguments: AuthService.instance.currentRole == UserRole.teacher
-              ? 'Teacher'
-              : 'Student',
-        ),
-        icon: const Icon(Icons.qr_code_scanner),
-        label: const Text('Scan QR'),
-        backgroundColor: AppTheme.secondaryColor,
-        foregroundColor: Colors.white,
-      ),
+      floatingActionButton: _isAdmin
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => Navigator.pushNamed(
+                context,
+                AppRoutes.qrScanner,
+                arguments: AuthService.instance.currentRole == UserRole.teacher
+                    ? 'Teacher'
+                    : 'Student',
+              ),
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Scan QR'),
+              backgroundColor: AppTheme.secondaryColor,
+              foregroundColor: Colors.white,
+            ),
     );
   }
 
@@ -284,7 +300,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 elevation: 0.5,
                 clipBehavior: Clip.antiAlias,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: InkWell(
                   onTap: s.onTap,
                   child: Padding(
@@ -315,7 +332,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Text(
                                 s.label,
                                 style: const TextStyle(
-                                    fontSize: 11, color: Color(0xFF6B7280)),
+                                  fontSize: 11,
+                                  color: Color(0xFF6B7280),
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -337,7 +356,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildNavigationGrid(List<_NavLink> links) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cols = R.columns(constraints.maxWidth, xs: 1, sm: 2, md: 3, lg: 3);
+        final cols = R.columns(
+          constraints.maxWidth,
+          xs: 1,
+          sm: 2,
+          md: 3,
+          lg: 3,
+        );
         final width = (constraints.maxWidth - (cols - 1) * 12) / cols;
         return Wrap(
           spacing: 12,
@@ -348,13 +373,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Card(
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () {
                     if (link.route.isNotEmpty) {
-                      Navigator.pushNamed(context, link.route,
-                          arguments: link.args);
+                      Navigator.pushNamed(
+                        context,
+                        link.route,
+                        arguments: link.args,
+                      );
                     }
                   },
                   child: Padding(
@@ -364,11 +393,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                            color: AppTheme.primaryColor.withValues(
+                              alpha: 0.08,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(link.icon,
-                              color: AppTheme.primaryColor, size: 22),
+                          child: Icon(
+                            link.icon,
+                            color: AppTheme.primaryColor,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -387,15 +421,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Text(
                                 link.desc,
                                 style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFF6B7280)),
+                                  fontSize: 12,
+                                  color: Color(0xFF6B7280),
+                                ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward,
-                            size: 16, color: Color(0xFF9CA3AF)),
+                        const Icon(
+                          Icons.arrow_forward,
+                          size: 16,
+                          color: Color(0xFF9CA3AF),
+                        ),
                       ],
                     ),
                   ),
@@ -409,37 +448,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<_NavLink> get _adminLinks => [
-        _NavLink(AppRoutes.manageInstruments, Icons.science,
-            'Manage Instruments', 'Add, edit, remove lab instruments'),
-        _NavLink(AppRoutes.manageRequests, Icons.assignment,
-            'Manage Requests', 'Approve or reject borrow requests'),
-        _NavLink(AppRoutes.userManagement, Icons.people, 'User Management',
-            'Manage students and teachers accounts'),
-        _NavLink(AppRoutes.transactionLogs, Icons.bar_chart,
-            'Transaction Logs', 'View all system transactions'),
-        _NavLink(AppRoutes.generateReports, Icons.trending_up,
-            'Generate Reports', 'Create inventory and usage reports'),
-      ];
+    _NavLink(
+      AppRoutes.manageInstruments,
+      Icons.science,
+      'Manage Instruments',
+      'Add, edit, remove lab instruments',
+    ),
+    _NavLink(
+      AppRoutes.manageRequests,
+      Icons.assignment,
+      'Manage Requests',
+      'Approve or reject borrow requests',
+    ),
+    _NavLink(
+      AppRoutes.userManagement,
+      Icons.people,
+      'User Management',
+      'Manage students and teachers accounts',
+    ),
+    _NavLink(
+      AppRoutes.transactionLogs,
+      Icons.bar_chart,
+      'Transaction Logs',
+      'View all system transactions',
+    ),
+    _NavLink(
+      AppRoutes.generateReports,
+      Icons.trending_up,
+      'Generate Reports',
+      'Create inventory and usage reports',
+    ),
+    _NavLink(
+      AppRoutes.userQr,
+      Icons.qr_code,
+      'User QR Codes',
+      'Generate/Download user identification QRs',
+    ),
+  ];
 
   List<_NavLink> get _teacherLinks => [
-        _NavLink(AppRoutes.viewInstruments, Icons.science,
-            'View Instruments', 'Browse available lab equipment',
-            args: 'Teacher'),
-        _NavLink(AppRoutes.submitRequest, Icons.assignment,
-            'Submit Request', 'Request to borrow instruments'),
-        _NavLink(AppRoutes.trackStatus, Icons.access_time, 'Track Status',
-            'Check your request status'),
-      ];
+    _NavLink(
+      AppRoutes.viewInstruments,
+      Icons.science,
+      'View Instruments',
+      'Browse available lab equipment',
+      args: 'Teacher',
+    ),
+    _NavLink(
+      AppRoutes.submitRequest,
+      Icons.assignment,
+      'Submit Request',
+      'Request to borrow instruments',
+    ),
+    _NavLink(
+      AppRoutes.userQr,
+      Icons.qr_code,
+      'My QR Code',
+      'Show your ID for scanning',
+    ),
+    _NavLink(
+      AppRoutes.trackStatus,
+      Icons.access_time,
+      'Track Status',
+      'Check your request status',
+    ),
+  ];
 
   List<_NavLink> get _studentLinks => [
-        _NavLink(AppRoutes.viewInstruments, Icons.science,
-            'View Instruments', 'Browse available lab equipment',
-            args: 'Student'),
-        _NavLink(AppRoutes.submitRequest, Icons.assignment,
-            'Submit Request', 'Request to borrow instruments'),
-        _NavLink(AppRoutes.trackStatus, Icons.access_time, 'Track Status',
-            'Check your request status'),
-      ];
+    _NavLink(
+      AppRoutes.viewInstruments,
+      Icons.science,
+      'View Instruments',
+      'Browse available lab equipment',
+      args: 'Student',
+    ),
+    _NavLink(
+      AppRoutes.submitRequest,
+      Icons.assignment,
+      'Submit Request',
+      'Request to borrow instruments',
+    ),
+    _NavLink(
+      AppRoutes.userQr,
+      Icons.qr_code,
+      'My QR Code',
+      'Show your ID for scanning',
+    ),
+    _NavLink(
+      AppRoutes.trackStatus,
+      Icons.access_time,
+      'Track Status',
+      'Check your request status',
+    ),
+  ];
 }
 
 class _StatItem {
@@ -449,7 +550,14 @@ class _StatItem {
   final Color color;
   final Color bg;
   final VoidCallback? onTap;
-  const _StatItem(this.label, this.value, this.icon, this.color, this.bg, {this.onTap});
+  const _StatItem(
+    this.label,
+    this.value,
+    this.icon,
+    this.color,
+    this.bg, {
+    this.onTap,
+  });
 }
 
 class _NavLink {

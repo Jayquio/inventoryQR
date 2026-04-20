@@ -53,14 +53,26 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   List<NotificationItem> _filterByRole(List<NotificationItem> items) {
     final role = AuthService.instance.currentRole;
-    if (role == UserRole.teacher) {
-      return items
-          .where((n) => n.recipient == 'Teacher' || n.recipient == 'Staff')
-          .toList();
-    } else if (role == UserRole.student) {
-      return items.where((n) => n.recipient == 'Student').toList();
+    final username = AuthService.instance.currentUsername;
+
+    // Admins see everything
+    if (role == UserRole.admin || role == UserRole.superadmin) {
+      return items;
     }
-    return items;
+
+    // Others only see what's meant for them or their role
+    return items.where((n) {
+      if (n.recipient == 'All') return true;
+      if (n.recipient == username) return true;
+      if (role == UserRole.teacher &&
+          (n.recipient == 'Teacher' || n.recipient == 'Staff')) {
+        return true;
+      }
+      if (role == UserRole.student && n.recipient == 'Student') {
+        return true;
+      }
+      return false;
+    }).toList();
   }
 
   List<NotificationItem> _filterByType(List<NotificationItem> items) {

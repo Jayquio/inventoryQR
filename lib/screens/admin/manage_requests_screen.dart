@@ -48,6 +48,20 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         status: status,
         user: name,
       );
+
+      // Create notification for the borrower if approved
+      if (status == 'approved') {
+        try {
+          final req = _requests.firstWhere((r) => r['id'].toString() == id);
+          await ApiClient.instance.createNotification(
+            title: 'Request Approved',
+            message: 'Your request for ${req['instrumentName']} has been approved.',
+            recipient: req['studentName'],
+            type: 'success',
+          );
+        } catch (_) {}
+      }
+
       await _load();
     } catch (_) {}
     if (mounted) setState(() => _actioning = null);

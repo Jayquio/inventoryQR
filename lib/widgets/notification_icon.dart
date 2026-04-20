@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/notification_service.dart';
+import '../data/auth_service.dart';
 
 class NotificationIcon extends StatelessWidget {
   const NotificationIcon({
@@ -16,11 +17,33 @@ class NotificationIcon extends StatelessWidget {
     return AnimatedBuilder(
       animation: NotificationService.instance,
       builder: (context, _) {
+        final role = AuthService.instance.currentRole;
+        final username = AuthService.instance.currentUsername;
+
         final filtered = NotificationService.instance.notifications.where((n) {
+          // 1. Recipient filtering (User-aware)
+          bool allowed = false;
+          if (n.recipient == 'All') {
+            allowed = true;
+          } else if (n.recipient == username) {
+            allowed = true;
+          } else if (role == UserRole.admin || role == UserRole.superadmin) {
+            if (n.recipient == 'Admin') allowed = true;
+          } else if (role == UserRole.teacher) {
+            if (n.recipient == 'Teacher' || n.recipient == 'Staff') {
+              allowed = true;
+            }
+          } else if (role == UserRole.student) {
+            if (n.recipient == 'Student') allowed = true;
+          }
+
+          // 2. Additional manual filters if provided
           final byRecipient = recipients == null || recipients!.contains(n.recipient);
           final byType = types == null || types!.contains(n.type);
-          return !n.read && byRecipient && byType;
+
+          return !n.read && allowed && byRecipient && byType;
         }).toList();
+
         final count = filtered.length;
         return Stack(
           alignment: Alignment.center,

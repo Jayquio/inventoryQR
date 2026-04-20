@@ -3,15 +3,19 @@ require __DIR__ . '/db.php';
 ensure_notifications_table($pdo);
 
 $recipient = $_GET['recipient'] ?? 'All';
+$username = $_GET['username'] ?? '';
 $limit = (int)($_GET['limit'] ?? 50);
 
 try {
-    if ($recipient === 'All') {
+    if ($recipient === 'Admin' || $recipient === 'Superadmin') {
+        // Admins can see everything, or we can keep it strict
         $stmt = $pdo->prepare("SELECT * FROM notifications ORDER BY created_at DESC LIMIT $limit");
         $stmt->execute();
     } else {
-        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient = :recipient OR recipient = 'All' ORDER BY created_at DESC LIMIT $limit");
+        // Strictly filter for the user
+        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient = :recipient OR recipient = 'All' OR recipient = :username ORDER BY created_at DESC LIMIT $limit");
         $stmt->bindValue(':recipient', $recipient, PDO::PARAM_STR);
+        $stmt->bindValue(':username', $username, PDO::PARAM_STR);
         $stmt->execute();
     }
     

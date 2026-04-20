@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Add this for kIsWeb
 import '../../core/theme.dart';
 import '../../data/auth_service.dart';
+import '../../data/notification_service.dart';
 import '../../data/api_client.dart';
 import '../../core/constants.dart';
 
@@ -243,15 +244,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    // Email domain restriction
-    if (username != 'superadmin' &&
-        username != 'admin' &&
-        username.contains('@') &&
-        !username.endsWith('@jmc.edu.ph')) {
-      _showError('Only jmc.edu.ph accounts are allowed.');
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
@@ -345,6 +337,9 @@ class _LoginScreenState extends State<LoginScreen> {
     AuthService.instance.setUsername(username);
     AuthService.instance.setRole(role);
     if (email != null) AuthService.instance.setEmail(email);
+
+    // Immediate fetch after login
+    NotificationService.instance.fetchFromServer();
 
     // Send to backend so admins can see it
     ApiClient.instance.createNotification(

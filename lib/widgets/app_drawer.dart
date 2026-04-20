@@ -29,10 +29,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 Text(
                   userRole,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 16),
                 ),
               ],
             ),
@@ -71,14 +68,6 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.assignment_return),
-              title: const Text("Confirm returns"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.manageRequests, arguments: 'Return Queue');
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.report),
               title: const Text("Generate Reports"),
               onTap: () {
@@ -103,11 +92,23 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.qr_code),
+              title: const Text("User QR Codes"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.userQr);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.settings),
               title: const Text("Settings"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.settings, arguments: userRole);
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.settings,
+                  arguments: userRole,
+                );
               },
             ),
           ],
@@ -117,7 +118,11 @@ class AppDrawer extends StatelessWidget {
               title: const Text("Monitor Inventory"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Teacher');
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.viewInstruments,
+                  arguments: 'Teacher',
+                );
               },
             ),
             ListTile(
@@ -129,11 +134,23 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.qr_code),
+              title: const Text("My QR"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.userQr);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.settings),
               title: const Text("Settings"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.settings, arguments: userRole);
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.settings,
+                  arguments: userRole,
+                );
               },
             ),
           ],
@@ -143,7 +160,11 @@ class AppDrawer extends StatelessWidget {
               title: const Text("View Instruments"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.viewInstruments, arguments: 'Student');
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.viewInstruments,
+                  arguments: 'Student',
+                );
               },
             ),
             ListTile(
@@ -163,11 +184,23 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.qr_code),
+              title: const Text("My QR"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.userQr);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.settings),
               title: const Text("Settings"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.settings, arguments: userRole);
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.settings,
+                  arguments: userRole,
+                );
               },
             ),
           ],

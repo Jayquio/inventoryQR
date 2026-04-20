@@ -140,7 +140,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                     : ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: _requests.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final req = _requests[index];

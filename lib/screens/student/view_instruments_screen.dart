@@ -226,7 +226,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen> {
               .map((c) => DropdownMenuItem(
                     value: c,
                     child:
-                        Text(c == 'all' ? 'All Categories' : c),
+                        Text(c == 'all' ? 'Instruments and Reagent' : c),
                   ))
               .toList(),
           onChanged: (v) => setState(() => _category = v ?? 'all'),

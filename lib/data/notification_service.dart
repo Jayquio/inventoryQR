@@ -49,7 +49,27 @@ class NotificationService extends ChangeNotifier {
 
   List<NotificationItem> get notifications => List.unmodifiable(_notifications);
 
-  int get unreadCount => _notifications.where((n) => !n.read).length;
+  /// Returns unread count filtered for the current user's role and username
+  int get unreadCount {
+    final role = AuthService.instance.currentRole;
+    final username = AuthService.instance.currentUsername;
+
+    return _notifications.where((n) {
+      if (n.read) return false;
+
+      // Filter by recipient
+      if (n.recipient == 'All') return true;
+      if (n.recipient == username) return true;
+      if (role == UserRole.admin || role == UserRole.superadmin) {
+        if (n.recipient == 'Admin') return true;
+      } else if (role == UserRole.teacher) {
+        if (n.recipient == 'Teacher' || n.recipient == 'Staff') return true;
+      } else if (role == UserRole.student) {
+        if (n.recipient == 'Student') return true;
+      }
+      return false;
+    }).length;
+  }
 
   void add(NotificationItem item) {
     // Avoid duplicates by ID
@@ -68,6 +88,7 @@ class NotificationService extends ChangeNotifier {
     _isFetching = true;
     try {
       final role = AuthService.instance.currentRole;
+      final username = AuthService.instance.currentUsername;
       String recipient = 'All';
       if (role == UserRole.admin || role == UserRole.superadmin) {
         recipient = 'Admin';
@@ -79,12 +100,21 @@ class NotificationService extends ChangeNotifier {
 
       final list = await ApiClient.instance.fetchNotifications(
         recipient: recipient,
+        username: username,
       );
 
       bool changed = false;
       for (final map in list) {
         final id = map['id'].toString();
-        if (!_notifications.any((n) => n.id == id)) {
+        final existingIdx = _notifications.indexWhere((n) => n.id == id);
+        if (existingIdx != -1) {
+          // Update read status if changed
+          final newRead = map['read'] ?? false;
+          if (_notifications[existingIdx].read != newRead) {
+            _notifications[existingIdx].read = newRead;
+            changed = true;
+          }
+        } else {
           _notifications.add(
             NotificationItem(
               id: id,
@@ -128,6 +158,12 @@ class NotificationService extends ChangeNotifier {
       _notifications[idx].read = true;
       notifyListeners();
       _persist();
+
+      // Sync with server
+      final username = AuthService.instance.currentUsername;
+      ApiClient.instance
+          .markNotificationRead(id: id, username: username)
+          .catchError((_) {});
     }
   }
 
@@ -137,6 +173,12 @@ class NotificationService extends ChangeNotifier {
     }
     notifyListeners();
     _persist();
+
+    // Sync with server
+    final username = AuthService.instance.currentUsername;
+    ApiClient.instance
+        .markNotificationRead(username: username, all: true)
+        .catchError((_) {});
   }
 
   Future<void> loadFromStorage() async {
@@ -228,8 +270,8 @@ class NotificationService extends ChangeNotifier {
 
   void startAutoRefresh() {
     _autoRefreshTimer?.cancel();
-    // Poll more frequently for "near real-time" feel (5 seconds)
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // Poll more frequently for "near real-time" feel (3 seconds)
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       fetchFromServer();
     });
   }

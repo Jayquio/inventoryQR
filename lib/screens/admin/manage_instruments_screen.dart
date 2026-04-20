@@ -621,7 +621,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       type: normalizedType,
       name: controllers.name.text.trim(),
       serialNumber: finalSerialNumber,
-      category: controllers.category.text.trim(),
+      category: normalizedType == 'reagent' ? 'Reagent' : 'Instrument',
       quantity: qty,
       available: avail,
       status: controllers.status.text.trim(),
@@ -759,8 +759,10 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
           const SizedBox(width: 12),
           DropdownButton<String>(
             value: _typeFilter,
+            underline: const SizedBox(),
+            icon: const Icon(Icons.filter_list, size: 20),
             items: const [
-              DropdownMenuItem(value: 'All', child: Text('All Types')),
+              DropdownMenuItem(value: 'All', child: Text('Instruments and Reagent')),
               DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
               DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
             ],

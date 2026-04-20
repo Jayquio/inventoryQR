@@ -64,8 +64,11 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       final items = await ApiClient.instance.fetchInstruments();
       if (!mounted) return;
       setState(() {
-        _instruments =
-            items.where((i) => i.status.toLowerCase() == 'active' || i.status.toLowerCase() == 'available').toList();
+        _instruments = items.where((i) {
+          final s = i.status.toLowerCase();
+          final isPre = i.name == widget.preSelectedInstrument;
+          return s == 'active' || s == 'available' || isPre;
+        }).toList();
         _loading = false;
       });
     } catch (_) {
@@ -131,7 +134,8 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         successCount++;
       } catch (e) {
         results.add(
-            '✗ ${item['instrumentName']} — ${e.toString().replaceFirst('Exception: ', '')}');
+          '✗ ${item['instrumentName']} — ${e.toString().replaceFirst('Exception: ', '')}',
+        );
       }
     }
 
@@ -187,8 +191,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         NotificationItem(
           id: 'student_${DateTime.now().microsecondsSinceEpoch}',
           title: 'Request Submitted',
-          message:
-              'You requested $_selectedInstrument (x$_quantity)',
+          message: 'You requested $_selectedInstrument (x$_quantity)',
           type: 'success',
           timestamp: nowIso,
           recipient: 'Student',
@@ -224,7 +227,8 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
             child: Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 440),
                 padding: const EdgeInsets.all(32),
@@ -238,8 +242,11 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                         color: Colors.green.shade100,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.check_circle,
-                          color: Colors.green.shade600, size: 32),
+                      child: Icon(
+                        Icons.check_circle,
+                        color: Colors.green.shade600,
+                        size: 32,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -274,18 +281,20 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: _submitResults
-                              .map((r) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Text(
-                                      r,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: r.startsWith('✓')
-                                            ? Colors.green.shade700
-                                            : Colors.red.shade700,
-                                      ),
+                              .map(
+                                (r) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Text(
+                                    r,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: r.startsWith('✓')
+                                          ? Colors.green.shade700
+                                          : Colors.red.shade700,
                                     ),
-                                  ))
+                                  ),
+                                ),
+                              )
                               .toList(),
                         ),
                       ),
@@ -327,8 +336,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryColor,
                               foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -365,14 +373,17 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back,
-                      color: Colors.white70, size: 22),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white70,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Icon(Icons.assignment, color: Colors.white, size: 22),
                 const SizedBox(width: 8),
                 const Text(
-                  'Submit Borrow Request',
+                  'Submit Request',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -383,7 +394,9 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                 if (_borrowList.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -420,7 +433,8 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                       Card(
                         elevation: 0.5,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Form(
@@ -442,12 +456,15 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                       const Spacer(),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 2),
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: AppTheme.primaryColor
                                               .withValues(alpha: 0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Text(
                                           'Adding item #${_borrowList.length + 1}',
@@ -464,28 +481,39 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                 const SizedBox(height: 20),
 
                                 // Instrument dropdown
-                                const Text('Instrument *',
-                                    style: TextStyle(fontSize: 13)),
+                                const Text(
+                                  'Instrument *',
+                                  style: TextStyle(fontSize: 13),
+                                ),
                                 const SizedBox(height: 4),
                                 _buildInstrumentDropdown(),
                                 const SizedBox(height: 16),
 
                                 // Quantity
-                                const Text('Quantity *',
-                                    style: TextStyle(fontSize: 13)),
+                                const Text(
+                                  'Quantity *',
+                                  style: TextStyle(fontSize: 13),
+                                ),
                                 const SizedBox(height: 4),
                                 TextFormField(
                                   controller: _quantityController,
                                   keyboardType: TextInputType.number,
                                   decoration: _inputDecor(''),
                                   validator: (v) {
-                                    if (v == null || v.isEmpty) return 'Required';
+                                    if (v == null || v.isEmpty) {
+                                      return 'Required';
+                                    }
                                     final n = int.tryParse(v);
                                     if (n == null || n <= 0) return '> 0';
-                                    if (_selectedInstrument != null && _selectedInstrument!.isNotEmpty) {
+                                    if (_selectedInstrument != null &&
+                                        _selectedInstrument!.isNotEmpty) {
                                       try {
-                                        final inst = _instruments.firstWhere((i) => i.name == _selectedInstrument);
-                                        if (n > inst.available) return 'Max available: ${inst.available}';
+                                        final inst = _instruments.firstWhere(
+                                          (i) => i.name == _selectedInstrument,
+                                        );
+                                        if (n > inst.available) {
+                                          return 'Max available: ${inst.available}';
+                                        }
                                       } catch (_) {}
                                     }
                                     return null;
@@ -496,16 +524,20 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                 const SizedBox(height: 16),
 
                                 // Purpose
-                                const Text('Purpose *',
-                                    style: TextStyle(fontSize: 13)),
+                                const Text(
+                                  'Purpose *',
+                                  style: TextStyle(fontSize: 13),
+                                ),
                                 const SizedBox(height: 4),
                                 TextFormField(
                                   controller: _purposeController,
                                   maxLines: 3,
                                   decoration: _inputDecor(
-                                      'Describe why you need this instrument...'),
-                                  validator: (v) =>
-                                      v == null || v.isEmpty ? 'Required' : null,
+                                    'Describe why you need this instrument...',
+                                  ),
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Required'
+                                      : null,
                                   onSaved: (v) => _purpose = v ?? '',
                                 ),
                                 const SizedBox(height: 16),
@@ -521,14 +553,16 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                const Text('Course / Subject',
-                                                    style: TextStyle(
-                                                        fontSize: 13)),
+                                                const Text(
+                                                  'Course',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
                                                 const SizedBox(height: 4),
                                                 TextFormField(
                                                   controller: _courseController,
-                                                  decoration:
-                                                      _inputDecor('e.g. Biology 101'),
+                                                  decoration: _inputDecor(''),
                                                   onSaved: (v) =>
                                                       _course = v ?? '',
                                                 ),
@@ -541,18 +575,22 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                const Text('Needed By',
-                                                    style: TextStyle(
-                                                        fontSize: 13)),
+                                                const Text(
+                                                  'Needed By',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
                                                 const SizedBox(height: 4),
                                                 GestureDetector(
                                                   onTap: _pickDate,
                                                   child: AbsorbPointer(
                                                     child: TextFormField(
                                                       decoration: _inputDecor(
-                                                          _neededAt.isEmpty
-                                                              ? 'Select date'
-                                                              : _neededAt),
+                                                        _neededAt.isEmpty
+                                                            ? 'Select date'
+                                                            : _neededAt,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
@@ -566,27 +604,31 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Course / Subject',
-                                            style: TextStyle(fontSize: 13)),
+                                        const Text(
+                                          'Course',
+                                          style: TextStyle(fontSize: 13),
+                                        ),
                                         const SizedBox(height: 4),
                                         TextFormField(
                                           controller: _courseController,
-                                          decoration:
-                                              _inputDecor('e.g. Biology 101'),
+                                          decoration: _inputDecor(''),
                                           onSaved: (v) => _course = v ?? '',
                                         ),
                                         const SizedBox(height: 16),
-                                        const Text('Needed By',
-                                            style: TextStyle(fontSize: 13)),
+                                        const Text(
+                                          'Needed By',
+                                          style: TextStyle(fontSize: 13),
+                                        ),
                                         const SizedBox(height: 4),
                                         GestureDetector(
                                           onTap: _pickDate,
                                           child: AbsorbPointer(
                                             child: TextFormField(
                                               decoration: _inputDecor(
-                                                  _neededAt.isEmpty
-                                                      ? 'Select date'
-                                                      : _neededAt),
+                                                _neededAt.isEmpty
+                                                    ? 'Select date'
+                                                    : _neededAt,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -596,29 +638,34 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                 ),
                                 const SizedBox(height: 24),
 
-                                // Buttons: Add to Borrow + Submit (if only 1 item)
+                                // Buttons: Add More + Submit (if only 1 item)
                                 Row(
                                   children: [
-                                    // Add to Borrow button
+                                    // Add More button
                                     Expanded(
                                       child: SizedBox(
-                                        height: 44,
+                                        height: 48,
                                         child: OutlinedButton.icon(
-                                          onPressed: (_selectedInstrument ==
-                                                      null ||
+                                          onPressed:
+                                              (_selectedInstrument == null ||
                                                   _selectedInstrument!.isEmpty)
                                               ? null
                                               : _addToBorrowList,
-                                          icon: const Icon(Icons.add_shopping_cart,
-                                              size: 18),
-                                          label: const Text('Add to Borrow',
-                                              style: TextStyle(fontSize: 14)),
+                                          icon: const Icon(
+                                            Icons.add_shopping_cart,
+                                            size: 18,
+                                          ),
+                                          label: const Text(
+                                            'Add More',
+                                            style: TextStyle(fontSize: 14),
+                                          ),
                                           style: OutlinedButton.styleFrom(
                                             foregroundColor:
                                                 AppTheme.primaryColor,
                                             side: BorderSide(
-                                                color: AppTheme.primaryColor
-                                                    .withValues(alpha: 0.5)),
+                                              color: AppTheme.primaryColor
+                                                  .withValues(alpha: 0.5),
+                                            ),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(8),
@@ -632,9 +679,10 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: SizedBox(
-                                          height: 44,
+                                          height: 48,
                                           child: ElevatedButton(
-                                            onPressed: (_submitting ||
+                                            onPressed:
+                                                (_submitting ||
                                                     _selectedInstrument ==
                                                         null ||
                                                     _selectedInstrument!
@@ -645,9 +693,9 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                               backgroundColor:
                                                   AppTheme.primaryColor,
                                               foregroundColor: Colors.white,
-                                              disabledBackgroundColor:
-                                                  AppTheme.primaryColor
-                                                      .withValues(alpha: 0.5),
+                                              disabledBackgroundColor: AppTheme
+                                                  .primaryColor
+                                                  .withValues(alpha: 0.5),
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
@@ -659,13 +707,16 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                                     height: 18,
                                                     child:
                                                         CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.white,
-                                                    ),
+                                                          strokeWidth: 2,
+                                                          color: Colors.white,
+                                                        ),
                                                   )
-                                                : const Text('Submit Request',
+                                                : const Text(
+                                                    'Submit Request',
                                                     style: TextStyle(
-                                                        fontSize: 14)),
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
                                           ),
                                         ),
                                       ),
@@ -723,13 +774,15 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                               ? 'Submitting...'
                               : 'Submit ${_borrowList.length} Request${_borrowList.length > 1 ? 's' : ''}',
                           style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w600),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green.shade600,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              Colors.green.shade600.withValues(alpha: 0.5),
+                          disabledBackgroundColor: Colors.green.shade600
+                              .withValues(alpha: 0.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -757,8 +810,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.list_alt,
-                    size: 18, color: AppTheme.primaryColor),
+                Icon(Icons.list_alt, size: 18, color: AppTheme.primaryColor),
                 const SizedBox(width: 8),
                 const Text(
                   'Borrow List',
@@ -771,7 +823,9 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -792,7 +846,8 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
               final item = _borrowList[index];
               return Container(
                 margin: EdgeInsets.only(
-                    bottom: index < _borrowList.length - 1 ? 8 : 0),
+                  bottom: index < _borrowList.length - 1 ? 8 : 0,
+                ),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF9FAFB),
@@ -806,8 +861,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color:
-                            AppTheme.primaryColor.withValues(alpha: 0.08),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Center(
@@ -857,8 +911,11 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                           color: Colors.red.shade50,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Icon(Icons.close,
-                            size: 16, color: Colors.red.shade600),
+                        child: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.red.shade600,
+                        ),
                       ),
                     ),
                   ],
@@ -876,7 +933,8 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       return const LinearProgressIndicator();
     }
     return DropdownButtonFormField<String>(
-      initialValue: _selectedInstrument != null &&
+      initialValue:
+          _selectedInstrument != null &&
               _instruments.any((i) => i.name == _selectedInstrument)
           ? _selectedInstrument
           : null,
@@ -923,8 +981,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
       filled: true,
       fillColor: Colors.white,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: Colors.grey.shade300),

@@ -95,7 +95,7 @@ class _HandleReturnsScreenState extends State<HandleReturnsScreen> {
                 const Icon(Icons.replay, color: Colors.white, size: 22),
                 const SizedBox(width: 8),
                 const Text(
-                  'Handle Returns',
+                  'Confirm Returns',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -172,7 +172,7 @@ class _HandleReturnsScreenState extends State<HandleReturnsScreen> {
                                   )
                                 : ListView.separated(
                                     itemCount: filtered.length,
-                                    separatorBuilder: (_, __) =>
+                                    separatorBuilder: (_, _) =>
                                         const SizedBox(height: 12),
                                     itemBuilder: (context, index) {
                                       final req = filtered[index];

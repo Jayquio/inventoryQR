@@ -50,14 +50,12 @@ class ApiClient {
       if (body.contains('<br />') || body.contains('<b>')) {
         return {
           'error':
-              'Server Error (PHP): ' +
-              body.replaceAll(RegExp(r'<[^>]*>'), ' ').trim(),
+              'Server Error (PHP): ${body.replaceAll(RegExp(r'<[^>]*>'), ' ').trim()}',
         };
       }
       return {
         'error':
-            'Invalid server response: ' +
-            body.substring(0, body.length > 100 ? 100 : body.length),
+            'Invalid server response: ${body.substring(0, body.length > 100 ? 100 : body.length)}',
       };
     }
   }
@@ -95,12 +93,14 @@ class ApiClient {
         .post(
           uri,
           headers: _jsonHeaders,
-          body: jsonEncode({
-            'username': username,
-            'password': password,
-            'role': role,
-            if (email != null) 'email': email,
-          }),
+          body: jsonEncode(
+            {
+              'username': username,
+              'password': password,
+              'role': role,
+              'email': email,
+            }..removeWhere((k, v) => v == null),
+          ),
         )
         .timeout(const Duration(seconds: 15));
     final body = _safeDecode(res.body);
@@ -246,6 +246,7 @@ class ApiClient {
       throw Exception(msg.toString());
     }
   }
+
   Future<void> updateRequestQuantity({
     required String id,
     required int quantity,
@@ -356,12 +357,14 @@ class ApiClient {
         .post(
           uri,
           headers: _jsonHeaders,
-          body: jsonEncode({
-            'type': type,
-            'instrument_name': instrumentName,
-            'processed_by': processedBy,
-            if (requestId != null) 'request_id': requestId,
-          }),
+          body: jsonEncode(
+            {
+              'type': type,
+              'instrument_name': instrumentName,
+              'processed_by': processedBy,
+              'request_id': requestId,
+            }..removeWhere((k, v) => v == null),
+          ),
         )
         .timeout(const Duration(seconds: 15));
     final body = _safeDecode(res.body);
@@ -390,11 +393,12 @@ class ApiClient {
 
   Future<List<Map<String, dynamic>>> fetchNotifications({
     String recipient = 'All',
+    String username = '',
     int limit = 50,
   }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final url =
-        '${_baseUrl()}/notifications_list.php?recipient=$recipient&limit=$limit&_=$timestamp';
+        '${_baseUrl()}/notifications_list.php?recipient=$recipient&username=${Uri.encodeQueryComponent(username)}&limit=$limit&_=$timestamp';
     final uri = Uri.parse(url);
     final res = await http
         .get(uri, headers: _authHeaders)
@@ -426,6 +430,24 @@ class ApiClient {
       'recipient': recipient,
       'priority': priority,
     };
+    final res = await http
+        .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) {
+      final body = _safeDecode(res.body);
+      final msg = body is Map ? (body['error'] ?? 'failed') : 'failed';
+      throw Exception(msg.toString());
+    }
+  }
+
+  Future<void> markNotificationRead({
+    String? id,
+    String? username,
+    bool all = false,
+  }) async {
+    final uri = Uri.parse('${_baseUrl()}/notifications_mark_read.php');
+    final payload = {'id': id, 'username': username, 'all': all}
+      ..removeWhere((k, v) => v == null);
     final res = await http
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
