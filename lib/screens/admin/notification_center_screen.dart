@@ -184,14 +184,14 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     }
   }
 
-  void _markAsRead(String id) {
-    NotificationService.instance.markAsRead(id);
-    setState(() {});
+  Future<void> _markAsRead(String id) async {
+    await NotificationService.instance.markAsRead(id);
+    if (mounted) setState(() {});
   }
 
-  void _markAllAsRead() {
-    NotificationService.instance.markAllAsRead();
-    setState(() {});
+  Future<void> _markAllAsRead() async {
+    await NotificationService.instance.markAllAsRead();
+    if (mounted) setState(() {});
   }
 
   @override

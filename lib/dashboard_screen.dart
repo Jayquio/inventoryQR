@@ -179,41 +179,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 8),
                 // Notification Bell
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.notificationCenter,
-                  ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(
-                        Icons.notifications,
-                        color: Colors.white.withValues(alpha: 0.8),
-                        size: 20,
+                AnimatedBuilder(
+                  animation: NotificationService.instance,
+                  builder: (context, _) {
+                    final count = NotificationService.instance.unreadCount;
+                    return GestureDetector(
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.notificationCenter,
                       ),
-                      if (NotificationService.instance.unreadCount > 0)
-                        Positioned(
-                          right: -4,
-                          top: -4,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              '${NotificationService.instance.unreadCount}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            Icons.notifications,
+                            color: Colors.white.withValues(alpha: 0.8),
+                            size: 20,
+                          ),
+                          if (count > 0)
+                            Positioned(
+                              right: -4,
+                              top: -4,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  '$count',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                    ],
-                  ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 12),
                 // Settings

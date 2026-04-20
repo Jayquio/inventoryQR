@@ -152,33 +152,37 @@ class NotificationService extends ChangeNotifier {
     }
   }
 
-  void markAsRead(String id) {
+  Future<void> markAsRead(String id) async {
     final idx = _notifications.indexWhere((e) => e.id == id);
     if (idx != -1) {
       _notifications[idx].read = true;
       notifyListeners();
-      _persist();
+      await _persist();
 
       // Sync with server
       final username = AuthService.instance.currentUsername;
-      ApiClient.instance
-          .markNotificationRead(id: id, username: username)
-          .catchError((_) {});
+      try {
+        await ApiClient.instance.markNotificationRead(id: id, username: username);
+      } catch (e) {
+        debugPrint('Error marking notification read on server: $e');
+      }
     }
   }
 
-  void markAllAsRead() {
+  Future<void> markAllAsRead() async {
     for (final n in _notifications) {
       n.read = true;
     }
     notifyListeners();
-    _persist();
+    await _persist();
 
     // Sync with server
     final username = AuthService.instance.currentUsername;
-    ApiClient.instance
-        .markNotificationRead(username: username, all: true)
-        .catchError((_) {});
+    try {
+      await ApiClient.instance.markNotificationRead(username: username, all: true);
+    } catch (e) {
+      debugPrint('Error marking all notifications read on server: $e');
+    }
   }
 
   Future<void> loadFromStorage() async {
