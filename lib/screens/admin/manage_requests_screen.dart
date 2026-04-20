@@ -40,31 +40,69 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   }
 
   Future<void> _action(String id, String status) async {
-    setState(() => _actioning = '$id$status');
+    final originalRequests = List<Map<String, dynamic>>.from(_requests);
     final name = AuthService.instance.currentUsername;
+
+    // 1. Optimistic Update (Immediate UI feedback)
+    setState(() {
+      _actioning = '$id$status';
+      final idx = _requests.indexWhere((r) => r['id'].toString() == id);
+      if (idx != -1) {
+        _requests[idx] = {..._requests[idx], 'status': status};
+      }
+    });
+
     try {
+      // 2. Perform API call
       await ApiClient.instance.updateRequestStatus(
         id: id,
         status: status,
         user: name,
       );
 
-      // Create notification for the borrower if approved
+      // 3. Create notification for the borrower
+      final req = originalRequests.firstWhere((r) => r['id'].toString() == id);
+      final instrumentName = req['instrumentName'] ?? 'instrument';
+      final studentUsername = req['studentName']; // This is the username in our DB
+
       if (status == 'approved') {
-        try {
-          final req = _requests.firstWhere((r) => r['id'].toString() == id);
-          await ApiClient.instance.createNotification(
-            title: 'Request Approved',
-            message: 'Your request for ${req['instrumentName']} has been approved.',
-            recipient: req['studentName'],
-            type: 'success',
-          );
-        } catch (_) {}
+        await ApiClient.instance.createNotification(
+          title: 'Request Approved',
+          message: 'Your request for $instrumentName has been approved.',
+          recipient: studentUsername,
+          type: 'success',
+          priority: 'high',
+        );
+      } else if (status == 'rejected') {
+        await ApiClient.instance.createNotification(
+          title: 'Request Rejected',
+          message: 'Your request for $instrumentName has been rejected.',
+          recipient: studentUsername,
+          type: 'error',
+          priority: 'high',
+        );
+      } else if (status == 'returned') {
+        await ApiClient.instance.createNotification(
+          title: 'Return Confirmed',
+          message: 'The return of $instrumentName has been confirmed.',
+          recipient: studentUsername,
+          type: 'info',
+        );
       }
 
+      // 4. Refresh to be sure (quietly)
       await _load();
-    } catch (_) {}
-    if (mounted) setState(() => _actioning = null);
+    } catch (e) {
+      // Rollback if failed
+      if (mounted) {
+        setState(() => _requests = originalRequests);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _actioning = null);
+    }
   }
 
   void _showOverrideDialog(Map<String, dynamic> req) {
