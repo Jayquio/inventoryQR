@@ -12,6 +12,7 @@ $overrideFields = $hasOverride
     : "0 AS isOverride, r.quantity AS originalQuantity, '' AS overrideReason,";
 
 $sql = "SELECT r.id,
+               r.batch_id AS batchId,
                r.student_name AS studentName,
                r.instrument_name AS instrumentName,
                r.quantity,

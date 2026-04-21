@@ -315,24 +315,31 @@ class ApiClient {
 
   Future<void> submitRequest({
     required String studentName,
-    required String instrumentName,
     required String purpose,
-    int quantity = 1,
-    String? serialNumber,
+    List<Map<String, dynamic>>? items,
     String? course,
     String? neededAtIso,
+    String? batchId,
+    // Keep single item parameters for backward compatibility
+    String? instrumentName,
+    int? quantity,
+    String? serialNumber,
   }) async {
     final uri = Uri.parse('${_baseUrl()}/request_create.php');
     final payload = {
       'student_name': studentName,
-      'instrument_name': instrumentName,
-      'quantity': quantity,
       'purpose': purpose,
-      if (serialNumber != null && serialNumber.isNotEmpty)
-        'serialNumber': serialNumber,
       if (course != null && course.isNotEmpty) 'course': course,
       if (neededAtIso != null && neededAtIso.isNotEmpty)
         'needed_at': neededAtIso,
+      if (batchId != null && batchId.isNotEmpty) 'batch_id': batchId,
+      if (items != null) 'items': items,
+      // Fallback for single item if items list is not provided
+      if (items == null && instrumentName != null)
+        'instrument_name': instrumentName,
+      if (items == null && quantity != null) 'quantity': quantity,
+      if (items == null && serialNumber != null && serialNumber.isNotEmpty)
+        'serialNumber': serialNumber,
     };
     final res = await http
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))

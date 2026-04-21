@@ -159,14 +159,29 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Instrument: $instrumentName',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      Text(
+                        'Instrument: $instrumentName',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text('Requested by: $studentName',
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                      Text(
+                        'Requested by: $studentName',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text('Current Qty: $currentQty',
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                      Text(
+                        'Current Qty: $currentQty',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -179,10 +194,16 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     hintText: 'Enter new quantity',
-                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 14,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -208,10 +229,16 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: 'Optional: reason for the override...',
-                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 13,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -237,7 +264,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange.shade700,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
@@ -254,13 +283,21 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                 await _load();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Quantity updated from $currentQty to $newQty')),
+                    SnackBar(
+                      content: Text(
+                        'Quantity updated from $currentQty to $newQty',
+                      ),
+                    ),
                   );
                 }
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: ${e.toString().replaceFirst("Exception: ", "")}')),
+                    SnackBar(
+                      content: Text(
+                        'Error: ${e.toString().replaceFirst("Exception: ", "")}',
+                      ),
+                    ),
                   );
                 }
               }
@@ -276,25 +313,34 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Request?'),
-        content: const Text('Are you sure you want to delete this request record? This cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this request record? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               Navigator.pop(dialogContext);
               try {
                 await ApiClient.instance.deleteRequest(id: id);
                 await _load();
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request deleted.')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Request deleted.')),
+                  );
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -310,18 +356,40 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       final status = (r['status'] ?? '').toString().toLowerCase();
       final matchStatus = _filter == 'all' || status == _filter;
       final studentName = (r['studentName'] ?? '').toString().toLowerCase();
-      final instrumentName =
-          (r['instrumentName'] ?? '').toString().toLowerCase();
-      final matchSearch = _search.isEmpty ||
+      final instrumentName = (r['instrumentName'] ?? '')
+          .toString()
+          .toLowerCase();
+      final matchSearch =
+          _search.isEmpty ||
           studentName.contains(_search.toLowerCase()) ||
           instrumentName.contains(_search.toLowerCase());
       return matchStatus && matchSearch;
     }).toList();
   }
 
+  Map<String, List<Map<String, dynamic>>> get _groupedFiltered {
+    final filtered = _filtered;
+    final Map<String, List<Map<String, dynamic>>> groups = {};
+    for (final req in filtered) {
+      String key;
+      final bId = (req['batchId'] ?? req['batch_id'])?.toString();
+      if (bId != null && bId.isNotEmpty) {
+        key = bId;
+      } else {
+        // Fallback key: student + purpose + date (same as student view)
+        final s = (req['studentName'] ?? '').toString().trim().toLowerCase();
+        final p = (req['purpose'] ?? '').toString().trim().toLowerCase();
+        final d = (req['neededAt'] ?? '').toString().trim();
+        key = 'fallback_${s}_${p}_${d}';
+      }
+      groups.putIfAbsent(key, () => []).add(req);
+    }
+    return groups;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
+    final grouped = _groupedFiltered;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -340,8 +408,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back,
-                      color: Colors.white70, size: 22),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white70,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Icon(Icons.assignment, color: Colors.white, size: 22),
@@ -375,27 +446,240 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                       Expanded(
                         child: _loading
                             ? const Center(
-                                child: Text('Loading requests...',
-                                    style: TextStyle(color: Colors.grey)),
+                                child: Text(
+                                  'Loading requests...',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
                               )
-                            : filtered.isEmpty
-                                ? const Center(
-                                    child: Text('No requests found',
-                                        style: TextStyle(color: Colors.grey)),
-                                  )
-                                : ListView.separated(
-                                    itemCount: filtered.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(height: 12),
-                                    itemBuilder: (context, index) =>
-                                        _buildRequestCard(filtered[index]),
-                                  ),
+                            : grouped.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No requests found',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: grouped.length,
+                                itemBuilder: (context, index) {
+                                  final batchId = grouped.keys.elementAt(index);
+                                  final items = grouped[batchId]!;
+                                  return _buildBatchRequestCard(batchId, items);
+                                },
+                              ),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBatchRequestCard(
+    String batchId,
+    List<Map<String, dynamic>> items,
+  ) {
+    final isRealBatch = !batchId.startsWith('fallback_');
+    final studentName = items.first['studentName'] ?? 'Unknown';
+    final first = items.first;
+
+    return Card(
+      elevation: 0.5,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  items.length > 1 ? Icons.inventory_2 : Icons.person,
+                  size: 16,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        items.length > 1 ? 'Batch: $studentName' : studentName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      if (isRealBatch)
+                        Text(
+                          'Batch ID: $batchId',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (first['neededAt'] != null)
+                  Text(
+                    'Needed by: ${first['neededAt']}',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if ((first['purpose'] ?? '').isNotEmpty) ...[
+                  const Text(
+                    'Purpose:',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    first['purpose'],
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+
+                const Text(
+                  'Items in Request:',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                ...items.map((req) => _buildItemRow(req)).toList(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemRow(Map<String, dynamic> req) {
+    final id = req['id'].toString();
+    final status = (req['status'] ?? '').toString().toLowerCase();
+    final isOverride = req['isOverride'] == 1 || req['isOverride'] == true;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${req['instrumentName']} (x${req['quantity']})',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ),
+              _buildStatusBadge(status),
+            ],
+          ),
+          if (isOverride) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Qty adjusted from ${req['originalQuantity']} units',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.orange.shade700,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (status == 'pending') ...[
+                _buildActionButton(
+                  id,
+                  'approved',
+                  'Approve',
+                  Icons.check_circle,
+                  Colors.green.shade600,
+                  Colors.white,
+                  filled: true,
+                ),
+                const SizedBox(width: 8),
+                _buildActionButton(
+                  id,
+                  'rejected',
+                  'Reject',
+                  Icons.cancel,
+                  Colors.red.shade600,
+                  Colors.red.shade600,
+                  borderColor: Colors.red.shade300,
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _showOverrideDialog(req),
+                  icon: const Icon(Icons.edit, size: 18),
+                  color: Colors.orange.shade700,
+                  tooltip: 'Override Quantity',
+                ),
+              ],
+              if (status == 'approved')
+                _buildActionButton(
+                  id,
+                  'returned',
+                  'Mark Returned',
+                  Icons.replay,
+                  Colors.blue.shade600,
+                  Colors.blue.shade600,
+                  borderColor: Colors.blue.shade300,
+                ),
+              const Spacer(),
+              IconButton(
+                onPressed: () => _confirmDeleteRequest(id),
+                icon: const Icon(Icons.delete_outline, size: 18),
+                color: Colors.red.shade600,
+                tooltip: 'Delete Record',
+              ),
+            ],
           ),
         ],
       ),
@@ -428,14 +712,19 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   Widget _buildSearchField() {
     return TextField(
       decoration: InputDecoration(
-        prefixIcon:
-            const Icon(Icons.search, size: 18, color: Color(0xFF9CA3AF)),
+        prefixIcon: const Icon(
+          Icons.search,
+          size: 18,
+          color: Color(0xFF9CA3AF),
+        ),
         hintText: 'Search by student or instrument...',
         hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -476,217 +765,6 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     );
   }
 
-  Widget _buildRequestCard(Map<String, dynamic> req) {
-    final id = (req['id'] ?? '').toString();
-    final status = (req['status'] ?? '').toString().toLowerCase();
-    final isOverride = req['isOverride'] == 1 || req['isOverride'] == true;
-
-    return Card(
-      elevation: 0.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top: Name + Status + Override
-                Wrap(
-                  spacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      (req['instrumentName'] ?? '').toString(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                    _buildStatusBadge(status),
-                    if (isOverride)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.purple.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Override',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.purple.shade700,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${req['studentName'] ?? ''} · Qty: ${req['quantity'] ?? 1}',
-                  style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-                ),
-                // Override info
-                if (isOverride) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline, size: 13, color: Colors.orange.shade700),
-                            const SizedBox(width: 4),
-                            Text('Override', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.orange.shade700)),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Qty changed from ${req['originalQuantity'] ?? '?'} → ${req['quantity'] ?? '?'}',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
-                        ),
-                        if ((req['overrideReason'] ?? '').toString().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              'Reason: ${req['overrideReason']}',
-                              style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Color(0xFF6B7280)),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-                if ((req['purpose'] ?? '').toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Purpose: ${req['purpose']}',
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9CA3AF)),
-                    ),
-                  ),
-                if ((req['course'] ?? '').toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      'Course: ${req['course']}',
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9CA3AF)),
-                    ),
-                  ),
-                if ((req['neededAt'] ?? '').toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      'Needed by: ${req['neededAt']}',
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9CA3AF)),
-                    ),
-                  ),
-                if ((req['approvedBy'] ?? '').toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Approved by: ${req['approvedBy']}',
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.green.shade600),
-                    ),
-                  ),
-                if ((req['rejectedBy'] ?? '').toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Rejected by: ${req['rejectedBy']}',
-                      style:
-                          TextStyle(fontSize: 11, color: Colors.red.shade500),
-                    ),
-                  ),
-
-                const SizedBox(height: 12),
-
-                // Action buttons
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (status == 'pending') ...[
-                      _buildActionButton(
-                        id,
-                        'approved',
-                        'Approve',
-                        Icons.check_circle,
-                        Colors.green.shade600,
-                        Colors.white,
-                        filled: true,
-                      ),
-                      _buildActionButton(
-                        id,
-                        'rejected',
-                        'Reject',
-                        Icons.cancel,
-                        Colors.red.shade600,
-                        Colors.red.shade600,
-                        borderColor: Colors.red.shade300,
-                      ),
-                      // Edit Qty / Override button
-                      SizedBox(
-                        height: 32,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showOverrideDialog(req),
-                          icon: Icon(Icons.edit, size: 14, color: Colors.orange.shade700),
-                          label: Text('Edit Qty', style: TextStyle(fontSize: 12, color: Colors.orange.shade700)),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.orange.shade300),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                        ),
-                      ),
-                    ],
-                    if (status == 'approved')
-                      _buildActionButton(
-                        id,
-                        'returned',
-                        'Mark Returned',
-                        Icons.replay,
-                        Colors.blue.shade600,
-                        Colors.blue.shade600,
-                        borderColor: Colors.blue.shade300,
-                      ),
-                    SizedBox(
-                      height: 32,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _confirmDeleteRequest(id),
-                        icon: Icon(Icons.delete, size: 14, color: Colors.red.shade600),
-                        label: Text('Delete', style: TextStyle(fontSize: 12, color: Colors.red.shade600)),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.red.shade300),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
   Widget _buildActionButton(
     String id,
     String newStatus,
@@ -708,7 +786,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                       width: 12,
                       height: 12,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: textColor),
+                        strokeWidth: 2,
+                        color: textColor,
+                      ),
                     )
                   : Icon(icon, size: 14),
               label: Text(label, style: const TextStyle(fontSize: 12)),
@@ -728,7 +808,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                       width: 12,
                       height: 12,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: textColor),
+                        strokeWidth: 2,
+                        color: textColor,
+                      ),
                     )
                   : Icon(icon, size: 14),
               label: Text(label, style: const TextStyle(fontSize: 12)),
@@ -751,8 +833,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       'rejected': (Colors.red.shade100, Colors.red.shade700),
       'returned': (const Color(0xFFF3F4F6), const Color(0xFF374151)),
     };
-    final pair = map[status] ??
-        (const Color(0xFFF3F4F6), const Color(0xFF374151));
+    final pair =
+        map[status] ?? (const Color(0xFFF3F4F6), const Color(0xFF374151));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

@@ -63,8 +63,28 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
     }
   }
 
+  Map<String, List<Request>> get _groupedRequests {
+    final Map<String, List<Request>> groups = {};
+    for (final req in _requests) {
+      // Use batchId if available, otherwise fallback to grouping by (Purpose + Date)
+      // to catch items submitted together before batchId was implemented or if it failed
+      String key;
+      if (req.batchId != null && req.batchId!.isNotEmpty) {
+        key = req.batchId!;
+      } else {
+        // Fallback key: student + purpose + date
+        final p = req.purpose.trim().toLowerCase();
+        final d = (req.neededAt ?? '').trim();
+        key = 'fallback_${req.studentName}_${p}_${d}';
+      }
+      groups.putIfAbsent(key, () => []).add(req);
+    }
+    return groups;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final groups = _groupedRequests;
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: Column(
@@ -82,8 +102,11 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back,
-                      color: Colors.white70, size: 22),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white70,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Icon(Icons.access_time, color: Colors.white, size: 22),
@@ -109,213 +132,255 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                       style: TextStyle(color: Colors.grey),
                     ),
                   )
-                : _requests.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.science,
-                                size: 40, color: Colors.grey.shade300),
-                            const SizedBox(height: 12),
-                            const Text(
-                              "You haven't submitted any requests yet.",
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: () => Navigator.pushNamed(
-                                  context, '/submit_request'),
-                              child: Text(
-                                'Submit a request',
-                                style: TextStyle(
-                                  color: AppTheme.primaryColor,
-                                  fontSize: 14,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                          ],
+                : groups.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.science,
+                          size: 40,
+                          color: Colors.grey.shade300,
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _requests.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final req = _requests[index];
-                          return _buildRequestCard(req);
-                        },
-                      ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "You haven't submitted any requests yet.",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/submit_request'),
+                          child: Text(
+                            'Submit a request',
+                            style: TextStyle(
+                              color: AppTheme.primaryColor,
+                              fontSize: 14,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: groups.length,
+                    itemBuilder: (context, index) {
+                      final batchId = groups.keys.elementAt(index);
+                      final items = groups[batchId]!;
+                      return _buildBatchCard(batchId, items);
+                    },
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRequestCard(Request req) {
+  String _calculateDuration(String? neededAt) {
+    if (neededAt == null || neededAt.isEmpty) return '';
+    try {
+      final neededDate = DateTime.parse(neededAt);
+      final now = DateTime.now();
+      // Use today's midnight to ensure consistent calculation
+      final todayMidnight = DateTime(now.year, now.month, now.day);
+
+      // Calculate difference in days
+      final difference = neededDate.difference(todayMidnight).inDays;
+
+      if (difference <= 0) return '';
+      return '($difference day${difference > 1 ? 's' : ''} duration)';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Widget _buildBatchCard(String batchId, List<Request> items) {
+    final isRealBatch = !batchId.startsWith('fallback_');
+    final isMultiple = items.length > 1;
+    final first = items.first;
+
     return Card(
       elevation: 0.5,
+      margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Icon(
-                _statusIcon(req.status),
-                color: _statusColor(req.status),
-                size: 22,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Batch Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Row(
+              children: [
+                Icon(
+                  isMultiple ? Icons.inventory_2 : Icons.description,
+                  size: 16,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          req.instrumentName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: Color(0xFF111827),
-                          ),
+                      Text(
+                        isMultiple ? 'Batch Request' : 'Single Request',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _buildStatusBadge(req.status),
+                      if (isRealBatch)
+                        Text(
+                          'ID: $batchId',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Qty: ${req.quantity}',
-                    style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF6B7280)),
+                ),
+                if (first.neededAt != null && first.neededAt!.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Needed by: ${first.neededAt}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        _calculateDuration(first.neededAt),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  if (req.purpose.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        req.purpose,
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF9CA3AF)),
-                      ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (first.purpose.isNotEmpty) ...[
+                  const Text(
+                    'Purpose:',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
                     ),
-                  if (req.course != null && req.course!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        'Course: ${req.course}',
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF9CA3AF)),
-                      ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    first.purpose,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF374151),
                     ),
-                  if (req.neededAt != null && req.neededAt!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        'Needed by: ${req.neededAt}',
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF9CA3AF)),
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (first.course != null && first.course!.isNotEmpty) ...[
+                  Text(
+                    'Course: ${first.course}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
                     ),
-                  if (req.approvedBy != null && req.approvedBy!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Approved by ${req.approvedBy}',
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.green.shade600),
-                      ),
-                    ),
-                  if (req.rejectedBy != null && req.rejectedBy!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Rejected by ${req.rejectedBy}',
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.red.shade500),
-                      ),
-                    ),
-                  if (req.returnedBy != null && req.returnedBy!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Returned — processed by ${req.returnedBy}',
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF6B7280)),
-                      ),
-                    ),
-                  // Override info
-                  if (req.isOverride) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: Colors.orange.withValues(alpha: 0.3)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.info_outline,
-                                  size: 14, color: Colors.orange),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'Override Update',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  color: Colors.orange,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Quantity adjusted from ${req.originalQuantity} to ${req.quantity} units.',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          if (req.overrideReason != null &&
-                              req.overrideReason!.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                'Reason: ${req.overrideReason}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontStyle: FontStyle.italic,
-                                ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+
+                const Text(
+                  'Items:',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Item List
+                ...items
+                    .map(
+                      (req) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _statusIcon(req.status),
+                              color: _statusColor(req.status),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${req.instrumentName} (x${req.quantity})',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: Color(0xFF111827),
+                                    ),
+                                  ),
+                                  if (req.isOverride)
+                                    Text(
+                                      'Adjusted from ${req.originalQuantity} units',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.orange.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
-                        ],
+                            _buildStatusBadge(req.status),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
+                    )
+                    .toList(),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+
   Widget _buildStatusBadge(RequestStatus status) {
     final map = {
       RequestStatus.pending: (Colors.amber.shade100, Colors.amber.shade700),
       RequestStatus.approved: (Colors.green.shade100, Colors.green.shade700),
       RequestStatus.rejected: (Colors.red.shade100, Colors.red.shade700),
-      RequestStatus.returned:
-          (const Color(0xFFF3F4F6), const Color(0xFF374151)),
+      RequestStatus.returned: (
+        const Color(0xFFF3F4F6),
+        const Color(0xFF374151),
+      ),
     };
     final pair = map[status]!;
 

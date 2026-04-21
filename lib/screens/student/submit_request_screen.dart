@@ -40,14 +40,18 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   List<String> _submitResults = [];
 
   // Controllers so we can clear them after adding to borrow list
-  final _quantityController = TextEditingController(text: '1');
+  final _quantityController = TextEditingController();
   final _purposeController = TextEditingController();
   final _courseController = TextEditingController();
+  final _instrumentController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _selectedInstrument = widget.preSelectedInstrument;
+    if (_selectedInstrument != null) {
+      _instrumentController.text = _selectedInstrument!;
+    }
     _load();
   }
 
@@ -56,6 +60,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     _quantityController.dispose();
     _purposeController.dispose();
     _courseController.dispose();
+    _instrumentController.dispose();
     super.dispose();
   }
 
@@ -64,11 +69,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
       final items = await ApiClient.instance.fetchInstruments();
       if (!mounted) return;
       setState(() {
-        _instruments = items.where((i) {
-          final s = i.status.toLowerCase();
-          final isPre = i.name == widget.preSelectedInstrument;
-          return s == 'active' || s == 'available' || isPre;
-        }).toList();
+        _instruments = items;
         _loading = false;
       });
     } catch (_) {
@@ -78,91 +79,134 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   }
 
   void _addToBorrowList() {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+    // We only validate instrument and quantity here
+    if (_selectedInstrument == null || _selectedInstrument!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an instrument first')),
+      );
+      return;
+    }
 
-    if (_selectedInstrument == null || _selectedInstrument!.isEmpty) return;
-    if (_purpose.isEmpty) return;
+    final qtyText = _quantityController.text;
+    final qty = int.tryParse(qtyText) ?? 1;
+    if (qty <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid quantity')),
+      );
+      return;
+    }
+
+    // Check availability
+    try {
+      final inst = _instruments.firstWhere(
+        (i) => i.name == _selectedInstrument,
+      );
+      if (qty > inst.available) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Only ${inst.available} available')),
+        );
+        return;
+      }
+    } catch (_) {}
 
     setState(() {
       _borrowList.add({
         'instrumentName': _selectedInstrument!,
-        'quantity': _quantity,
-        'purpose': _purpose,
-        'course': _course,
-        'neededAt': _neededAt,
+        'quantity': qty,
       });
-      // Reset form fields for next item
+      // Reset only instrument-specific state
       _selectedInstrument = null;
+      _instrumentController.clear();
       _quantity = 1;
-      _purpose = '';
-      _neededAt = '';
-      // Keep course as it's likely the same
-      _quantityController.text = '1';
-      _purposeController.clear();
+      _quantityController.clear();
     });
-    // Reset form validation state
-    _formKey.currentState!.reset();
-    _quantityController.text = '1';
   }
 
   void _removeFromBorrowList(int index) {
-    setState(() => _borrowList.removeAt(index));
+    setState(() {
+      _borrowList.removeAt(index);
+      // If the list becomes empty, we could potentially reset fields,
+      // but it's better to keep the values so the user doesn't have to re-type.
+      // The fields will automatically become editable again because readOnly: _borrowList.isNotEmpty
+    });
   }
 
   Future<void> _submitAll() async {
     if (_borrowList.isEmpty) return;
 
+    // Validate Purpose, Course, NeededAt before submitting
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please complete the request details below'),
+        ),
+      );
+      return;
+    }
+    _formKey.currentState!.save();
+
     setState(() => _submitting = true);
 
-    final results = <String>[];
-    int successCount = 0;
+    // Generate a unique batch ID
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final user = AuthService.instance.currentUsername;
+    final batchId =
+        'B-$timestamp-${user.toUpperCase().hashCode.abs().toString().substring(0, 4)}';
 
-    for (final item in _borrowList) {
-      try {
-        await ApiClient.instance.submitRequest(
-          studentName: AuthService.instance.currentUsername,
-          instrumentName: item['instrumentName'],
-          quantity: item['quantity'],
-          purpose: item['purpose'],
-          course: item['course'] ?? '',
-          neededAtIso: (item['neededAt'] ?? '').toString().isNotEmpty
-              ? item['neededAt']
-              : null,
-        );
-        results.add('✓ ${item['instrumentName']} (x${item['quantity']})');
-        successCount++;
-      } catch (e) {
-        results.add(
-          '✗ ${item['instrumentName']} — ${e.toString().replaceFirst('Exception: ', '')}',
-        );
-      }
-    }
+    try {
+      await ApiClient.instance.submitRequest(
+        studentName: AuthService.instance.currentUsername,
+        purpose: _purpose,
+        items: _borrowList,
+        course: _course,
+        neededAtIso: _neededAt.isNotEmpty ? _neededAt : null,
+        batchId: batchId,
+      );
 
-    // Add notification
-    if (successCount > 0) {
+      // Add notification
       final nowIso = DateTime.now().toIso8601String();
+      final role = AuthService.instance.currentRole == UserRole.teacher
+          ? 'Teacher'
+          : 'Student';
+
+      final results = _borrowList
+          .map((item) => '✓ ${item['instrumentName']} (x${item['quantity']})')
+          .toList();
+
       NotificationService.instance.add(
         NotificationItem(
-          id: 'student_${DateTime.now().microsecondsSinceEpoch}',
+          id: 'request_${DateTime.now().microsecondsSinceEpoch}',
           title: 'Requests Submitted',
           message:
-              'You submitted $successCount borrow request${successCount > 1 ? 's' : ''}',
+              'You submitted a request for ${_borrowList.length} item(s)',
           type: 'success',
           timestamp: nowIso,
-          recipient: 'Student',
+          recipient: role,
           course: _course,
           priority: 'low',
         ),
       );
-    }
 
-    if (!mounted) return;
-    setState(() {
-      _submitting = false;
-      _success = true;
-      _submitResults = results;
-    });
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _success = true;
+          _submitResults = results;
+          _borrowList.clear();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to submit: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   // Legacy single submit (for when user submits directly without using the list)
@@ -187,14 +231,18 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
       // Add notification
       final nowIso = DateTime.now().toIso8601String();
+      final role = AuthService.instance.currentRole == UserRole.teacher
+          ? 'Teacher'
+          : 'Student';
+
       NotificationService.instance.add(
         NotificationItem(
-          id: 'student_${DateTime.now().microsecondsSinceEpoch}',
+          id: 'request_${DateTime.now().microsecondsSinceEpoch}',
           title: 'Request Submitted',
           message: 'You requested $_selectedInstrument (x$_quantity)',
           type: 'success',
           timestamp: nowIso,
-          recipient: 'Student',
+          recipient: role,
           course: _course,
           priority: 'low',
         ),
@@ -322,13 +370,14 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                               setState(() {
                                 _success = false;
                                 _selectedInstrument = null;
+                                _instrumentController.clear();
                                 _quantity = 1;
                                 _purpose = '';
                                 _course = '';
                                 _neededAt = '';
                                 _borrowList.clear();
                                 _submitResults.clear();
-                                _quantityController.text = '1';
+                                _quantityController.clear();
                                 _purposeController.clear();
                                 _courseController.clear();
                               });
@@ -423,13 +472,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: Column(
                     children: [
-                      // --- Borrow List Summary ---
-                      if (_borrowList.isNotEmpty) ...[
-                        _buildBorrowListCard(),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // --- Request Form ---
+                      // --- 1. Instrument Selection ---
                       Card(
                         elevation: 0.5,
                         shape: RoundedRectangleBorder(
@@ -437,297 +480,143 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Text(
-                                      'Request Details',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF374151),
-                                      ),
-                                    ),
-                                    if (_borrowList.isNotEmpty) ...[
-                                      const Spacer(),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.primaryColor
-                                              .withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Adding item #${_borrowList.length + 1}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: AppTheme.primaryColor,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Select Instrument',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF374151),
                                 ),
-                                const SizedBox(height: 20),
-
-                                // Instrument dropdown
-                                const Text(
-                                  'Instrument *',
-                                  style: TextStyle(fontSize: 13),
-                                ),
-                                const SizedBox(height: 4),
-                                _buildInstrumentDropdown(),
-                                const SizedBox(height: 16),
-
-                                // Quantity
-                                const Text(
-                                  'Quantity *',
-                                  style: TextStyle(fontSize: 13),
-                                ),
-                                const SizedBox(height: 4),
-                                TextFormField(
-                                  controller: _quantityController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: _inputDecor(''),
-                                  validator: (v) {
-                                    if (v == null || v.isEmpty) {
-                                      return 'Required';
-                                    }
-                                    final n = int.tryParse(v);
-                                    if (n == null || n <= 0) return '> 0';
-                                    if (_selectedInstrument != null &&
-                                        _selectedInstrument!.isNotEmpty) {
-                                      try {
-                                        final inst = _instruments.firstWhere(
-                                          (i) => i.name == _selectedInstrument,
-                                        );
-                                        if (n > inst.available) {
-                                          return 'Max available: ${inst.available}';
-                                        }
-                                      } catch (_) {}
-                                    }
-                                    return null;
-                                  },
-                                  onSaved: (v) =>
-                                      _quantity = int.tryParse(v ?? '1') ?? 1,
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Purpose
-                                const Text(
-                                  'Purpose *',
-                                  style: TextStyle(fontSize: 13),
-                                ),
-                                const SizedBox(height: 4),
-                                TextFormField(
-                                  controller: _purposeController,
-                                  maxLines: 3,
-                                  decoration: _inputDecor(
-                                    'Describe why you need this instrument...',
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Instrument *',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              _buildInstrumentDropdown(),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Quantity *',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              TextFormField(
+                                controller: _quantityController,
+                                keyboardType: TextInputType.number,
+                                decoration: _inputDecor('Enter quantity...'),
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 44,
+                                child: OutlinedButton.icon(
+                                  onPressed: _addToBorrowList,
+                                  icon: const Icon(
+                                    Icons.add_shopping_cart,
+                                    size: 18,
                                   ),
-                                  validator: (v) => v == null || v.isEmpty
-                                      ? 'Required'
-                                      : null,
-                                  onSaved: (v) => _purpose = v ?? '',
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Course + Needed By
-                                LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    if (constraints.maxWidth > 400) {
-                                      return Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  'Course',
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                TextFormField(
-                                                  controller: _courseController,
-                                                  decoration: _inputDecor(''),
-                                                  onSaved: (v) =>
-                                                      _course = v ?? '',
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  'Needed By',
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                GestureDetector(
-                                                  onTap: _pickDate,
-                                                  child: AbsorbPointer(
-                                                    child: TextFormField(
-                                                      decoration: _inputDecor(
-                                                        _neededAt.isEmpty
-                                                            ? 'Select date'
-                                                            : _neededAt,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Course',
-                                          style: TextStyle(fontSize: 13),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        TextFormField(
-                                          controller: _courseController,
-                                          decoration: _inputDecor(''),
-                                          onSaved: (v) => _course = v ?? '',
-                                        ),
-                                        const SizedBox(height: 16),
-                                        const Text(
-                                          'Needed By',
-                                          style: TextStyle(fontSize: 13),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        GestureDetector(
-                                          onTap: _pickDate,
-                                          child: AbsorbPointer(
-                                            child: TextFormField(
-                                              decoration: _inputDecor(
-                                                _neededAt.isEmpty
-                                                    ? 'Select date'
-                                                    : _neededAt,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 24),
-
-                                // Buttons: Add More + Submit (if only 1 item)
-                                Row(
-                                  children: [
-                                    // Add More button
-                                    Expanded(
-                                      child: SizedBox(
-                                        height: 48,
-                                        child: OutlinedButton.icon(
-                                          onPressed:
-                                              (_selectedInstrument == null ||
-                                                  _selectedInstrument!.isEmpty)
-                                              ? null
-                                              : _addToBorrowList,
-                                          icon: const Icon(
-                                            Icons.add_shopping_cart,
-                                            size: 18,
-                                          ),
-                                          label: const Text(
-                                            'Add More',
-                                            style: TextStyle(fontSize: 14),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor:
-                                                AppTheme.primaryColor,
-                                            side: BorderSide(
-                                              color: AppTheme.primaryColor
-                                                  .withValues(alpha: 0.5),
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                        ),
+                                  label: const Text('Add to Request List'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.primaryColor,
+                                    side: BorderSide(
+                                      color: AppTheme.primaryColor.withValues(
+                                        alpha: 0.5,
                                       ),
                                     ),
-                                    // Show direct submit only when borrow list is empty
-                                    if (_borrowList.isEmpty) ...[
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: SizedBox(
-                                          height: 48,
-                                          child: ElevatedButton(
-                                            onPressed:
-                                                (_submitting ||
-                                                    _selectedInstrument ==
-                                                        null ||
-                                                    _selectedInstrument!
-                                                        .isEmpty)
-                                                ? null
-                                                : _submit,
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  AppTheme.primaryColor,
-                                              foregroundColor: Colors.white,
-                                              disabledBackgroundColor: AppTheme
-                                                  .primaryColor
-                                                  .withValues(alpha: 0.5),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            child: _submitting
-                                                ? const SizedBox(
-                                                    width: 18,
-                                                    height: 18,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          color: Colors.white,
-                                                        ),
-                                                  )
-                                                : const Text(
-                                                    'Submit Request',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
+
+                      // --- 2. Borrow List Summary ---
+                      if (_borrowList.isNotEmpty) ...[
+                        _buildBorrowListCard(),
+                        const SizedBox(height: 16),
+
+                        // --- 3. Shared Request Details ---
+                        Card(
+                          elevation: 0.5,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Request Details',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF374151),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  const Text(
+                                    'Purpose *',
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  TextFormField(
+                                    controller: _purposeController,
+                                    maxLines: 3,
+                                    decoration: _inputDecor(
+                                      'Describe why you need these instruments...',
+                                    ),
+                                    validator: (v) => v == null || v.isEmpty
+                                        ? 'Required'
+                                        : null,
+                                    onSaved: (v) => _purpose = v ?? '',
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Course',
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  TextFormField(
+                                    controller: _courseController,
+                                    decoration: _inputDecor(''),
+                                    onSaved: (v) => _course = v ?? '',
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Needed By',
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  GestureDetector(
+                                    onTap: _pickDate,
+                                    child: AbsorbPointer(
+                                      child: TextFormField(
+                                        decoration: _inputDecor(
+                                          _neededAt.isEmpty
+                                              ? 'Select date'
+                                              : _neededAt,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -890,7 +779,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Qty: ${item['quantity']} · ${item['purpose']}',
+                            'Qty: ${item['quantity']}',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF6B7280),
@@ -932,29 +821,247 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     if (_loading) {
       return const LinearProgressIndicator();
     }
-    return DropdownButtonFormField<String>(
-      initialValue:
-          _selectedInstrument != null &&
-              _instruments.any((i) => i.name == _selectedInstrument)
-          ? _selectedInstrument
-          : null,
-      decoration: _inputDecor('Select instrument'),
-      isExpanded: true,
-      items: _instruments.map((i) {
-        return DropdownMenuItem(
-          value: i.name,
-          enabled: i.available > 0,
-          child: Text(
-            '${i.name} ${i.available == 0 ? "(unavailable)" : "(${i.available} available)"}',
-            style: TextStyle(
-              fontSize: 14,
-              color: i.available == 0 ? Colors.grey : null,
-            ),
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Autocomplete<Instrument>(
+          optionsBuilder: (textEditingValue) {
+            if (textEditingValue.text.isEmpty) {
+              return _instruments;
+            }
+            final q = textEditingValue.text.toLowerCase();
+            return _instruments.where(
+              (i) =>
+                  i.name.toLowerCase().contains(q) ||
+                  i.category.toLowerCase().contains(q) ||
+                  (i.serialNumber?.toLowerCase().contains(q) ?? false),
+            );
+          },
+          onSelected: (inst) {
+            setState(() {
+              _selectedInstrument = inst.name;
+              _instrumentController.text = inst.name;
+            });
+          },
+          displayStringForOption: (i) => i.name,
+          fieldViewBuilder:
+              (context, textController, focusNode, onFieldSubmitted) {
+                // Keep controllers in sync
+                if (_instrumentController.text != textController.text) {
+                  Future.microtask(() {
+                    if (mounted &&
+                        textController.text != _instrumentController.text) {
+                      textController.text = _instrumentController.text;
+                    }
+                  });
+                }
+
+                return TextFormField(
+                  controller: textController,
+                  focusNode: focusNode,
+                  onChanged: (v) {
+                    if (v.isEmpty) {
+                      setState(() => _selectedInstrument = null);
+                      _instrumentController.clear();
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search & select instrument...',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 14,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 18,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                    suffixIcon: textController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 16),
+                            onPressed: () {
+                              textController.clear();
+                              _instrumentController.clear();
+                              setState(() => _selectedInstrument = null);
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: AppTheme.primaryColor,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  style: const TextStyle(fontSize: 14),
+                  validator: (_) =>
+                      _selectedInstrument == null ||
+                          _selectedInstrument!.isEmpty
+                      ? 'Please select an instrument'
+                      : null,
+                );
+              },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 280,
+                    maxWidth: 560,
+                  ),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final inst = options.elementAt(index);
+                      final avail = inst.available > 0;
+                      return InkWell(
+                        onTap: avail ? () => onSelected(inst) : null,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(color: Colors.grey.shade100),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: avail
+                                      ? Colors.green
+                                      : Colors.red.shade300,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      inst.name,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: avail
+                                            ? const Color(0xFF1F2937)
+                                            : Colors.grey,
+                                      ),
+                                    ),
+                                    if (inst.category.isNotEmpty)
+                                      Text(
+                                        inst.category,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: avail
+                                      ? Colors.green.shade50
+                                      : Colors.red.shade50,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  avail ? '${inst.available} avail' : 'unavail',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: avail
+                                        ? Colors.green.shade700
+                                        : Colors.red.shade600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        if (_selectedInstrument != null && _selectedInstrument!.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Builder(
+            builder: (_) {
+              final inst = _instruments
+                  .where((i) => i.name == _selectedInstrument)
+                  .toList();
+              if (inst.isEmpty) return const SizedBox.shrink();
+              final i = inst.first;
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 14,
+                      color: AppTheme.primaryColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${i.name} — ${i.available}/${i.quantity} available',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        );
-      }).toList(),
-      onChanged: (v) => setState(() => _selectedInstrument = v),
-      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+        ],
+      ],
     );
   }
 

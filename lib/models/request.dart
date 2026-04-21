@@ -2,6 +2,7 @@ enum RequestStatus { pending, approved, rejected, returned }
 
 class Request {
   final String id;
+  final String? batchId;
   final String studentName;
   final String instrumentName;
   final int quantity;
@@ -19,6 +20,7 @@ class Request {
 
   Request({
     this.id = '',
+    this.batchId,
     required this.studentName,
     required this.instrumentName,
     this.quantity = 1,
@@ -45,6 +47,7 @@ class Request {
     };
     return Request(
       id: json['id']?.toString() ?? '',
+      batchId: (json['batchId'] ?? json['batch_id'])?.toString(),
       studentName: (json['studentName'] ?? '') as String,
       instrumentName: (json['instrumentName'] ?? '') as String,
       quantity: int.tryParse(json['quantity']?.toString() ?? '1') ?? 1,
@@ -75,6 +78,7 @@ class Request {
     };
     return {
       if (id.isNotEmpty) 'id': id,
+      if (batchId != null) 'batchId': batchId,
       'studentName': studentName,
       'instrumentName': instrumentName,
       'quantity': quantity,

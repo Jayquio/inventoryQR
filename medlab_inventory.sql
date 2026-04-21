@@ -46,25 +46,52 @@ CREATE TABLE `instruments` (
 --
 
 INSERT INTO `instruments` (`type`, `id`, `name`, `serial_number`, `category`, `quantity`, `available`, `status`, `condition`, `location`, `last_maintenance`) VALUES
-('instrument', 1, 'Microscope Olympus CX23', NULL, 'Microscopy', 5, 1, 'Available', 'Good', 'Lab Room A', '2024-10-15'),
-('instrument', 2, 'Centrifuge Machine', NULL, 'Sample Processing', 3, 0, 'Available', 'Good', 'Lab Room B', '2024-09-20'),
-('instrument', 3, 'Hematology Analyzer', NULL, 'Hematology', 2, 1, 'Available', 'Excellent', 'Lab Room C', '2024-08-05'),
-('instrument', 4, 'Clinical Chemistry Analyzer', NULL, 'Chemistry', 2, 1, 'In Use', 'Good', 'Lab Room C', '2024-07-18'),
+('instrument', 1, 'Microscope Olympus CX23', NULL, 'Microscopy', 5, 5, 'Available', 'Good', 'Lab Room A', '2024-10-15'),
+('instrument', 2, 'Centrifuge Machine', NULL, 'Sample Processing', 3, 3, 'Available', 'Good', 'Lab Room B', '2024-09-20'),
+('instrument', 3, 'Hematology Analyzer', NULL, 'Hematology', 2, 2, 'Available', 'Excellent', 'Lab Room C', '2024-08-05'),
+('instrument', 4, 'Clinical Chemistry Analyzer', NULL, 'Chemistry', 2, 2, 'Available', 'Good', 'Lab Room C', '2024-07-18'),
 ('instrument', 5, 'Autoclave Sterilizer', NULL, 'Sterilization', 1, 1, 'Available', 'Good', 'Sterilization Room', '2024-06-10'),
-('instrument', 6, 'microscope', NULL, 'yes', 10, 1, 'good', 'good', 'secret', '0000-00-00'),
-('instrument', 7, 'Incubators', 'INC-94HS2L', 'Heating', 20, 2, 'Available', 'New', 'Front Desk', NULL),
+('instrument', 7, 'Incubators', 'INC-94HS2L', 'Heating', 20, 20, 'Available', 'New', 'Front Desk', NULL),
 ('instrument', 8, 'Purple Top Tube', 'PUR-C4OCNB', 'Biology', 1, 1, 'Available', 'Good', 'Central Lab', NULL),
 ('instrument', 9, 'Testtube', 'TES-RO03HM', 'Glassware', 1, 1, 'Available', 'Good', 'Central Lab', NULL),
 ('instrument', 10, 'Red Top Tube', 'RED-X5T7H4', 'Biology', 1, 1, 'Available', 'Good', 'Central Lab', NULL),
 ('instrument', 11, 'Test Tube Rack', 'TES-YS9RCQ', 'Glassware', 1, 1, 'Available', '', 'Central Lab', NULL),
-('instrument', 12, 'Water Bath', 'WAT-2E29M6', 'Heating', 1, 0, 'Available', '', 'Central Lab', NULL),
-('instrument', 13, 'Pipette', 'PIP-5DQBT5', 'Measuring', 1, 1, '', '', 'Central Lab', NULL),
-('instrument', 14, 'Glass Slide', 'GLA-7G72CS', 'Microscopy', 1, 0, '', '', 'Central Lab', NULL),
-('instrument', 15, 'Syringes', 'SYR-JZRGXN', '', 1, 1, '', '', 'Central Lab', NULL),
-('instrument', 16, 'Blood Container', 'BLO-CUZO3R', '', 1, 1, '', '', 'Central Lab', NULL),
-('instrument', 17, 'Platelet Counter', 'PLA-E991I6', '', 1, 1, '', '', 'Central Lab', NULL),
-('instrument', 18, 'Gloves', 'GLO-1KP2UN', '', 1, 0, '', '', 'Central Lab', NULL),
-('instrument', 19, 'Alcohol', 'ALC-32F4EM', 'Chemicals', 1, 0, '', '', 'Central Lab', NULL);
+('instrument', 12, 'Water Bath', 'WAT-2E29M6', 'Heating', 1, 1, 'Available', '', 'Central Lab', NULL),
+('instrument', 13, 'Pipette', 'PIP-5DQBT5', 'Measuring', 1, 1, 'Available', '', 'Central Lab', NULL),
+('instrument', 14, 'Glass Slide', 'GLA-7G72CS', 'Microscopy', 1, 1, 'Available', '', 'Central Lab', NULL),
+('instrument', 15, 'Syringes', 'SYR-JZRGXN', '', 1, 1, 'Available', '', 'Central Lab', NULL),
+('instrument', 16, 'Blood Container', 'BLO-CUZO3R', '', 1, 1, 'Available', '', 'Central Lab', NULL),
+('instrument', 17, 'Platelet Counter', 'PLA-E991I6', '', 1, 1, 'Available', '', 'Central Lab', NULL),
+('instrument', 18, 'Gloves', 'GLO-1KP2UN', '', 1, 1, 'Available', '', 'Central Lab', NULL),
+('instrument', 19, 'Alcohol', 'ALC-32F4EM', 'Chemicals', 1, 1, 'Available', '', 'Central Lab', NULL),
+-- Glasswares from Sheet 8
+('instrument', 20, 'Alcohol Lamp', 'LAG001', 'Glasswares', 19, 19, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 21, 'Aspirator Bulb', 'LAG002', 'Glasswares', 35, 35, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 22, 'Beaker, Glass 250ML', 'LAG013', 'Glasswares', 44, 44, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 23, 'Erlenmeyer Flask 250ML', 'LAG033', 'Glasswares', 44, 44, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 24, 'Graduated Cylinder 10ML', 'LAG056', 'Glasswares', 28, 28, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 25, 'Petri Dish, Glass', 'LAG082', 'Glasswares', 142, 142, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 26, 'Test Tube 3ML', 'LAG109', 'Glasswares', 230, 230, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 27, 'Test Tube 8ML', 'LAG111', 'Glasswares', 206, 206, 'Available', 'New', 'Central Lab', NULL),
+-- Chemicals from Sheet 7
+('reagent', 28, '1-Naphthol, A.R. 500G', '0000215300', 'Chemicals', 1, 1, 'Available', 'New', 'Central Lab', NULL),
+('reagent', 29, '2-Propanol 2.5L', 'BATCH 21794306', 'Chemicals', 1, 1, 'Available', 'New', 'Central Lab', NULL),
+('reagent', 30, 'Acetamide 500G', NULL, 'Chemicals', 1, 1, 'Available', 'New', 'Central Lab', NULL),
+('reagent', 31, 'Activated Glutaraldehyde Solution 1L', '66J3', 'Chemicals', 2, 2, 'Available', 'New', 'Central Lab', NULL),
+-- Machines from Sheet 9
+('instrument', 32, 'Analgesiometer', 'LEM001', 'Machines', 2, 2, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 33, 'Vertical Autoclave 50L', 'LEM002', 'Machines', 8, 8, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 34, 'Analytical Balance', 'LEM008', 'Machines', 2, 2, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 35, 'Centrifuge, 12 Placer', 'LEM072', 'Machines', 3, 3, 'Available', 'New', 'Central Lab', NULL),
+-- Additional items from CSVs
+('instrument', 36, 'Buchner Funnel 100ML', 'LAG003', 'Glasswares', 5, 5, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 37, 'Burette, Acid 25ML', 'LAG004', 'Glasswares', 1, 1, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 38, 'Evaporating Dish 50ML', 'LAG036', 'Glasswares', 12, 12, 'Available', 'New', 'Central Lab', NULL),
+('reagent', 39, 'Acetone', '1.903285997E9', 'Chemicals', 1, 1, 'Available', 'New', 'Central Lab', NULL),
+('reagent', 40, 'Acid Alcohol 500ML', NULL, 'Chemicals', 1, 1, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 41, 'Biosafety Cabinet, Class III', 'LEM013', 'Machines', 11, 11, 'Available', 'New', 'Central Lab', NULL),
+('instrument', 42, 'Blood Cell Counter', NULL, 'Machines', 2, 2, 'Available', 'New', 'Central Lab', NULL);
+
 
 --
 -- Triggers `instruments`
@@ -244,6 +271,7 @@ INSERT INTO `notifications` (`id`, `title`, `message`, `type`, `recipient`, `cou
 
 CREATE TABLE `requests` (
   `id` int(11) NOT NULL,
+  `batch_id` varchar(64) DEFAULT NULL,
   `student_name` varchar(128) NOT NULL,
   `instrument_name` varchar(128) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT 1,
