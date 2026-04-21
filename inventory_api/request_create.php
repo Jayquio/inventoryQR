@@ -118,7 +118,6 @@ try {
 
     // Create Admin Notification
     try {
-        ensure_notifications_table($pdo);
         $notifSql = "INSERT INTO notifications (title, message, type, recipient, course, priority) VALUES (?, ?, ?, ?, ?, ?)";
         $notifStmt = $pdo->prepare($notifSql);
         $itemCount = count($requestIds);
