@@ -19,12 +19,9 @@ class NotificationBanner extends StatelessWidget {
     return AnimatedBuilder(
       animation: NotificationService.instance,
       builder: (context, _) {
-        final filtered = NotificationService.instance.notifications.where((n) {
-          final byRecipient = recipients == null || recipients!.contains(n.recipient);
-          final byType = types == null || types!.contains(n.type);
-          return !n.read && byRecipient && byType;
-        }).toList();
-        final unread = filtered.length;
+        final unread = NotificationService.instance.unreadCount;
+        if (unread == 0) return const SizedBox.shrink();
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: EdgeInsets.symmetric(
@@ -73,9 +70,7 @@ class NotificationBanner extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  unread > 0
-                      ? 'You have $unread unread notifications'
-                      : 'You are all caught up',
+                  'You have $unread unread notifications',
                   style: TextStyle(
                     fontSize: R.text(14, w),
                     fontWeight: FontWeight.w600,

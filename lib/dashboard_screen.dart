@@ -7,6 +7,7 @@ import 'data/api_client.dart';
 import 'data/auth_service.dart';
 import 'data/notification_service.dart';
 import 'models/instrument.dart';
+import 'widgets/notification_banner.dart';
 import 'core/theme.dart';
 import 'core/constants.dart';
 
@@ -258,6 +259,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Notification Banner
+                              const NotificationBanner(),
+                              
                               // Stat cards
                               _buildStatsGrid(stats),
                               const SizedBox(height: 24),

@@ -36,6 +36,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         _recipientFilter = 'Student';
         break;
     }
+
+    // Always fetch fresh notifications on entering the screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.fetchFromServer();
+    });
   }
 
   List<NotificationItem> get _filteredNotifications {
@@ -81,6 +86,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   }
 
   List<NotificationItem> _filterByRecipient(List<NotificationItem> items) {
+    final role = AuthService.instance.currentRole;
+    if (role != UserRole.admin && role != UserRole.superadmin) {
+      return items; // _filterByRole already handles proper filtering for non-admins
+    }
     if (_recipientFilter == 'All') return items;
     if (_recipientFilter == 'Teacher') {
       return items
@@ -234,7 +243,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   Widget _buildFilterSection() {
     final role = AuthService.instance.currentRole;
-    final bool showRecipientFilter = role == UserRole.admin;
+    final bool showRecipientFilter = role == UserRole.admin || role == UserRole.superadmin;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

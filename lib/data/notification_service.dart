@@ -105,59 +105,45 @@ class NotificationService extends ChangeNotifier {
         username: username,
       );
 
-      bool changed = false;
+      final Set<String> seenRequestIds = {};
+      final List<NotificationItem> newNotifications = [];
+
       for (final map in list) {
         final id = map['id'].toString();
         final requestId = map['requestId']?.toString();
-        final existingIdx = _notifications.indexWhere((n) => n.id == id);
 
-        if (existingIdx != -1) {
-          // Update read status if changed
-          final newRead = map['read'] ?? false;
-          if (_notifications[existingIdx].read != newRead) {
-            _notifications[existingIdx].read = newRead;
-            changed = true;
+        if (requestId != null) {
+          if (seenRequestIds.contains(requestId)) {
+            continue; // Skip older duplicates for the same request
           }
-        } else {
-          // If a newer notification for the same requestId exists, mark old ones as read
-          if (requestId != null) {
-            for (var n in _notifications) {
-              if (n.requestId == requestId) {
-                n.read = true;
-                changed = true;
-              }
-            }
-          }
-
-          _notifications.insert(
-            0, // Insert at the beginning (newest)
-            NotificationItem(
-              id: id,
-              title: map['title'] ?? 'Update',
-              message: map['message'] ?? '',
-              type: map['type'] ?? 'info',
-              timestamp: map['timestamp'] ?? DateTime.now().toIso8601String(),
-              recipient: map['recipient'] ?? 'All',
-              course: map['course'],
-              read: map['read'] ?? false,
-              priority: map['priority'] ?? 'medium',
-              isOverride: map['isOverride'] == 1 || map['isOverride'] == true,
-              originalQuantity: map['originalQuantity'],
-              overrideQuantity: map['overrideQuantity'],
-              overrideReason: map['overrideReason'],
-              requestId: requestId,
-            ),
-          );
-          changed = true;
+          seenRequestIds.add(requestId);
         }
+
+        newNotifications.add(
+          NotificationItem(
+            id: id,
+            title: map['title'] ?? 'Update',
+            message: map['message'] ?? '',
+            type: map['type'] ?? 'info',
+            timestamp: map['timestamp'] ?? DateTime.now().toIso8601String(),
+            recipient: map['recipient'] ?? 'All',
+            course: map['course'],
+            read: map['read'] ?? false,
+            priority: map['priority'] ?? 'medium',
+            isOverride: map['isOverride'] == 1 || map['isOverride'] == true,
+            originalQuantity: map['originalQuantity'],
+            overrideQuantity: map['overrideQuantity'],
+            overrideReason: map['overrideReason'],
+            requestId: requestId,
+          ),
+        );
       }
 
-      if (changed) {
-        // Ensure consistent sorting by timestamp (descending)
-        _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-        notifyListeners();
-        await _persist();
-      }
+      _notifications.clear();
+      _notifications.addAll(newNotifications);
+      _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      notifyListeners();
+      await _persist();
     } catch (e) {
       debugPrint('Error fetching notifications: $e');
     } finally {

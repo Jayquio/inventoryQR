@@ -85,11 +85,13 @@ if ($status === 'returned') {
 
     // Create User Notification for Return
     try {
-      ensure_notifications_table($pdo);
-      $notifSql = "INSERT INTO notifications (title, message, type, recipient, priority) VALUES (?, ?, ?, ?, ?)";
+      // Mark old as read
+      $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE request_id = ? AND recipient = ?")->execute([$id, $borrower]);
+
+      $notifSql = "INSERT INTO notifications (title, message, type, recipient, priority, request_id) VALUES (?, ?, ?, ?, ?, ?)";
       $notifStmt = $pdo->prepare($notifSql);
       $msg = "Instrument '$instrument' has been successfully returned and confirmed by admin on $now.";
-      $notifStmt->execute(['Instrument Returned', $msg, 'success', $borrower, 'medium']);
+      $notifStmt->execute(['Instrument Returned', $msg, 'info', $borrower, 'medium', $id]);
     } catch (Throwable $e) {}
 
     $pdo->commit();
@@ -127,11 +129,13 @@ if ($status === 'returned') {
 
     // Create User Notification for Approval
     try {
-      ensure_notifications_table($pdo);
-      $notifSql = "INSERT INTO notifications (title, message, type, recipient, priority) VALUES (?, ?, ?, ?, ?)";
+      // Mark old as read
+      $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE request_id = ? AND recipient = ?")->execute([$id, $borrower]);
+
+      $notifSql = "INSERT INTO notifications (title, message, type, recipient, priority, request_id) VALUES (?, ?, ?, ?, ?, ?)";
       $notifStmt = $pdo->prepare($notifSql);
       $msg = "Your request for $reqQty unit(s) of $instrument has been APPROVED.";
-      $notifStmt->execute(['Request Approved', $msg, 'success', $borrower, 'high']);
+      $notifStmt->execute(['Request Approved', $msg, 'success', $borrower, 'high', $id]);
     } catch (Throwable $e) {}
 
     $pdo->commit();
@@ -150,11 +154,13 @@ if ($status === 'returned') {
 
     // Create User Notification for Rejection
     try {
-      ensure_notifications_table($pdo);
-      $notifSql = "INSERT INTO notifications (title, message, type, recipient, priority) VALUES (?, ?, ?, ?, ?)";
+      // Mark old as read
+      $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE request_id = ? AND recipient = ?")->execute([$id, $borrower]);
+
+      $notifSql = "INSERT INTO notifications (title, message, type, recipient, priority, request_id) VALUES (?, ?, ?, ?, ?, ?)";
       $notifStmt = $pdo->prepare($notifSql);
       $msg = "Your request for $reqQty unit(s) of $instrument has been REJECTED.";
-      $notifStmt->execute(['Request Rejected', $msg, 'error', $borrower, 'high']);
+      $notifStmt->execute(['Request Rejected', $msg, 'error', $borrower, 'high', $id]);
     } catch (Throwable $e) {}
   } catch (Throwable $e) {
     json_out(['error' => 'update_failed'], 500);
