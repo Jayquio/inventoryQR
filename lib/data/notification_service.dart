@@ -115,7 +115,8 @@ class NotificationService extends ChangeNotifier {
             changed = true;
           }
         } else {
-          _notifications.add(
+          _notifications.insert(
+            0, // Insert at the beginning (newest)
             NotificationItem(
               id: id,
               title: map['title'] ?? 'Update',
@@ -126,6 +127,10 @@ class NotificationService extends ChangeNotifier {
               course: map['course'],
               read: map['read'] ?? false,
               priority: map['priority'] ?? 'medium',
+              isOverride: map['isOverride'] == 1 || map['isOverride'] == true,
+              originalQuantity: map['originalQuantity'],
+              overrideQuantity: map['overrideQuantity'],
+              overrideReason: map['overrideReason'],
             ),
           );
           changed = true;
@@ -133,9 +138,10 @@ class NotificationService extends ChangeNotifier {
       }
 
       if (changed) {
+        // Ensure consistent sorting by timestamp (descending)
         _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
         notifyListeners();
-        _persist();
+        await _persist();
       }
     } catch (e) {
       debugPrint('Error fetching notifications: $e');

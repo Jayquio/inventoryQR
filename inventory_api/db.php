@@ -47,6 +47,10 @@ try {
       `course` varchar(128) DEFAULT NULL,
       `is_read` tinyint(1) NOT NULL DEFAULT 0,
       `priority` enum('high','medium','low') NOT NULL DEFAULT 'medium',
+      `is_override` tinyint(1) NOT NULL DEFAULT 0,
+      `original_quantity` int(11) DEFAULT NULL,
+      `override_quantity` int(11) DEFAULT NULL,
+      `override_reason` text DEFAULT NULL,
       `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
       PRIMARY KEY (`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
@@ -77,6 +81,10 @@ function ensure_notifications_table($pdo) {
     `course` varchar(128) DEFAULT NULL,
     `is_read` tinyint(1) NOT NULL DEFAULT 0,
     `priority` enum('high','medium','low') NOT NULL DEFAULT 'medium',
+    `is_override` tinyint(1) NOT NULL DEFAULT 0,
+    `original_quantity` int(11) DEFAULT NULL,
+    `override_quantity` int(11) DEFAULT NULL,
+    `override_reason` text DEFAULT NULL,
     `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
     PRIMARY KEY (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";

@@ -32,7 +32,11 @@ try {
             'course' => $n['course'],
             'read' => (bool)$n['is_read'],
             'priority' => $n['priority'],
-            'timestamp' => $n['created_at']
+            'timestamp' => $n['created_at'],
+            'isOverride' => isset($n['is_override']) ? (bool)$n['is_override'] : false,
+            'originalQuantity' => isset($n['original_quantity']) ? (int)$n['original_quantity'] : null,
+            'overrideQuantity' => isset($n['override_quantity']) ? (int)$n['override_quantity'] : null,
+            'overrideReason' => $n['override_reason'] ?? null
         ];
     }, $data);
 

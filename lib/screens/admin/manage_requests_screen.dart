@@ -63,7 +63,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
       // 3. Create notification for the borrower
       final req = originalRequests.firstWhere((r) => r['id'].toString() == id);
       final instrumentName = req['instrumentName'] ?? 'instrument';
-      final studentUsername = req['studentName']; // This is the username in our DB
+      final studentUsername = req['studentName'];
+      final course = req['course'];
+      final isOverride = req['isOverride'] == 1 || req['isOverride'] == true;
 
       if (status == 'approved') {
         await ApiClient.instance.createNotification(
@@ -72,6 +74,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           recipient: studentUsername,
           type: 'success',
           priority: 'high',
+          course: course,
+          isOverride: isOverride,
+          originalQuantity: req['originalQuantity'],
+          overrideQuantity: req['overrideQuantity'],
+          overrideReason: req['overrideReason'],
         );
       } else if (status == 'rejected') {
         await ApiClient.instance.createNotification(
@@ -80,6 +87,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           recipient: studentUsername,
           type: 'error',
           priority: 'high',
+          course: course,
+          isOverride: isOverride,
+          originalQuantity: req['originalQuantity'],
+          overrideQuantity: req['overrideQuantity'],
+          overrideReason: req['overrideReason'],
         );
       } else if (status == 'returned') {
         await ApiClient.instance.createNotification(
@@ -87,6 +99,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           message: 'The return of $instrumentName has been confirmed.',
           recipient: studentUsername,
           type: 'info',
+          course: course,
         );
       }
 
