@@ -426,6 +426,7 @@ class ApiClient {
     int? originalQuantity,
     int? overrideQuantity,
     String? overrideReason,
+    String? requestId,
   }) async {
     final uri = Uri.parse('${_baseUrl()}/notifications_create.php');
     final payload = {
@@ -439,6 +440,7 @@ class ApiClient {
       'original_quantity': originalQuantity,
       'override_quantity': overrideQuantity,
       'override_reason': overrideReason,
+      'request_id': requestId,
     };
     final res = await http
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))

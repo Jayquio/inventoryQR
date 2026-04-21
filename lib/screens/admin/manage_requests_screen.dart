@@ -79,6 +79,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           originalQuantity: req['originalQuantity'],
           overrideQuantity: req['overrideQuantity'],
           overrideReason: req['overrideReason'],
+          requestId: id,
         );
       } else if (status == 'rejected') {
         await ApiClient.instance.createNotification(
@@ -92,6 +93,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           originalQuantity: req['originalQuantity'],
           overrideQuantity: req['overrideQuantity'],
           overrideReason: req['overrideReason'],
+          requestId: id,
         );
       } else if (status == 'returned') {
         await ApiClient.instance.createNotification(
@@ -100,6 +102,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
           recipient: studentUsername,
           type: 'info',
           course: course,
+          requestId: id,
         );
       }
 

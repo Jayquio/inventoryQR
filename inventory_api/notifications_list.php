@@ -36,7 +36,8 @@ try {
             'isOverride' => isset($n['is_override']) ? (bool)$n['is_override'] : false,
             'originalQuantity' => isset($n['original_quantity']) ? (int)$n['original_quantity'] : null,
             'overrideQuantity' => isset($n['override_quantity']) ? (int)$n['override_quantity'] : null,
-            'overrideReason' => $n['override_reason'] ?? null
+            'overrideReason' => $n['override_reason'] ?? null,
+            'requestId' => $n['request_id'] ?? null
         ];
     }, $data);
 

@@ -21,6 +21,7 @@ class NotificationItem {
     this.originalQuantity,
     this.overrideQuantity,
     this.overrideReason,
+    this.requestId,
   });
 
   final String id;
@@ -36,6 +37,7 @@ class NotificationItem {
   final int? originalQuantity;
   final int? overrideQuantity;
   final String? overrideReason;
+  final String? requestId;
 }
 
 class NotificationService extends ChangeNotifier {
@@ -106,7 +108,9 @@ class NotificationService extends ChangeNotifier {
       bool changed = false;
       for (final map in list) {
         final id = map['id'].toString();
+        final requestId = map['requestId']?.toString();
         final existingIdx = _notifications.indexWhere((n) => n.id == id);
+
         if (existingIdx != -1) {
           // Update read status if changed
           final newRead = map['read'] ?? false;
@@ -115,6 +119,16 @@ class NotificationService extends ChangeNotifier {
             changed = true;
           }
         } else {
+          // If a newer notification for the same requestId exists, mark old ones as read
+          if (requestId != null) {
+            for (var n in _notifications) {
+              if (n.requestId == requestId) {
+                n.read = true;
+                changed = true;
+              }
+            }
+          }
+
           _notifications.insert(
             0, // Insert at the beginning (newest)
             NotificationItem(
@@ -131,6 +145,7 @@ class NotificationService extends ChangeNotifier {
               originalQuantity: map['originalQuantity'],
               overrideQuantity: map['overrideQuantity'],
               overrideReason: map['overrideReason'],
+              requestId: requestId,
             ),
           );
           changed = true;
@@ -168,7 +183,10 @@ class NotificationService extends ChangeNotifier {
       // Sync with server
       final username = AuthService.instance.currentUsername;
       try {
-        await ApiClient.instance.markNotificationRead(id: id, username: username);
+        await ApiClient.instance.markNotificationRead(
+          id: id,
+          username: username,
+        );
       } catch (e) {
         debugPrint('Error marking notification read on server: $e');
       }
@@ -185,7 +203,10 @@ class NotificationService extends ChangeNotifier {
     // Sync with server
     final username = AuthService.instance.currentUsername;
     try {
-      await ApiClient.instance.markNotificationRead(username: username, all: true);
+      await ApiClient.instance.markNotificationRead(
+        username: username,
+        all: true,
+      );
     } catch (e) {
       debugPrint('Error marking all notifications read on server: $e');
     }
@@ -214,6 +235,7 @@ class NotificationService extends ChangeNotifier {
               originalQuantity: e['originalQuantity'],
               overrideQuantity: e['overrideQuantity'],
               overrideReason: e['overrideReason'],
+              requestId: e['requestId']?.toString(),
             ),
           ),
         );
@@ -240,6 +262,7 @@ class NotificationService extends ChangeNotifier {
             'originalQuantity': n.originalQuantity,
             'overrideQuantity': n.overrideQuantity,
             'overrideReason': n.overrideReason,
+            'requestId': n.requestId,
           },
         )
         .toList();
