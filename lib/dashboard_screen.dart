@@ -259,9 +259,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Notification Banner
-                              const NotificationBanner(),
-                              
                               // Stat cards
                               _buildStatsGrid(stats),
                               const SizedBox(height: 24),
