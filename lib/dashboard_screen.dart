@@ -252,7 +252,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     onRefresh: _load,
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        top: 16,
+                        right: 16,
+                        bottom: 80, // Add bottom padding to account for the FAB
+                      ),
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 900),
