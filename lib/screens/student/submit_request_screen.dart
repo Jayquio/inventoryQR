@@ -5,7 +5,9 @@ import '../../data/api_client.dart';
 import '../../models/instrument.dart';
 import '../../data/auth_service.dart';
 import '../../data/notification_service.dart';
+import '../../core/datetime_utils.dart';
 import '../../core/theme.dart';
+import '../../widgets/borrower_notification_header_action.dart';
 
 class SubmitRequestScreen extends StatefulWidget {
   final String? preSelectedInstrument;
@@ -51,6 +53,22 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     _selectedInstrument = widget.preSelectedInstrument;
     if (_selectedInstrument != null) {
       _instrumentController.text = _selectedInstrument!;
+    }
+    if (widget.preSelectedCourse != null &&
+        widget.preSelectedCourse!.isNotEmpty) {
+      _course = widget.preSelectedCourse!;
+      _courseController.text = _course;
+    }
+    final d0 = widget.preSelectedDate;
+    if (d0 != null) {
+      final first = DateTimeUtils.firstAllowedNeededByDay();
+      final day = !DateTime(d0.year, d0.month, d0.day).isBefore(first)
+          ? DateTime(d0.year, d0.month, d0.day)
+          : first;
+      final c = DateTime(day.year, day.month, day.day, 9, 0);
+      _neededAt =
+          '${c.year}-${c.month.toString().padLeft(2, '0')}-${c.day.toString().padLeft(2, '0')} '
+          '${c.hour.toString().padLeft(2, '0')}:${c.minute.toString().padLeft(2, '0')}:00';
     }
     _load();
   }
@@ -186,6 +204,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
           priority: 'low',
         ),
       );
+      await NotificationService.instance.fetchFromServer();
 
       if (mounted) {
         setState(() {
@@ -247,6 +266,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
           priority: 'low',
         ),
       );
+      await NotificationService.instance.fetchFromServer();
 
       if (!mounted) return;
       setState(() {
@@ -431,15 +451,19 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                 const SizedBox(width: 12),
                 const Icon(Icons.assignment, color: Colors.white, size: 22),
                 const SizedBox(width: 8),
-                const Text(
-                  'Submit Request',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                const Expanded(
+                  child: Text(
+                    'Submit Request',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
+                const BorrowerNotificationHeaderAction(),
                 if (_borrowList.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -600,13 +624,16 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   GestureDetector(
-                                    onTap: _pickDate,
+                                    onTap: _pickNeededBy,
                                     child: AbsorbPointer(
                                       child: TextFormField(
                                         decoration: _inputDecor(
                                           _neededAt.isEmpty
-                                              ? 'Select date'
-                                              : _neededAt,
+                                              ? 'Select date & time'
+                                              : DateTimeUtils
+                                                  .formatNeededByForDisplay(
+                                                    _neededAt,
+                                                  ),
                                         ),
                                       ),
                                     ),
@@ -1065,21 +1092,37 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     );
   }
 
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final firstAllowedDate = now.add(const Duration(days: 3));
+  Future<void> _pickNeededBy() async {
+    final firstAllowed = DateTimeUtils.firstAllowedNeededByDay();
+    final lastDate = DateTime(firstAllowed.year + 1, firstAllowed.month, firstAllowed.day);
+    DateTime initialDate = firstAllowed;
+    final existing = DateTimeUtils.tryParseFlexible(_neededAt);
+    if (existing != null && !existing.isBefore(firstAllowed)) {
+      initialDate = DateTime(existing.year, existing.month, existing.day);
+    }
     final date = await showDatePicker(
       context: context,
-      initialDate: firstAllowedDate,
-      firstDate: firstAllowedDate,
-      lastDate: DateTime(now.year + 1),
+      initialDate: initialDate,
+      firstDate: firstAllowed,
+      lastDate: lastDate,
     );
-    if (date != null && mounted) {
-      setState(() {
-        _neededAt =
-            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      });
-    }
+    if (date == null || !mounted) return;
+    final existingTime = DateTimeUtils.tryParseFlexible(_neededAt);
+    final initialTod = existingTime != null && !existingTime.isBefore(firstAllowed)
+        ? TimeOfDay(hour: existingTime.hour, minute: existingTime.minute)
+        : const TimeOfDay(hour: 9, minute: 0);
+    final time = await showTimePicker(
+      context: context,
+      initialTime: initialTod,
+    );
+    if (!mounted) return;
+    final t = time ?? initialTod;
+    final combined = DateTime(date.year, date.month, date.day, t.hour, t.minute);
+    setState(() {
+      _neededAt =
+          '${combined.year}-${combined.month.toString().padLeft(2, '0')}-${combined.day.toString().padLeft(2, '0')} '
+          '${combined.hour.toString().padLeft(2, '0')}:${combined.minute.toString().padLeft(2, '0')}:00';
+    });
   }
 
   InputDecoration _inputDecor(String hint) {

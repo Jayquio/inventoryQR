@@ -7,7 +7,6 @@ import 'data/api_client.dart';
 import 'data/auth_service.dart';
 import 'data/notification_service.dart';
 import 'models/instrument.dart';
-import 'widgets/notification_banner.dart';
 import 'core/theme.dart';
 import 'core/constants.dart';
 
@@ -31,17 +30,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _load() async {
     try {
-      final results = await Future.wait([
-        ApiClient.instance.fetchInstruments(),
-        ApiClient.instance.fetchRequests(),
-      ]);
+      final instruments = await ApiClient.instance.fetchInstruments();
+      List<Map<String, dynamic>> requests = [];
+      try {
+        final role = AuthService.instance.currentRole;
+        final studentName = (role == UserRole.admin || role == UserRole.superadmin) 
+            ? null 
+            : AuthService.instance.currentUsername;
+        requests = await ApiClient.instance.fetchRequests(studentName: studentName);
+      } catch (e) {
+        debugPrint('Error fetching requests: $e');
+      }
       if (!mounted) return;
       setState(() {
-        _instruments = results[0] as List<Instrument>;
-        _requests = results[1] as List<Map<String, dynamic>>;
+        _instruments = instruments;
+        _requests = requests;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Error fetching instruments: $e');
       if (!mounted) return;
       setState(() => _loading = false);
     }
@@ -66,10 +73,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final pendingRequests = _requests
-        .where((r) => (r['status'] ?? '') == 'pending')
+        .where((r) => (r['status'] ?? '').toString().toLowerCase() == 'pending')
         .length;
-    final totalItems = _instruments.length;
-    final availableItems = _instruments.where((i) => i.available > 0).length;
+    final totalItems = _instruments.fold(0, (sum, i) => sum + i.quantity);
+    final availableItems = _instruments.fold(0, (sum, i) => sum + i.available);
 
     final stats = [
       _StatItem(
@@ -108,6 +115,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? _teacherLinks
         : _studentLinks;
 
+    final screenW = MediaQuery.sizeOf(context).width;
+    final compactHeader = screenW < 400;
+    final titleSize = _isAdmin
+        ? (compactHeader ? 17.0 : 20.0)
+        : (compactHeader ? 16.0 : 19.0);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: Column(
@@ -117,101 +130,119 @@ class _DashboardScreenState extends State<DashboardScreen> {
             color: AppTheme.primaryColor,
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
-              left: 16,
-              right: 16,
-              bottom: 16,
+              left: 12,
+              right: 12,
+              bottom: 12,
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Logo
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.science,
                     color: Colors.white,
-                    size: 24,
+                    size: compactHeader ? 20 : 24,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'MedLab Inventory',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: titleSize,
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        '${_roleName[0].toUpperCase()}${_roleName.substring(1)} Dashboard',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 12,
+                      if (!compactHeader || _isAdmin)
+                        Text(
+                          '${_roleName[0].toUpperCase()}${_roleName.substring(1)} Dashboard',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.72),
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                     ],
                   ),
                 ),
-                // Role badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                if (!compactHeader)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_roleName[0].toUpperCase()}${_roleName.substring(1)}',
+                        style: const TextStyle(color: Colors.white, fontSize: 11),
+                      ),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_roleName[0].toUpperCase()}${_roleName.substring(1)}',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Notification Bell
+                if (compactHeader) const SizedBox(width: 4),
+                if (!compactHeader) const SizedBox(width: 6),
                 AnimatedBuilder(
                   animation: NotificationService.instance,
                   builder: (context, _) {
                     final count = NotificationService.instance.unreadCount;
-                    return GestureDetector(
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        AppRoutes.notificationCenter,
+                    return IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 40,
+                        minHeight: 40,
                       ),
-                      child: Stack(
+                      onPressed: () {
+                        NotificationService.instance.fetchFromServer();
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.notificationCenter,
+                        );
+                      },
+                      icon: Stack(
                         clipBehavior: Clip.none,
+                        alignment: Alignment.center,
                         children: [
                           Icon(
-                            Icons.notifications,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            size: 20,
+                            Icons.notifications_outlined,
+                            color: Colors.white.withValues(alpha: 0.9),
+                            size: compactHeader ? 22 : 24,
                           ),
                           if (count > 0)
                             Positioned(
-                              right: -4,
-                              top: -4,
+                              right: 0,
+                              top: 4,
                               child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
                                 ),
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                constraints: const BoxConstraints(minWidth: 16),
                                 child: Text(
-                                  '$count',
+                                  count > 9 ? '9+' : '$count',
+                                  textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 8,
+                                    fontSize: 9,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -222,10 +253,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                   },
                 ),
-                const SizedBox(width: 12),
-                // Settings
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  onPressed: () => Navigator.pushNamed(
                     context,
                     AppRoutes.settings,
                     arguments: _isAdmin
@@ -234,10 +268,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ? 'Teacher'
                         : 'Student',
                   ),
-                  child: Icon(
-                    Icons.settings,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    size: 20,
+                  icon: Icon(
+                    Icons.settings_outlined,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    size: compactHeader ? 22 : 24,
                   ),
                 ),
               ],

@@ -35,6 +35,10 @@ try {
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES => false,
   ]);
+  // Keep TIMESTAMP / NOW() aligned with application timezone (MedLab / PH).
+  try {
+    $pdo->exec("SET time_zone = '+08:00'");
+  } catch (Throwable $e) {}
   
   // Proactively ensure notifications table exists (Bypass errors if permission restricted)
   try {

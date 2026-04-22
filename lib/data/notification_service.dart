@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
+import '../core/datetime_utils.dart';
 import '../data/api_client.dart';
 import '../data/auth_service.dart';
 
@@ -44,6 +45,15 @@ class NotificationService extends ChangeNotifier {
   NotificationService._internal();
   static final NotificationService instance = NotificationService._internal();
 
+  static int _compareTimestampsDesc(String a, String b) {
+    final da = DateTimeUtils.tryParseFlexible(a);
+    final db = DateTimeUtils.tryParseFlexible(b);
+    if (da != null && db != null) {
+      return db.compareTo(da);
+    }
+    return b.compareTo(a);
+  }
+
   final List<NotificationItem> _notifications = [];
   WebSocketChannel? _channel;
   Timer? _autoRefreshTimer;
@@ -78,8 +88,9 @@ class NotificationService extends ChangeNotifier {
     if (_notifications.any((n) => n.id == item.id)) return;
 
     _notifications.insert(0, item);
-    // Sort by timestamp descending
-    _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    _notifications.sort(
+      (a, b) => _compareTimestampsDesc(a.timestamp, b.timestamp),
+    );
 
     notifyListeners();
     _persist();
@@ -141,7 +152,9 @@ class NotificationService extends ChangeNotifier {
 
       _notifications.clear();
       _notifications.addAll(newNotifications);
-      _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      _notifications.sort(
+        (a, b) => _compareTimestampsDesc(a.timestamp, b.timestamp),
+      );
       notifyListeners();
       await _persist();
     } catch (e) {
@@ -225,7 +238,9 @@ class NotificationService extends ChangeNotifier {
             ),
           ),
         );
-      _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      _notifications.sort(
+        (a, b) => _compareTimestampsDesc(a.timestamp, b.timestamp),
+      );
       notifyListeners();
     }
   }

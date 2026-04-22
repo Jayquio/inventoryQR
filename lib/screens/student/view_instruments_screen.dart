@@ -3,6 +3,7 @@ import '../../data/api_client.dart';
 import '../../models/instrument.dart';
 import '../../core/theme.dart';
 import '../../core/constants.dart';
+import '../../widgets/borrower_notification_header_action.dart';
 
 class ViewInstrumentsScreen extends StatefulWidget {
   final String userRole;
@@ -191,7 +192,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
                 ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -199,19 +200,30 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
                       'Lab Instruments',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: MediaQuery.sizeOf(context).width < 360
+                            ? 16
+                            : 18,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.3,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       'Browse, borrow & request instruments',
-                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 11,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              if (widget.userRole == 'Student' || widget.userRole == 'Teacher')
+                const BorrowerNotificationHeaderAction(),
             ],
           ),
           const SizedBox(height: 14),
@@ -326,6 +338,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
   //  TAB BAR
   // ═══════════════════════════════════════
   Widget _buildTabBar() {
+    final narrow = MediaQuery.sizeOf(context).width < 520;
     return Container(
       color: Colors.white,
       child: TabBar(
@@ -339,7 +352,8 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
           fontWeight: FontWeight.w500,
           fontSize: 12,
         ),
-        isScrollable: false,
+        isScrollable: narrow,
+        tabAlignment: narrow ? TabAlignment.start : TabAlignment.fill,
         labelPadding: EdgeInsets.zero,
         tabs: List.generate(4, (i) {
           return Tab(

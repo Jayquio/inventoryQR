@@ -58,17 +58,18 @@ if ($neededAt !== '') {
         json_out(['error' => 'invalid_needed_at'], 400);
     }
 
-    // Enforce 3-day buffer policy (today not counted).
+    // At least 3 full calendar days after local midnight today (matches Flutter picker).
     $todayMidnight = strtotime('today midnight');
-    $minTs = $todayMidnight + (4 * 24 * 60 * 60); 
-    
+    $minTs = $todayMidnight + (3 * 24 * 60 * 60);
+
     if ($neededTs < $minTs) {
-        json_out(['error' => 'needed_at_must_be_at_least_3_days_ahead_excluding_today'], 400);
+        json_out(['error' => 'needed_at_must_be_at_least_3_days_ahead'], 400);
     }
 }
 
 $pdo->beginTransaction();
 $requestIds = [];
+$itemSummaries = [];
 
 try {
     foreach ($items as $item) {
@@ -78,6 +79,7 @@ try {
         
         if ($instrument === '') continue;
         if ($quantity <= 0) $quantity = 1;
+        $itemSummaries[] = $instrument . ' ×' . $quantity;
 
         // Ensure request references a valid instrument.
         $inst = $pdo->prepare('SELECT name, `type` FROM instruments WHERE name = ?');
@@ -116,19 +118,28 @@ try {
         json_out(['error' => 'no_valid_items_processed'], 400);
     }
 
-    // Create Admin Notification
+    // Create Admin Notification (one row per batch; link first request for client dedupe)
     try {
-        $notifSql = "INSERT INTO notifications (title, message, type, recipient, course, priority) VALUES (?, ?, ?, ?, ?, ?)";
+        $notifSql = "INSERT INTO notifications (title, message, type, recipient, course, priority, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $notifStmt = $pdo->prepare($notifSql);
         $itemCount = count($requestIds);
-        $msg = "$student submitted a request for $itemCount item(s). Purpose: $purpose";
+        $summary = implode(', ', $itemSummaries);
+        if (strlen($summary) > 400) {
+            $summary = substr($summary, 0, 397) . '…';
+        }
+        $neededLine = $neededAt !== '' ? ' Needed by: ' . $neededAt . '.' : '';
+        $batchLine = $batchId !== '' ? ' Batch: ' . $batchId . '.' : '';
+        $msg = $student . ' requested ' . $itemCount . ' item(s): ' . $summary
+            . '. Purpose: ' . ($purpose !== '' ? $purpose : '(none)')
+            . '.' . $neededLine . $batchLine;
         $notifStmt->execute([
             'New Borrow Request',
             $msg,
             'request',
             'Admin',
             $course ?: null,
-            'medium'
+            'medium',
+            (int)$requestIds[0],
         ]);
     } catch (Throwable $e) {
         // Silently fail if notifications table is not ready yet

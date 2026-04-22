@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../models/request.dart';
 import '../../data/api_client.dart';
 import '../../data/auth_service.dart';
+import '../../core/datetime_utils.dart';
 import '../../core/theme.dart';
+import '../../widgets/borrower_notification_header_action.dart';
 
 class TrackStatusScreen extends StatefulWidget {
   const TrackStatusScreen({super.key});
@@ -111,14 +113,19 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                 const SizedBox(width: 12),
                 const Icon(Icons.access_time, color: Colors.white, size: 22),
                 const SizedBox(width: 8),
-                const Text(
-                  'Track My Requests',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                const Expanded(
+                  child: Text(
+                    'Track My Requests',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const BorrowerNotificationHeaderAction(),
               ],
             ),
           ),
@@ -179,21 +186,18 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   }
 
   String _calculateDuration(String? neededAt) {
-    if (neededAt == null || neededAt.isEmpty) return '';
-    try {
-      final neededDate = DateTime.parse(neededAt);
-      final now = DateTime.now();
-      // Use today's midnight to ensure consistent calculation
-      final todayMidnight = DateTime(now.year, now.month, now.day);
-
-      // Calculate difference in days
-      final difference = neededDate.difference(todayMidnight).inDays;
-
-      if (difference <= 0) return '';
-      return '($difference day${difference > 1 ? 's' : ''} duration)';
-    } catch (_) {
-      return '';
-    }
+    final neededDate = DateTimeUtils.tryParseFlexible(neededAt);
+    if (neededDate == null) return '';
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final neededDay = DateTime(
+      neededDate.year,
+      neededDate.month,
+      neededDate.day,
+    );
+    final difference = neededDay.difference(todayMidnight).inDays;
+    if (difference <= 0) return '';
+    return '($difference day${difference > 1 ? 's' : ''} until needed)';
   }
 
   Widget _buildBatchCard(String batchId, List<Request> items) {
@@ -249,25 +253,31 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                   ),
                 ),
                 if (first.neededAt != null && first.neededAt!.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Needed by: ${first.neededAt}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Needed by: ${DateTimeUtils.formatNeededByForDisplay(first.neededAt)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.end,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Text(
-                        _calculateDuration(first.neededAt),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.w500,
+                        Text(
+                          _calculateDuration(first.neededAt),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.end,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
               ],
             ),
