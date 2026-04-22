@@ -263,38 +263,51 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
   //  STATS BAR (Real-time from DB)
   // ═══════════════════════════════════════
   Widget _buildStatsBar() {
+    final narrow = MediaQuery.sizeOf(context).width < 430;
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 8,
         children: [
           _statChip(
             Icons.inventory,
             '$_totalItems',
             'Total',
             const Color(0xFF6366F1),
+            narrow ? 0.48 : 0.31,
           ),
-          const SizedBox(width: 10),
           _statChip(
             Icons.check_circle_outline,
             '$_availableItems',
             'Available',
             const Color(0xFF10B981),
+            narrow ? 0.48 : 0.31,
           ),
-          const SizedBox(width: 10),
           _statChip(
             Icons.pending_outlined,
             '$_pendingItems',
             'Pending',
             const Color(0xFFF59E0B),
+            narrow ? 0.48 : 0.31,
           ),
         ],
       ),
     );
   }
 
-  Widget _statChip(IconData icon, String value, String label, Color color) {
-    return Expanded(
+  Widget _statChip(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+    double widthFactor,
+  ) {
+    final screenW = MediaQuery.sizeOf(context).width;
+    final chipWidth = (screenW - 32) * widthFactor;
+    return SizedBox(
+      width: chipWidth.clamp(120.0, 220.0),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
@@ -377,6 +390,7 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
   //  TOOLBAR
   // ═══════════════════════════════════════
   Widget _buildToolbar() {
+    final narrow = MediaQuery.sizeOf(context).width < 430;
     final groupLabel = _selectedTab == 0
         ? 'All Items'
         : 'Grouped by ${_tabs[_selectedTab]}';
@@ -384,18 +398,23 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: const Color(0xFFF5F5FA),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(Icons.category_outlined, size: 14, color: Colors.grey.shade500),
           const SizedBox(width: 6),
-          Text(
-            groupLabel,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Text(
+              groupLabel,
+              maxLines: narrow ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -674,91 +693,132 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            // Status dot
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: available ? Colors.green : Colors.red.shade400,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: (available ? Colors.green : Colors.red).withValues(
-                      alpha: 0.3,
-                    ),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Info
-            Expanded(
-              child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 430;
+            if (compact) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    inst.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 3),
                   Row(
                     children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: available ? Colors.green : Colors.red.shade400,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          inst.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _qtyBadge(inst, available),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
                       if (inst.category.isNotEmpty) _miniPill(inst.category),
-                      if (inst.category.isNotEmpty) const SizedBox(width: 6),
                       if (inst.serialNumber != null &&
                           inst.serialNumber!.isNotEmpty)
                         _miniPill('S/N: ${inst.serialNumber}'),
-                      const Spacer(),
-                      Text(
-                        inst.location,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade400,
+                      _miniPill(inst.location),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 32,
+                    child: ElevatedButton(
+                      onPressed: () => _requestInstrument(inst),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
                         ),
+                        padding: EdgeInsets.zero,
+                        elevation: 0,
+                      ),
+                      child: const Text('Request', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                // Status dot
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: available ? Colors.green : Colors.red.shade400,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (available ? Colors.green : Colors.red).withValues(
+                          alpha: 0.3,
+                        ),
+                        blurRadius: 4,
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Qty
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: available ? Colors.green.shade50 : Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    '${inst.available}/${inst.quantity}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: available
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        inst.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          if (inst.category.isNotEmpty) _miniPill(inst.category),
+                          if (inst.category.isNotEmpty) const SizedBox(width: 6),
+                          if (inst.serialNumber != null &&
+                              inst.serialNumber!.isNotEmpty)
+                            _miniPill('S/N: ${inst.serialNumber}'),
+                          const Spacer(),
+                          Flexible(
+                            child: Text(
+                              inst.location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  Text(
-                    'avail',
-                    style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Action buttons
-            Column(
-              children: [
+                ),
+                const SizedBox(width: 10),
+                _qtyBadge(inst, available),
+                const SizedBox(width: 10),
                 SizedBox(
                   width: 72,
                   height: 28,
@@ -780,9 +840,35 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
                   ),
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _qtyBadge(Instrument inst, bool available) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: available ? Colors.green.shade50 : Colors.red.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '${inst.available}/${inst.quantity}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: available ? Colors.green.shade700 : Colors.red.shade700,
+            ),
+          ),
+          Text(
+            'avail',
+            style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
+          ),
+        ],
       ),
     );
   }

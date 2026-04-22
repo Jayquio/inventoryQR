@@ -10142,3 +10142,75 @@ docker system prune -f
 - Borrower notification bell count updates
 
 If you tell me **where your live server is hosted** (VPS? cPanel? Render? Railway?) and whether your DB is **inside Docker** or **external**, I’ll give you the exact commands/paths for that environment.
+
+---
+
+_**User**_
+
+fix it its overlappig in the mobile devics
+
+---
+
+_**Agent (default)**_
+
+I’ll fix the mobile overlap in the instruments screen by making the top summary and filter/tab controls responsive on narrow widths, then I’ll run a quick analyzer check.
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\lib\screens\student\view_instruments_screen.dart</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\lib\screens\student\view_instruments_screen.dart</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\lib\screens\student\view_instruments_screen.dart</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+I found the overlap points in `view_instruments_screen` (stats row, toolbar row, and each list item row with fixed-width qty + request button). I’m making those sections responsive so they wrap/stack cleanly on small phones.
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\lib\screens\student\view_instruments_screen.dart</summary>
+
+Status: **loading**
+
+</details>
+
+</tool-use>
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2"><details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+</details></tool-use>
