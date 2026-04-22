@@ -10204,7 +10204,126 @@ _**Agent (default)**_
 
 <details><summary>Tool use: **edit_file_v2** • Edit file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\lib\screens\student\view_instruments_screen.dart</summary>
 
-Status: **loading**
+</details>
+
+</tool-use>
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2"><details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"; dart analyze lib/screens/student/view_instruments_screen.dart</summary>
+
+```bash
+cd "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"; dart analyze lib/screens/student/view_instruments_screen.dart
+```
+
+```
+Analyzing view_instruments_screen.dart...
+]633;CAnalyzing view_instruments_screen.dart...
+
+warning - view_instruments_screen.dart:899:10 - The declaration '_infoPill' isn't referenced. Try removing the declaration of '_infoPill'. - unused_element
+   info - view_instruments_screen.dart:553:49 - Unnecessary use of 'toList' in a spread. Try removing the invocation of 'toList'. - unnecessary_to_list_in_spreads
+   info - view_instruments_screen.dart:938:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - view_instruments_screen.dart:940:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - view_instruments_screen.dart:942:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+
+5 issues found.
+]633;D;2
+
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="await">
+<details>
+<summary>Tool use: **await**</summary>
+
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="unknown" data-tool-name="await"><details>
+<summary>Tool use: **await**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\USER\.cursor\projects\c-3rd-Year-SEM-2-SIA-2-QR-CODE-INVENTORY-MANAGEMENT-SYSTEM-inventoryQR\terminals\923829.txt</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+Fixed — I updated the mobile layout in `lib/screens/student/view_instruments_screen.dart` so it no longer overlaps on narrow screens.
+
+### What I changed
+
+- **Top stats bar** (`Total / Available / Pending`)
+  - Switched from rigid `Row + Expanded` to a responsive `Wrap`.
+  - Chips now resize and wrap cleanly on small widths.
+
+- **Toolbar row** (`All Items` label + list/grid toggle)
+  - Made the label area flexible (`Expanded`) with ellipsis/multiline behavior.
+  - Prevents text from colliding with the toggle controls.
+
+- **Instrument list cards (main overlap fix)**
+  - Added responsive behavior in each item row:
+    - **Wide screens:** keeps the old horizontal layout.
+    - **Small screens:** stacks content into vertical sections:
+      - name + qty badge
+      - category/serial/location pills
+      - full-width `Request` button
+  - Removed the tight fixed-width horizontal pressure that caused overlap.
+
+- **Refactor for stability**
+  - Extracted a reusable `_qtyBadge(...)` widget so qty display is consistent in both layouts.
+
+### What you should do now
+
+- Run and test on your phone/browser again.
+- If testing on live web, do a **hard refresh** (`Ctrl + F5`) after deploy so old cached JS/CSS doesn’t keep the old layout.
+
+If you want, I can also tighten the tab labels (`All Items / Glasswares / ...`) for extra-small phones so they appear even cleaner.
+
+---
+
+_**User**_
+
+remove the overview total available  pending inside pending 
+
+---
+
+_**Agent (default)**_
+
+Understood — I’ll remove that top overview section (`Total / Available / Pending`) from the mobile instruments screen so only the tabs and list remain.
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\lib\screens\student\view_instruments_screen.dart</summary>
 
 </details>
 
@@ -10212,5 +10331,21 @@ Status: **loading**
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2"><details>
 <summary>Tool use: **edit_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"; dart analyze lib/screens/student/view_instruments_screen.dart</summary>
+
+```bash
+cd "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"; dart analyze lib/screens/student/view_instruments_screen.dart
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
 
 </details></tool-use>

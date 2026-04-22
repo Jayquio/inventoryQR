@@ -132,7 +132,6 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
       body: Column(
         children: [
           _buildHeader(context),
-          _buildStatsBar(),
           _buildTabBar(),
           _buildToolbar(),
           Expanded(
