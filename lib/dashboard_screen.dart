@@ -75,8 +75,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final pendingRequests = _requests
         .where((r) => (r['status'] ?? '').toString().toLowerCase() == 'pending')
         .length;
-    final totalItems = _instruments.fold(0, (sum, i) => sum + i.quantity);
-    final availableItems = _instruments.fold(0, (sum, i) => sum + i.available);
+    // Match admin SQL cards:
+    // - Total Items: COUNT(*) FROM instruments
+    // - Available: COUNT(*) FROM instruments WHERE available > 0
+    final totalItems = _instruments.length;
+    final availableItems = _instruments.where((i) => i.available > 0).length;
 
     final stats = [
       _StatItem(

@@ -10945,3 +10945,74 @@ That matches the logic currently used in the app:
 
 So if the dashboard now shows `726 / 628 / 5`, it is correct.  
 The earlier `7423 / 7371` values were from old/stale data before refresh/rebuild.
+
+---
+
+_**User**_
+
+still remain the same i already update it and push to my live site
+
+---
+
+_**Agent (default)**_
+
+You’re right—this screenshot is the **Admin Dashboard**, not `Manage Instruments`. I updated `Manage Instruments`, but the dashboard cards still use old math (`sum of quantities`), which is why you still see `7423 / 7371`. I’ll fix dashboard stats to use the same DB-count logic (`COUNT rows`, `COUNT available > 0`, pending requests).
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\lib\dashboard_screen.dart</summary>
+
+</details>
+
+</tool-use>
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2"><details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"; dart analyze lib/dashboard_screen.dart</summary>
+
+```bash
+cd "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"; dart analyze lib/dashboard_screen.dart
+```
+
+```
+Analyzing dashboard_screen.dart...
+No issues found!
+
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+Exactly — now I confirmed the reason.
+
+Your screenshot is from **`Admin Dashboard`**, and that page was still computing:
+
+- `Total` = **sum of `quantity`** (gave ~7423)
+- `Available` = **sum of `available`** (gave ~7371)
+
+So even after your deploy, it stayed high.
+
+I’ve now changed `dashboard_screen.dart` to match your DB query logic:
+
+- `Total Items` = `_instruments.length` (`COUNT(*)`)
+- `Available` = `_instruments.where((i) => i.available > 0).length` (`COUNT where available > 0`)
+- `Pending` already matched request count logic
+
+So after redeploy, dashboard should align with your SQL values (`726 / 628 / 5`).
+
+### Next step
+Redeploy this latest change, then hard refresh browser (`Ctrl+F5`) to clear cached web bundle.
