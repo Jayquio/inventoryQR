@@ -6,8 +6,6 @@ import 'package:flutter_application_inventorymanagement/models/instrument.dart';
 import '../../widgets/role_guard.dart';
 import '../../data/auth_service.dart';
 import '../../widgets/search_bar.dart';
-import '../../widgets/instrument_card.dart';
-import '../../core/constants.dart';
 import '../../core/theme.dart';
 import 'dart:math' as math; // Import for random number generation
 
@@ -27,10 +25,9 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
   late List<Instrument> _instruments;
   final TextEditingController _searchController = TextEditingController();
-  int _page = 0;
-  final int _perPage = 30; // Increased to show more instruments per page
   bool _loading = true;
   String _typeFilter = 'All';
+  int _pendingRequests = 0;
 
   @override
   void initState() {
@@ -42,9 +39,19 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   Future<void> _load() async {
     try {
       final items = await ApiClient.instance.fetchInstruments();
+      int pending = 0;
+      try {
+        final requests = await ApiClient.instance.fetchRequests();
+        pending = requests
+            .where(
+              (r) => (r['status'] ?? '').toString().toLowerCase() == 'pending',
+            )
+            .length;
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _instruments = items;
+        _pendingRequests = pending;
         _loading = false;
       });
     } catch (e) {
@@ -368,36 +375,161 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  Widget _buildStatItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    final w = MediaQuery.of(context).size.width;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white70, size: 18),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: R.text(18, w),
-            fontWeight: FontWeight.bold,
-          ),
+  Widget _buildStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 78),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
         ),
-        Text(
-          label,
-          style: TextStyle(color: Colors.white70, fontSize: R.text(10, w)),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 33 * 0.55,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 13 * 0.85,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildStatDivider() {
-    return Container(height: 30, width: 1, color: Colors.white24);
+  Widget _buildTypeBadge(String type) {
+    final isReagent = type.toLowerCase() == 'reagent';
+    final color = isReagent ? Colors.orange : AppTheme.primaryColor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        isReagent ? 'Reagent' : 'Instrument',
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    final lower = status.toLowerCase();
+    final color = switch (lower) {
+      'available' => Colors.green,
+      'in use' => Colors.amber.shade700,
+      'under maintenance' => Colors.orange,
+      'damaged' => Colors.red,
+      'out of stock' => Colors.grey,
+      _ => Colors.blueGrey,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        status.isEmpty ? 'Unknown' : status,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstrumentImage(Instrument instrument) {
+    final imagePath = instrument.imageAsset;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.asset(
+          imagePath,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildImageFallback(),
+        ),
+      );
+    }
+    return _buildImageFallback();
+  }
+
+  Widget _buildImageFallback() {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Icon(Icons.inventory_2_outlined, color: AppTheme.primaryColor),
+    );
+  }
+
+  Widget _buildRowActions(Instrument instrument, int originalIndex) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        OutlinedButton.icon(
+          onPressed: () => _editInstrument(originalIndex),
+          icon: const Icon(Icons.edit, size: 16),
+          label: const Text('Edit'),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => _showInstrumentDetails(context, instrument, originalIndex),
+          icon: const Icon(Icons.update, size: 16),
+          label: const Text('Update'),
+        ),
+        TextButton.icon(
+          onPressed: () => _confirmDelete(instrument, originalIndex),
+          icon: const Icon(Icons.delete_outline, size: 16),
+          label: const Text('Delete'),
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+        ),
+      ],
+    );
   }
 
   void _editInstrument(int index) {
@@ -519,7 +651,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
 
     await ApiClient.instance.createInstrument(instrument: item);
     if (!mounted) return;
-    setState(() => _instruments.add(item));
+    setState(() => _instruments.insert(0, item));
   }
 
   void _handleSubmitSuccess({
@@ -694,48 +826,30 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     final availableInstruments = _instruments
         .where((i) => i.available > 0)
         .length;
-    final categories = _instruments.map((i) => i.category).toSet().length;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.teal.shade700, Colors.teal.shade500],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.teal.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem(
-            context,
-            'Total',
-            totalInstruments.toString(),
-            Icons.inventory_2_outlined,
+          _buildStatCard(
+            icon: Icons.inventory_2_outlined,
+            value: totalInstruments.toString(),
+            label: 'Total Items',
+            color: AppTheme.primaryColor,
           ),
-          _buildStatDivider(),
-          _buildStatItem(
-            context,
-            'Available',
-            availableInstruments.toString(),
-            Icons.check_circle_outline,
+          const SizedBox(width: 12),
+          _buildStatCard(
+            icon: Icons.check_circle_outline,
+            value: availableInstruments.toString(),
+            label: 'Available',
+            color: const Color(0xFF10B981),
           ),
-          _buildStatDivider(),
-          _buildStatItem(
-            context,
-            'Categories',
-            categories.toString(),
-            Icons.category_outlined,
+          const SizedBox(width: 12),
+          _buildStatCard(
+            icon: Icons.pending_actions_outlined,
+            value: _pendingRequests.toString(),
+            label: 'Pending',
+            color: const Color(0xFFF59E0B),
           ),
         ],
       ),
@@ -751,9 +865,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
             child: DebouncedSearchBar(
               controller: _searchController,
               hintText: 'Search instruments...',
-              onChanged: (value) => setState(() {
-                _page = 0;
-              }),
+              onChanged: (value) => setState(() {}),
             ),
           ),
           const SizedBox(width: 12),
@@ -766,10 +878,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
               DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
               DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
             ],
-            onChanged: (v) => setState(() {
-              _typeFilter = v ?? 'All';
-              _page = 0;
-            }),
+            onChanged: (v) => setState(() => _typeFilter = v ?? 'All'),
           ),
           const SizedBox(width: 12),
           ElevatedButton.icon(
@@ -785,126 +894,103 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     );
   }
 
-  Widget _buildInstrumentGrid(
-    List<Instrument> pageItems,
-    int crossAxisCount,
-    double spacing,
-    double childAspectRatio,
-  ) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        mainAxisSpacing: spacing,
-        crossAxisSpacing: spacing,
-        childAspectRatio: childAspectRatio,
-      ),
-      itemCount: pageItems.length,
+  Widget _buildInstrumentList(List<Instrument> filteredInstruments) {
+    if (filteredInstruments.isEmpty) {
+      return const Center(child: Text('No instruments found.'));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      itemCount: filteredInstruments.length,
       itemBuilder: (context, index) {
-        final instrument = pageItems[index];
+        final instrument = filteredInstruments[index];
         final originalIndex = _instruments.indexOf(instrument);
-        return InstrumentCard(
-          instrument: instrument,
-          highlight: _searchController.text,
-          onTap: () =>
-              _showInstrumentDetails(context, instrument, originalIndex),
+        final borrowed = (instrument.quantity - instrument.available).clamp(
+          0,
+          instrument.quantity,
+        );
+        return Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          elevation: 0.3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _showInstrumentDetails(context, instrument, originalIndex),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInstrumentImage(instrument),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                instrument.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildTypeBadge(instrument.type),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            Text(
+                              'Category: ${instrument.category}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            Text(
+                              'Qty: ${instrument.quantity}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            Text(
+                              'Available: ${instrument.available}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            Text(
+                              'Borrowed: $borrowed',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _buildStatusChip(instrument.status),
+                        const SizedBox(height: 8),
+                        _buildRowActions(instrument, originalIndex),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
-    );
-  }
-
-  Widget _buildInstrumentList(List<Instrument> filteredInstruments) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      child: LayoutBuilder(
-        key: ValueKey('${_searchController.text}_$_page'),
-        builder: (context, constraints) {
-          final crossAxisCount = R.columns(
-            constraints.maxWidth,
-            xs: 2,
-            sm: 3,
-            md: 4,
-            lg: 5,
-          );
-          final layoutData = _calculateGridLayout(
-            constraints.maxWidth,
-            crossAxisCount,
-          );
-          final pageData = _getPageData(filteredInstruments);
-
-          if (pageData.items.isEmpty) {
-            return const Center(child: Text('No instruments found.'));
-          }
-
-          return Column(
-            children: [
-              Expanded(
-                child: _buildInstrumentGrid(
-                  pageData.items,
-                  crossAxisCount,
-                  layoutData.spacing,
-                  layoutData.childAspectRatio,
-                ),
-              ),
-              _buildPagination(pageData.totalPages),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  _GridLayoutData _calculateGridLayout(double maxWidth, int crossAxisCount) {
-    const spacing = 6.0;
-    const totalPadding = 32.0;
-    final itemWidth =
-        (maxWidth - totalPadding - (spacing * (crossAxisCount - 1))) /
-        crossAxisCount;
-    const fixedContentHeight = 64.0;
-    final cellHeight = (itemWidth / 1.77) + fixedContentHeight;
-    final childAspectRatio = (itemWidth / cellHeight).clamp(0.5, 1.0);
-    return _GridLayoutData(spacing, childAspectRatio);
-  }
-
-  _PageData _getPageData(List<Instrument> filteredInstruments) {
-    final totalPages = (filteredInstruments.length / _perPage).ceil();
-    final start = (_page * _perPage).clamp(0, filteredInstruments.length);
-    final end = (start + _perPage).clamp(0, filteredInstruments.length);
-    final items = filteredInstruments.sublist(start, end);
-    return _PageData(items, totalPages);
-  }
-
-  Widget _buildPagination(int totalPages) {
-    final w = MediaQuery.of(context).size.width;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Text(
-            'Page ${_page + 1} of ${totalPages == 0 ? 1 : totalPages}',
-            style: TextStyle(fontSize: R.text(12, w)),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton(
-            onPressed: _page > 0
-                ? () => setState(() {
-                    _page--;
-                  })
-                : null,
-            child: const Text('Prev'),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: _page < totalPages - 1
-                ? () => setState(() {
-                    _page++;
-                  })
-                : null,
-            child: const Text('Next'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -913,18 +999,6 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     _searchController.dispose();
     super.dispose();
   }
-}
-
-class _GridLayoutData {
-  final double spacing;
-  final double childAspectRatio;
-  _GridLayoutData(this.spacing, this.childAspectRatio);
-}
-
-class _PageData {
-  final List<Instrument> items;
-  final int totalPages;
-  _PageData(this.items, this.totalPages);
 }
 
 class _InstrumentFormControllers {
