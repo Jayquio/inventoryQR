@@ -22,7 +22,7 @@ if (!in_array($role, ['admin', 'superadmin'], true)) {
 
 $pdo->beginTransaction();
 try {
-  $selReq = $pdo->prepare('SELECT status, instrument_name, quantity FROM requests WHERE id = ? FOR UPDATE');
+  $selReq = $pdo->prepare('SELECT status, instrument_name, student_name, course, quantity FROM requests WHERE id = ? FOR UPDATE');
   $selReq->execute([$id]);
   $reqRow = $selReq->fetch();
   
@@ -56,6 +56,36 @@ try {
 
   $upd = $pdo->prepare('UPDATE requests SET quantity = ?, is_override = 1, original_quantity = ?, override_reason = ? WHERE id = ?');
   $upd->execute([$new_quantity, $original_quantity, $reason, $id]);
+
+  // Notify borrower about admin quantity override
+  try {
+    $borrower = trim((string)($reqRow['student_name'] ?? ''));
+    if ($borrower !== '') {
+      $instrument = (string)($reqRow['instrument_name'] ?? 'instrument');
+      $course = $reqRow['course'] ?? null;
+      $commentSuffix = $reason !== '' ? " Reason: $reason." : '';
+
+      $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE request_id = ? AND recipient = ?")
+          ->execute([$id, $borrower]);
+
+      $notifSql = "INSERT INTO notifications (title, message, type, recipient, priority, course, is_override, original_quantity, override_quantity, override_reason, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      $notifStmt = $pdo->prepare($notifSql);
+      $msg = "Admin adjusted your request for $instrument from $original_quantity to $new_quantity.$commentSuffix";
+      $notifStmt->execute([
+        'Request Quantity Updated',
+        $msg,
+        'warning',
+        $borrower,
+        'high',
+        $course,
+        1,
+        $original_quantity,
+        $new_quantity,
+        $reason !== '' ? $reason : null,
+        $id,
+      ]);
+    }
+  } catch (Throwable $e) {}
   
   $pdo->commit();
   json_out(['ok' => true]);

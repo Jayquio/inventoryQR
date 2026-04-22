@@ -38,14 +38,14 @@ function format_notification_timestamp(?string $sqlDatetime): string
 
 try {
     if ($recipient === 'Admin' || $recipient === 'Superadmin') {
-        $stmt = $pdo->prepare('SELECT * FROM notifications WHERE recipient IN (\'Admin\', \'All\') ORDER BY created_at DESC LIMIT ?');
-        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient IN ('Admin', 'All') ORDER BY created_at DESC LIMIT :limit");
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
     } else {
-        $stmt = $pdo->prepare('SELECT * FROM notifications WHERE recipient = :recipient OR recipient = \'All\' OR recipient = :username ORDER BY created_at DESC LIMIT ?');
+        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient = :recipient OR recipient = 'All' OR recipient = :username ORDER BY created_at DESC LIMIT :limit");
         $stmt->bindValue(':recipient', $recipient, PDO::PARAM_STR);
         $stmt->bindValue(':username', $username, PDO::PARAM_STR);
-        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
     }
 

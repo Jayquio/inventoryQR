@@ -59,54 +59,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         status: status,
         user: name,
       );
-
-      // 3. Create notification for the borrower
-      final req = originalRequests.firstWhere((r) => r['id'].toString() == id);
-      final instrumentName = req['instrumentName'] ?? 'instrument';
-      final studentUsername = req['studentName'];
-      final course = req['course'];
-      final isOverride = req['isOverride'] == 1 || req['isOverride'] == true;
-
-      if (status == 'approved') {
-        await ApiClient.instance.createNotification(
-          title: 'Request Approved',
-          message: 'Your request for $instrumentName has been approved.',
-          recipient: studentUsername,
-          type: 'success',
-          priority: 'high',
-          course: course,
-          isOverride: isOverride,
-          originalQuantity: req['originalQuantity'],
-          overrideQuantity: req['overrideQuantity'],
-          overrideReason: req['overrideReason'],
-          requestId: id,
-        );
-      } else if (status == 'rejected') {
-        await ApiClient.instance.createNotification(
-          title: 'Request Rejected',
-          message: 'Your request for $instrumentName has been rejected.',
-          recipient: studentUsername,
-          type: 'error',
-          priority: 'high',
-          course: course,
-          isOverride: isOverride,
-          originalQuantity: req['originalQuantity'],
-          overrideQuantity: req['overrideQuantity'],
-          overrideReason: req['overrideReason'],
-          requestId: id,
-        );
-      } else if (status == 'returned') {
-        await ApiClient.instance.createNotification(
-          title: 'Return Confirmed',
-          message: 'The return of $instrumentName has been confirmed.',
-          recipient: studentUsername,
-          type: 'info',
-          course: course,
-          requestId: id,
-        );
-      }
-
-      // 4. Refresh to be sure (quietly)
+      // Backend endpoint already writes borrower notifications for these statuses.
+      // 3. Refresh to be sure (quietly)
       await _load();
     } catch (e) {
       // Rollback if failed
