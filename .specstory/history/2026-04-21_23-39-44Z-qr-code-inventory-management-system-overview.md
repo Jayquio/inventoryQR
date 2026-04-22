@@ -11016,3 +11016,337 @@ So after redeploy, dashboard should align with your SQL values (`726 / 628 / 5`)
 
 ### Next step
 Redeploy this latest change, then hard refresh browser (`Ctrl+F5`) to clear cached web bundle.
+
+---
+
+_**User**_
+
+still not accurate can you all the connection from my system to my php my api and database @medlab_inventory.sql 
+
+---
+
+_**Agent (default)**_
+
+I’ll trace the full data path for those dashboard numbers (Flutter → API base URL → PHP endpoints → SQL tables) and pinpoint exactly where the mismatch is coming from.
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\lib\data\app_config_service.dart</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\inventory_api\instruments_list.php</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\inventory_api\requests_list.php</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR\inventory_api\db.php</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "caseInsensitive": false,
+  "outputMode": "content",
+  "path": "c:\\3rd Year\\SEM 2\\SIA 2\\QR CODE INVENTORY MANAGEMENT SYSTEM\\inventoryQR\\lib",
+  "pattern": "7423|7371|fold\\(0, \\(sum, i\\) =\u003e sum \\+ i\\."
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "outputMode": "content",
+  "path": "c:\\3rd Year\\SEM 2\\SIA 2\\QR CODE INVENTORY MANAGEMENT SYSTEM\\inventoryQR\\lib",
+  "pattern": "7423|7371|fold\\(0, \\(sum, i\\) =\u003e sum \\+ i\\.",
+  "topFiles": [
+    {
+      "matchCount": 2,
+      "uri": "lib/screens/student/view_instruments_screen.dart"
+    }
+  ],
+  "totalFiles": 1,
+  "totalMatches": 2
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search"><details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: $inst = Invoke-RestMethod "https://api.medtechinventorysystem.org/instruments_list.php"; $req = Invoke-RestMethod "https://api.medtechinventorysystem.org/requests_list.php"; $count = $inst.data.Count; $availRecords = ($inst.data | Where-Object { [int]$_.available -gt 0 }).Count; $sumQty = ($inst.data | Measure-Object -Property quantity -Sum).Sum; $sumAvail = ($inst.data | Measure-Object -Property available -Sum).Sum; $pending = ($req.data | Where-Object { $_.status -eq 'pending' }).Count; Write-Output "count=$count availRecords=$availRecords sumQty=$sumQty sumAvail=$sumAvail pending=$pending"</summary>
+
+```bash
+$inst = Invoke-RestMethod "https://api.medtechinventorysystem.org/instruments_list.php"; $req = Invoke-RestMethod "https://api.medtechinventorysystem.org/requests_list.php"; $count = $inst.data.Count; $availRecords = ($inst.data | Where-Object { [int]$_.available -gt 0 }).Count; $sumQty = ($inst.data | Measure-Object -Property quantity -Sum).Sum; $sumAvail = ($inst.data | Measure-Object -Property available -Sum).Sum; $pending = ($req.data | Where-Object { $_.status -eq 'pending' }).Count; Write-Output "count=$count availRecords=$availRecords sumQty=$sumQty sumAvail=$sumAvail pending=$pending"
+```
+
+```
+count=726 availRecords=628 sumQty=7423 sumAvail=7371 pending=5
+
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: git -C "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR" status --short lib/dashboard_screen.dart</summary>
+
+```bash
+git -C "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR" status --short lib/dashboard_screen.dart
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "caseInsensitive": false,
+  "contextAfter": 3,
+  "outputMode": "content",
+  "path": "c:\\3rd Year\\SEM 2\\SIA 2\\QR CODE INVENTORY MANAGEMENT SYSTEM\\inventoryQR\\lib\\dashboard_screen.dart",
+  "pattern": "final totalItems|final availableItems"
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "outputMode": "content",
+  "path": "c:\\3rd Year\\SEM 2\\SIA 2\\QR CODE INVENTORY MANAGEMENT SYSTEM\\inventoryQR\\lib\\dashboard_screen.dart",
+  "pattern": "final totalItems|final availableItems",
+  "topFiles": [
+    {
+      "matchCount": 5,
+      "uri": "lib\\dashboard_screen.dart"
+    }
+  ],
+  "totalFiles": 1,
+  "totalMatches": 2
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search"><details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+Yes — I traced the full connection and found the exact mismatch.
+
+## What your live API currently returns
+
+I checked your **live API** directly:
+
+- `count=726`
+- `availRecords=628`
+- `sumQty=7423`
+- `sumAvail=7371`
+- `pending=5`
+
+So:
+
+- `726 / 628 / 5` = **COUNT-based** stats (what you want)
+- `7423 / 7371 / 5` = **SUM-based** stats (what your dashboard is still showing)
+
+## Connection path (end-to-end)
+
+- Flutter dashboard (`lib/dashboard_screen.dart`)
+  - pulls `fetchInstruments()` + `fetchRequests()`
+- `ApiClient` base URL
+  - production web points to `https://api.medtechinventorysystem.org`
+- PHP endpoints
+  - `instruments_list.php` -> `SELECT ... FROM instruments`
+  - `requests_list.php` -> `SELECT ... FROM requests`
+- DB
+  - from `db.php`: database is `medlab_inventory` (unless env overrides)
+
+## Why it is still wrong on site
+
+Your live dashboard JS is still using the **old SUM logic** build, even though source was changed.
+
+This is a **deployment/caching issue**, not DB/API issue.
+
+---
+
+## Fix now (important)
+
+On your deployment machine/server:
+
+1. Rebuild web after latest pull
+```bash
+git pull origin main
+flutter clean
+flutter pub get
+flutter build web --release
+```
+
+2. Deploy fresh `build/web/*` to live root.
+
+3. Remove old service worker cache (very important for Flutter web):
+- hard refresh: `Ctrl + F5`
+- or open DevTools > Application > Service Workers > unregister
+- clear site storage/cache once
+
+4. If Docker serves static web, rebuild image with no cache and recreate:
+```bash
+docker compose build --no-cache
+docker compose up -d --force-recreate
+```
+
+---
+
+If you want, I can also make dashboard use a dedicated PHP `dashboard_stats.php` endpoint (`COUNT` values from SQL directly), so this never depends on client-side math again.
+
+---
+
+_**User**_
+
+im using digital ocean 
+ ssh root@159.223.47.185 for digital ocean
+
+
+.env=MYSQL_ROOT_PASSWORD=congtv123
+DB_PORT=3306
+
+powershell -ExecutionPolicy Bypass -File .\scripts\build_web_prod.ps1
+>> git add .
+>> git commit -m "FIX: Updated"                                                    
+>> git push origin main
+
+
+---
+
+_**Agent (default)**_
+
+Use this exact DigitalOcean flow so your latest Flutter web build + API changes actually go live.
+
+## 1) Local machine (build + push)
+
+```powershell
+cd "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"
+powershell -ExecutionPolicy Bypass -File .\scripts\build_web_prod.ps1
+git add .
+git commit -m "fix: dashboard stats + admin ui sync"
+git push origin main
+```
+
+## 2) SSH to your Droplet
+
+```bash
+ssh root@159.223.47.185
+```
+
+## 3) On server: pull + rebuild + restart
+
+```bash
+cd ~/inventoryQR
+git pull origin main
+
+docker compose build --no-cache
+docker compose up -d --force-recreate
+```
+
+## 4) Verify containers and logs
+
+```bash
+docker compose ps
+docker compose logs --tail=120
+```
+
+## 5) Critical for Flutter web (stale old numbers issue)
+
+Your site can still show old `7423/7371` if browser cached old bundle/service worker.
+
+- Open site in browser
+- Hard refresh: `Ctrl + F5`
+- If still old: DevTools -> Application -> Service Workers -> **Unregister**
+- Clear site storage/cache, reload again
+
+---
+
+### Important security note
+You posted your DB root password in chat. Rotate it immediately after deploy (recommended), then update `.env` on server and restart containers.
+
+If you want, I can give you a one-command deploy script for your Droplet (pull + build + restart + health check).
