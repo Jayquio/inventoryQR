@@ -1064,17 +1064,43 @@ class _InstrumentFormContent extends StatelessWidget {
     required this.setStateDialog,
   });
 
-  static const List<String> _categoryOptions = [
-    'Glassware',
-    'Measuring',
-    'Heating',
-    'Microscopy',
-    'Safety',
-    'Chemicals',
-    'Biology',
-    'Physics',
-    'Other',
-  ];
+  static const Map<String, List<String>> _categoryOptionsMap = {
+    'instrument': [
+      'Glassware',
+      'Measuring',
+      'Heating',
+      'Microscopy',
+      'Safety',
+      'Biology',
+      'Physics',
+      'Electronics',
+      'Other',
+    ],
+    'reagent': [
+      'Chemicals',
+      'Biological Reagents',
+      'Acids/Bases',
+      'Stains/Dyes',
+      'Solvents',
+      'Solutions',
+      'Other',
+    ],
+    'consumable': [
+      'Gloves/PPE',
+      'Syringes/Needles',
+      'Pipette Tips',
+      'Test Tubes',
+      'Cotton/Gauze',
+      'Cleaning Supplies',
+      'Stationery',
+      'Other',
+    ],
+  };
+
+  List<String> _getCategoryOptions(String type) {
+    return _categoryOptionsMap[type.toLowerCase()] ??
+        _categoryOptionsMap['instrument']!;
+  }
 
   static const List<String> _statusOptions = [
     'Available',
@@ -1105,7 +1131,7 @@ class _InstrumentFormContent extends StatelessWidget {
     final t = typeValue.toLowerCase();
     final isNoSerialType = t == 'reagent' || t == 'consumable';
     final categoryOptions = _optionsWithCurrent(
-      _categoryOptions,
+      _getCategoryOptions(typeValue),
       controllers.category.text,
     );
     final statusOptions = _optionsWithCurrent(
