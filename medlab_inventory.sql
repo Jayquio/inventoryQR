@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `instruments` (
-  `type` enum('instrument','reagent') NOT NULL DEFAULT 'instrument',
+  `type` enum('instrument','reagent','consumable') NOT NULL DEFAULT 'instrument',
   `id` int(11) NOT NULL,
   `name` varchar(128) NOT NULL,
   `serial_number` varchar(64) DEFAULT NULL,

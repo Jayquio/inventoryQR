@@ -429,6 +429,9 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                       _buildSearchFilter(),
                       const SizedBox(height: 16),
 
+                      // Global Bulk Actions (if multiple pending across all groups)
+                      _buildGlobalBulkActions(),
+
                       // Content
                       Expanded(
                         child: _loading
@@ -743,6 +746,57 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                 tooltip: 'Delete Record',
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlobalBulkActions() {
+    final pendingRequests = _filtered
+        .where((r) => r['status'].toString().toLowerCase() == 'pending')
+        .toList();
+
+    if (pendingRequests.length < 2) return const SizedBox.shrink();
+
+    final ids = pendingRequests.map((r) => r['id'].toString()).toList();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade100),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.bolt, color: Colors.orange.shade700, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Bulk Actions (${pendingRequests.length} pending items)',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.orange.shade900,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          _buildBatchActionButton(
+            ids,
+            'approved',
+            'Approve All',
+            Icons.done_all,
+            Colors.green.shade600,
+          ),
+          const SizedBox(width: 8),
+          _buildBatchActionButton(
+            ids,
+            'rejected',
+            'Reject All',
+            Icons.remove_done,
+            Colors.red.shade600,
           ),
         ],
       ),
