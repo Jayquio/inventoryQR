@@ -16,8 +16,8 @@ $lastMaintenance = trim($in['lastMaintenance'] ?? '');
 if ($name === '' || $quantity < 0 || $available < 0 || $available > $quantity) {
   json_out(['error' => 'invalid_fields'], 400);
 }
-if (!in_array($type, ['instrument','reagent'], true)) $type = 'instrument';
-if ($type === 'reagent') {
+if (!in_array($type, ['instrument','reagent','consumable'], true)) $type = 'instrument';
+if ($type === 'reagent' || $type === 'consumable') {
   $serialNumber = '';
 }
 

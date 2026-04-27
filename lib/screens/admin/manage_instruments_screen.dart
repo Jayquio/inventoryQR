@@ -432,8 +432,13 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   }
 
   Widget _buildTypeBadge(String type) {
-    final isReagent = type.toLowerCase() == 'reagent';
-    final color = isReagent ? Colors.orange : AppTheme.primaryColor;
+    final t = type.toLowerCase();
+    final isReagent = t == 'reagent';
+    final isConsumable = t == 'consumable';
+    final color = isReagent
+        ? Colors.orange
+        : (isConsumable ? Colors.purple : AppTheme.primaryColor);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -441,7 +446,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        isReagent ? 'Reagent' : 'Instrument',
+        isReagent ? 'Reagent' : (isConsumable ? 'Consumable' : 'Instrument'),
         style: TextStyle(
           color: color,
           fontSize: 11,
@@ -503,7 +508,10 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         color: AppTheme.primaryColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Icon(Icons.inventory_2_outlined, color: AppTheme.primaryColor),
+      child: const Icon(
+        Icons.inventory_2_outlined,
+        color: AppTheme.primaryColor,
+      ),
     );
   }
 
@@ -518,7 +526,8 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
           label: const Text('Edit'),
         ),
         OutlinedButton.icon(
-          onPressed: () => _showInstrumentDetails(context, instrument, originalIndex),
+          onPressed: () =>
+              _showInstrumentDetails(context, instrument, originalIndex),
           icon: const Icon(Icons.update, size: 16),
           label: const Text('Update'),
         ),
@@ -822,8 +831,14 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   }
 
   Widget _buildStatsRow() {
-    final totalInstruments = _instruments.fold<int>(0, (sum, i) => sum + i.quantity);
-    final availableInstruments = _instruments.fold<int>(0, (sum, i) => sum + i.available);
+    final totalInstruments = _instruments.fold<int>(
+      0,
+      (sum, i) => sum + i.quantity,
+    );
+    final availableInstruments = _instruments.fold<int>(
+      0,
+      (sum, i) => sum + i.available,
+    );
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -872,9 +887,13 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
             underline: const SizedBox(),
             icon: const Icon(Icons.filter_list, size: 20),
             items: const [
-              DropdownMenuItem(value: 'All', child: Text('Instruments and Reagent')),
+              DropdownMenuItem(
+                value: 'All',
+                child: Text('Instruments and Reagent'),
+              ),
               DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
               DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
+              DropdownMenuItem(value: 'consumable', child: Text('Consumable')),
             ],
             onChanged: (v) => setState(() => _typeFilter = v ?? 'All'),
           ),
@@ -909,10 +928,13 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 10),
           elevation: 0.3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () => _showInstrumentDetails(context, instrument, originalIndex),
+            onTap: () =>
+                _showInstrumentDetails(context, instrument, originalIndex),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -1085,7 +1107,8 @@ class _InstrumentFormContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isReagent = typeValue.toLowerCase() == 'reagent';
+    final t = typeValue.toLowerCase();
+    final isNoSerialType = t == 'reagent' || t == 'consumable';
     final categoryOptions = _optionsWithCurrent(
       _categoryOptions,
       controllers.category.text,
@@ -1107,6 +1130,7 @@ class _InstrumentFormContent extends StatelessWidget {
             items: const [
               DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
               DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
+              DropdownMenuItem(value: 'consumable', child: Text('Consumable')),
             ],
             onChanged: (v) => onTypeChanged(v ?? 'instrument'),
             decoration: const InputDecoration(labelText: 'Type'),
@@ -1136,14 +1160,14 @@ class _InstrumentFormContent extends StatelessWidget {
           // Serial Number input field, enabled only if not auto-generating
           TextField(
             controller: controllers.serialNumber,
-            enabled: !isReagent && !controllers.autoGenerateSerialNumber,
+            enabled: !isNoSerialType && !controllers.autoGenerateSerialNumber,
             decoration: InputDecoration(
-              labelText: isReagent
-                  ? 'Serial Number (not used for reagents)'
+              labelText: isNoSerialType
+                  ? 'Serial Number (not used for this type)'
                   : (controllers.autoGenerateSerialNumber
                         ? 'Serial Number (Auto-generated)'
                         : 'Serial Number'),
-              hintText: controllers.autoGenerateSerialNumber && !isReagent
+              hintText: controllers.autoGenerateSerialNumber && !isNoSerialType
                   ? 'Will be generated automatically'
                   : null,
             ),

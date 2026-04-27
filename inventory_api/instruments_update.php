@@ -17,7 +17,7 @@ $lastMaintenance = trim($in['lastMaintenance'] ?? '');
 if ($originalName === '' || $name === '' || $quantity < 0 || $available < 0 || $available > $quantity) {
   json_out(['error' => 'invalid_fields'], 400);
 }
-if (!in_array($type, ['instrument','reagent'], true)) $type = 'instrument';
+if (!in_array($type, ['instrument','reagent','consumable'], true)) $type = 'instrument';
 
 $sel = $pdo->prepare('SELECT name FROM instruments WHERE name = ?');
 $sel->execute([$originalName]);

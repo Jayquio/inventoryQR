@@ -22,23 +22,31 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
 
   // --- UI State ---
   String _search = '';
-  int _selectedTab = 0; // 0=All, 1=Glasswares, 2=Machines, 3=Chemicals
+  int _selectedTab =
+      0; // 0=All, 1=Glasswares, 2=Machines, 3=Chemicals, 4=Consumables
   bool _isGridView = false; // Default to List View (Order/List)
 
   late TabController _tabController;
 
-  static const _tabs = ['All Items', 'Glasswares', 'Machines', 'Chemicals'];
+  static const _tabs = [
+    'All Items',
+    'Glasswares',
+    'Machines',
+    'Chemicals',
+    'Consumables',
+  ];
   static const _tabIcons = [
     Icons.inventory_2_outlined,
     Icons.science_outlined,
     Icons.precision_manufacturing_outlined,
     Icons.biotech_outlined,
+    Icons.shopping_basket_outlined,
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() => _selectedTab = _tabController.index);
@@ -109,6 +117,12 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
         baseList = _dbInstruments.where((i) {
           final cat = i.category.toLowerCase();
           return cat.contains('chemical') || cat.contains('reagent');
+        }).toList();
+        break;
+      case 4: // Consumables
+        baseList = _dbInstruments.where((i) {
+          final t = i.type.toLowerCase();
+          return t == 'consumable';
         }).toList();
         break;
       default:
@@ -751,7 +765,10 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
                         padding: EdgeInsets.zero,
                         elevation: 0,
                       ),
-                      child: const Text('Request', style: TextStyle(fontSize: 12)),
+                      child: const Text(
+                        'Request',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                   ),
                 ],
@@ -769,9 +786,8 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (available ? Colors.green : Colors.red).withValues(
-                          alpha: 0.3,
-                        ),
+                        color: (available ? Colors.green : Colors.red)
+                            .withValues(alpha: 0.3),
                         blurRadius: 4,
                       ),
                     ],
@@ -793,8 +809,10 @@ class _ViewInstrumentsScreenState extends State<ViewInstrumentsScreen>
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          if (inst.category.isNotEmpty) _miniPill(inst.category),
-                          if (inst.category.isNotEmpty) const SizedBox(width: 6),
+                          if (inst.category.isNotEmpty)
+                            _miniPill(inst.category),
+                          if (inst.category.isNotEmpty)
+                            const SizedBox(width: 6),
                           if (inst.serialNumber != null &&
                               inst.serialNumber!.isNotEmpty)
                             _miniPill('S/N: ${inst.serialNumber}'),
