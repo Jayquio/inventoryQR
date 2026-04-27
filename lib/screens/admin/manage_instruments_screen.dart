@@ -737,16 +737,19 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
     int qty,
     int avail,
   ) {
-    final normalizedType = type.toLowerCase() == 'reagent'
-        ? 'reagent'
-        : 'instrument';
+    final normalizedType = switch (type.toLowerCase()) {
+      'reagent' => 'reagent',
+      'consumable' => 'consumable',
+      _ => 'instrument',
+    };
     String? finalSerialNumber;
 
-    if (normalizedType == 'reagent') {
-      finalSerialNumber = null; // Reagents don't use serial numbers
+    if (normalizedType == 'reagent' || normalizedType == 'consumable') {
+      finalSerialNumber =
+          null; // Reagents and Consumables don't use serial numbers
     } else if (controllers.autoGenerateSerialNumber ||
         controllers.serialNumber.text.trim().isEmpty) {
-      // Generate if auto-generate is checked OR if field is empty (and not a reagent)
+      // Generate if auto-generate is checked OR if field is empty (and not a reagent/consumable)
       finalSerialNumber = _generateSerialNumber(controllers.name.text.trim());
     } else {
       // Use manual input if provided and auto-generate is not checked
@@ -757,7 +760,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       type: normalizedType,
       name: controllers.name.text.trim(),
       serialNumber: finalSerialNumber,
-      category: normalizedType == 'reagent' ? 'Reagent' : 'Instrument',
+      category: controllers.category.text.trim(),
       quantity: qty,
       available: avail,
       status: controllers.status.text.trim(),

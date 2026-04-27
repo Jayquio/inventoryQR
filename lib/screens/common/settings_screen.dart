@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../data/auth_service.dart';
 import '../../data/notification_service.dart';
+import '../../data/api_client.dart';
 import '../../core/theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -15,8 +16,14 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _nameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _saving = false;
   bool _saved = false;
+  bool _changingPassword = false;
+  bool _passwordChanged = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -27,6 +34,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -43,6 +52,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _saved = false);
     });
+  }
+
+  Future<void> _changePassword() async {
+    final pass = _passwordController.text.trim();
+    final confirm = _confirmPasswordController.text.trim();
+
+    if (pass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a new password')),
+      );
+      return;
+    }
+
+    if (pass != confirm) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      return;
+    }
+
+    setState(() => _changingPassword = true);
+
+    try {
+      await ApiClient.instance.updateUser(
+        username: AuthService.instance.currentUsername,
+        password: pass,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _changingPassword = false;
+        _passwordChanged = true;
+        _passwordController.clear();
+        _confirmPasswordController.clear();
+      });
+
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _passwordChanged = false);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password changed successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _changingPassword = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to change password: $e')));
+    }
   }
 
   @override
@@ -67,8 +126,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back,
-                      color: Colors.white70, size: 22),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white70,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Icon(Icons.settings, color: Colors.white, size: 22),
@@ -98,7 +160,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Card(
                         elevation: 0.5,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
@@ -106,8 +169,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.person,
-                                      size: 18, color: Colors.grey.shade600),
+                                  Icon(
+                                    Icons.person,
+                                    size: 18,
+                                    color: Colors.grey.shade600,
+                                  ),
                                   const SizedBox(width: 8),
                                   const Text(
                                     'Profile',
@@ -122,8 +188,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(height: 16),
 
                               // Full Name
-                              const Text('Full Name',
-                                  style: TextStyle(fontSize: 13)),
+                              const Text(
+                                'Full Name',
+                                style: TextStyle(fontSize: 13),
+                              ),
                               const SizedBox(height: 4),
                               TextField(
                                 controller: _nameController,
@@ -132,28 +200,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(height: 12),
 
                               // Email
-                              const Text('Email',
-                                  style: TextStyle(fontSize: 13)),
+                              const Text(
+                                'Email',
+                                style: TextStyle(fontSize: 13),
+                              ),
                               const SizedBox(height: 4),
                               TextField(
                                 enabled: false,
                                 decoration: _inputDecor(
-                                    email.isNotEmpty ? email : 'No email'),
-                                style:
-                                    const TextStyle(color: Color(0xFF9CA3AF)),
+                                  email.isNotEmpty ? email : 'No email',
+                                ),
+                                style: const TextStyle(
+                                  color: Color(0xFF9CA3AF),
+                                ),
                               ),
                               const SizedBox(height: 12),
 
                               // Role
-                              const Text('Role',
-                                  style: TextStyle(fontSize: 13)),
+                              const Text(
+                                'Role',
+                                style: TextStyle(fontSize: 13),
+                              ),
                               const SizedBox(height: 4),
                               TextField(
                                 enabled: false,
                                 decoration: _inputDecor(
-                                    '${role[0].toUpperCase()}${role.substring(1)}'),
-                                style:
-                                    const TextStyle(color: Color(0xFF9CA3AF)),
+                                  '${role[0].toUpperCase()}${role.substring(1)}',
+                                ),
+                                style: const TextStyle(
+                                  color: Color(0xFF9CA3AF),
+                                ),
                               ),
                               const SizedBox(height: 16),
 
@@ -172,12 +248,137 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           ),
                                         )
                                       : _saved
-                                          ? const Icon(Icons.check_circle,
-                                              size: 16)
-                                          : const Icon(Icons.save, size: 16),
+                                      ? const Icon(Icons.check_circle, size: 16)
+                                      : const Icon(Icons.save, size: 16),
                                   label: Text(
-                                      _saved ? 'Saved!' : 'Save Changes',
-                                      style: const TextStyle(fontSize: 13)),
+                                    _saved ? 'Saved!' : 'Save Changes',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Security Card
+                      Card(
+                        elevation: 0.5,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.lock_outline,
+                                    size: 18,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Security',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF374151),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // New Password
+                              const Text(
+                                'New Password',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                decoration: _inputDecor('Enter new password')
+                                    .copyWith(
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                          size: 18,
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _obscurePassword =
+                                              !_obscurePassword,
+                                        ),
+                                      ),
+                                    ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Confirm Password
+                              const Text(
+                                'Confirm New Password',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: _confirmPasswordController,
+                                obscureText: _obscureConfirmPassword,
+                                decoration: _inputDecor('Confirm new password')
+                                    .copyWith(
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscureConfirmPassword
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                          size: 18,
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _obscureConfirmPassword =
+                                              !_obscureConfirmPassword,
+                                        ),
+                                      ),
+                                    ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Change Password button
+                              SizedBox(
+                                height: 40,
+                                child: ElevatedButton.icon(
+                                  onPressed: _changingPassword
+                                      ? null
+                                      : _changePassword,
+                                  icon: _changingPassword
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : _passwordChanged
+                                      ? const Icon(Icons.check_circle, size: 16)
+                                      : const Icon(Icons.vpn_key, size: 16),
+                                  label: Text(
+                                    _passwordChanged
+                                        ? 'Password Changed!'
+                                        : 'Update Password',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppTheme.primaryColor,
                                     foregroundColor: Colors.white,
@@ -197,7 +398,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Card(
                         elevation: 0.5,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
@@ -239,8 +441,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               (route) => false,
                             );
                           },
-                          icon: Icon(Icons.logout,
-                              size: 18, color: Colors.red.shade600),
+                          icon: Icon(
+                            Icons.logout,
+                            size: 18,
+                            color: Colors.red.shade600,
+                          ),
                           label: Text(
                             'Sign Out',
                             style: TextStyle(color: Colors.red.shade600),
@@ -268,14 +473,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
-        Text(value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF374151),
-            )),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF374151),
+          ),
+        ),
       ],
     );
   }
@@ -286,8 +495,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
       filled: true,
       fillColor: const Color(0xFFF9FAFB),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: Colors.grey.shade300),
