@@ -37,18 +37,10 @@ if (empty($items)) {
     json_out(['error' => 'missing_items', 'message' => 'At least one item is required'], 400);
 }
 
-// Course validation
+// Course validation - Flexible: allow any course provided
 if ($course !== '') {
-    $allowedCourses = [
-        'BS Pharmacy',
-        'BS Biology',
-        'BS Radiologic Technology',
-        'BS Medical Technology/Medical Laboratory Science',
-        'BS Nursing',
-    ];
-    if (!in_array($course, $allowedCourses, true)) {
-        json_out(['error' => 'invalid_course'], 400);
-    }
+    // We no longer restrict to a hardcoded list. 
+    // This allows the system to grow as new courses are added.
 }
 
 // Date validation

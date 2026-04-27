@@ -75,6 +75,39 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     }
   }
 
+  Future<void> _actionBatch(List<String> ids, String status) async {
+    final originalRequests = List<Map<String, dynamic>>.from(_requests);
+    final name = AuthService.instance.currentUsername;
+
+    setState(() {
+      _actioning = 'batch_$status';
+      for (final id in ids) {
+        final idx = _requests.indexWhere((r) => r['id'].toString() == id);
+        if (idx != -1) {
+          _requests[idx] = {..._requests[idx], 'status': status};
+        }
+      }
+    });
+
+    try {
+      await ApiClient.instance.updateBatchStatus(
+        ids: ids,
+        status: status,
+        user: name,
+      );
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _requests = originalRequests);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update batch: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _actioning = null);
+    }
+  }
+
   void _showOverrideDialog(Map<String, dynamic> req) {
     final id = (req['id'] ?? '').toString();
     final currentQty = int.tryParse((req['quantity'] ?? '1').toString()) ?? 1;
@@ -487,6 +520,50 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                     ],
                   ),
                 ),
+                // Batch Actions (Only show if there are multiple pending items)
+                if (items.length > 1 &&
+                    items.any(
+                      (r) => r['status'].toString().toLowerCase() == 'pending',
+                    ))
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton.icon(
+                        onPressed: _actioning != null
+                            ? null
+                            : () => _actionBatch(
+                                items.map((r) => r['id'].toString()).toList(),
+                                'approved',
+                              ),
+                        icon: const Icon(
+                          Icons.done_all,
+                          size: 16,
+                          color: Colors.green,
+                        ),
+                        label: const Text(
+                          'Approve All',
+                          style: TextStyle(fontSize: 11, color: Colors.green),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _actioning != null
+                            ? null
+                            : () => _actionBatch(
+                                items.map((r) => r['id'].toString()).toList(),
+                                'rejected',
+                              ),
+                        icon: const Icon(
+                          Icons.remove_done,
+                          size: 16,
+                          color: Colors.red,
+                        ),
+                        label: const Text(
+                          'Reject All',
+                          style: TextStyle(fontSize: 11, color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
                 if (first['neededAt'] != null)
                   Text(
                     'Needed by: ${first['neededAt']}',

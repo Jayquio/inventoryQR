@@ -822,10 +822,8 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
   }
 
   Widget _buildStatsRow() {
-    final totalInstruments = _instruments.length;
-    final availableInstruments = _instruments
-        .where((i) => i.available > 0)
-        .length;
+    final totalInstruments = _instruments.fold<int>(0, (sum, i) => sum + i.quantity);
+    final availableInstruments = _instruments.fold<int>(0, (sum, i) => sum + i.available);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),

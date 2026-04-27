@@ -37,6 +37,20 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
   String _course = '';
   String _neededAt = '';
 
+  final List<String> _courseOptions = [
+    'BS Pharmacy',
+    'BS Biology',
+    'BS Radiologic Technology',
+    'BS Medical Technology/Medical Laboratory Science',
+    'BS Nursing',
+    'BSMLS',
+    'BSMT',
+    'BS RadTech',
+    'BS Pharma',
+    'BS Bio',
+    'BSN',
+  ];
+
   // --- Borrow list ---
   final List<Map<String, dynamic>> _borrowList = [];
   List<String> _submitResults = [];
@@ -195,8 +209,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         NotificationItem(
           id: 'request_${DateTime.now().microsecondsSinceEpoch}',
           title: 'Requests Submitted',
-          message:
-              'You submitted a request for ${_borrowList.length} item(s)',
+          message: 'You submitted a request for ${_borrowList.length} item(s)',
           type: 'success',
           timestamp: nowIso,
           recipient: role,
@@ -612,10 +625,29 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                     style: TextStyle(fontSize: 13),
                                   ),
                                   const SizedBox(height: 4),
-                                  TextFormField(
-                                    controller: _courseController,
-                                    decoration: _inputDecor(''),
-                                    onSaved: (v) => _course = v ?? '',
+                                  DropdownButtonFormField<String>(
+                                    value: _course.isEmpty ? null : _course,
+                                    items: _courseOptions.map((c) {
+                                      return DropdownMenuItem(
+                                        value: c,
+                                        child: Text(
+                                          c,
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      );
+                                    }).toList(),
+                                    decoration: _inputDecor(
+                                      'Select your course',
+                                    ),
+                                    onChanged: (v) {
+                                      setState(() {
+                                        _course = v ?? '';
+                                        _courseController.text = _course;
+                                      });
+                                    },
+                                    validator: (v) => v == null || v.isEmpty
+                                        ? 'Required'
+                                        : null,
                                   ),
                                   const SizedBox(height: 16),
                                   const Text(
@@ -630,10 +662,9 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
                                         decoration: _inputDecor(
                                           _neededAt.isEmpty
                                               ? 'Select date & time'
-                                              : DateTimeUtils
-                                                  .formatNeededByForDisplay(
-                                                    _neededAt,
-                                                  ),
+                                              : DateTimeUtils.formatNeededByForDisplay(
+                                                  _neededAt,
+                                                ),
                                         ),
                                       ),
                                     ),
@@ -1094,7 +1125,11 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
   Future<void> _pickNeededBy() async {
     final firstAllowed = DateTimeUtils.firstAllowedNeededByDay();
-    final lastDate = DateTime(firstAllowed.year + 1, firstAllowed.month, firstAllowed.day);
+    final lastDate = DateTime(
+      firstAllowed.year + 1,
+      firstAllowed.month,
+      firstAllowed.day,
+    );
     DateTime initialDate = firstAllowed;
     final existing = DateTimeUtils.tryParseFlexible(_neededAt);
     if (existing != null && !existing.isBefore(firstAllowed)) {
@@ -1108,7 +1143,8 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     );
     if (date == null || !mounted) return;
     final existingTime = DateTimeUtils.tryParseFlexible(_neededAt);
-    final initialTod = existingTime != null && !existingTime.isBefore(firstAllowed)
+    final initialTod =
+        existingTime != null && !existingTime.isBefore(firstAllowed)
         ? TimeOfDay(hour: existingTime.hour, minute: existingTime.minute)
         : const TimeOfDay(hour: 9, minute: 0);
     final time = await showTimePicker(
@@ -1117,7 +1153,13 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
     );
     if (!mounted) return;
     final t = time ?? initialTod;
-    final combined = DateTime(date.year, date.month, date.day, t.hour, t.minute);
+    final combined = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      t.hour,
+      t.minute,
+    );
     setState(() {
       _neededAt =
           '${combined.year}-${combined.month.toString().padLeft(2, '0')}-${combined.day.toString().padLeft(2, '0')} '

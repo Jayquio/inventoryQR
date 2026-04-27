@@ -11350,3 +11350,169 @@ Your site can still show old `7423/7371` if browser cached old bundle/service wo
 You posted your DB root password in chat. Rotate it immediately after deploy (recommended), then update `.env` on server and restart containers.
 
 If you want, I can give you a one-command deploy script for your Droplet (pull + build + restart + health check).
+
+---
+
+_**User**_
+
+@c:\Users\USER\.cursor\projects\c-3rd-Year-SEM-2-SIA-2-QR-CODE-INVENTORY-MANAGEMENT-SYSTEM-inventoryQR\terminals\4.txt:80-251 
+
+---
+
+_**Agent (default)**_
+
+The logs you shared (`4.txt:80-251`) show **containers are healthy**, but they do **not** confirm that the latest dashboard code is inside the running `web` image.
+
+### What the log proves
+- `api`, `db`, `web`, `nginx` all started successfully.
+- No runtime crash.
+
+### What it does **not** prove
+- That the updated Flutter build (COUNT logic) was actually deployed.
+
+---
+
+Run these on the Droplet now to verify the exact version:
+
+```bash
+cd ~/inventoryQR
+git log -1 --oneline
+git status
+```
+
+Then force rebuild and ensure new static files are used:
+
+```bash
+docker compose down
+docker compose build --no-cache web nginx
+docker compose up -d --force-recreate
+docker compose ps
+```
+
+Then clear browser cache/service worker (very important for Flutter web):
+- `Ctrl + F5`
+- DevTools -> Application -> Service Workers -> Unregister
+- Clear site storage
+
+---
+
+If still showing `7423/7371`, then your server code is still old. Check directly on server:
+
+```bash
+grep -n "final totalItems" ~/inventoryQR/lib/dashboard_screen.dart
+grep -n "final availableItems" ~/inventoryQR/lib/dashboard_screen.dart
+```
+
+It should show:
+
+- `totalItems = _instruments.length`
+- `availableItems = _instruments.where((i) => i.available > 0).length`
+
+If you want, paste the outputs of these 4 commands and I’ll tell you exactly where it’s stuck.
+
+---
+
+_**User**_
+
+@c:\Users\USER\.cursor\projects\c-3rd-Year-SEM-2-SIA-2-QR-CODE-INVENTORY-MANAGEMENT-SYSTEM-inventoryQR\terminals\4.txt:251-264 
+
+---
+
+_**Agent (default)**_
+
+Great, this confirms your Droplet is on the correct commit.  
+So the issue is now almost certainly **served frontend cache / old web bundle**, not git sync.
+
+I’ll give you quick commands to verify what bundle is actually being served, then force-refresh it.Perfect — this output proves:
+
+- Server is on latest commit `3abdcb3`
+- Branch is synced with `origin/main`
+
+So your **code is updated on server**.  
+If UI still shows `7423 / 7371`, the problem is almost certainly **old Flutter web files being served/cached**.
+
+## Do this exact sequence on server
+
+```bash
+cd ~/inventoryQR
+
+# 1) Rebuild Flutter web artifact locally in repo (important)
+# If Flutter is available on server:
+flutter clean
+flutter pub get
+flutter build web --release
+
+# 2) Rebuild containers using latest web artifact
+docker compose down
+docker compose build --no-cache web nginx
+docker compose up -d --force-recreate
+```
+
+## Then in browser (critical)
+
+1. Open `medtechinventorysystem.org`
+2. Press `Ctrl + Shift + R`
+3. If still old:
+   - DevTools -> Application -> Service Workers -> **Unregister**
+   - Clear Storage -> **Clear site data**
+   - Reload
+
+---
+
+## Quick check if source is correct on server
+
+Run:
+
+```bash
+grep -n "final totalItems" ~/inventoryQR/lib/dashboard_screen.dart
+grep -n "final availableItems" ~/inventoryQR/lib/dashboard_screen.dart
+```
+
+Expected lines:
+- `final totalItems = _instruments.length;`
+- `final availableItems = _instruments.where((i) => i.available > 0).length;`
+
+If those lines are present (they should be), then only cached/old web bundle remains.
+
+If you want, next message I can give you a **single one-liner deploy command** for your Droplet to avoid this issue every update.
+
+---
+
+_**User**_
+
+@c:\Users\USER\.cursor\projects\c-3rd-Year-SEM-2-SIA-2-QR-CODE-INVENTORY-MANAGEMENT-SYSTEM-inventoryQR\terminals\4.txt:268-277 
+
+---
+
+_**Agent (default)**_
+
+Exactly — that confirms it: your Droplet **cannot build Flutter**, so it can only deploy whatever is already in git (`build/web` files).
+
+## What to do now (correct flow for your setup)
+
+### 1) On your local machine (with Flutter installed)
+```powershell
+cd "c:\3rd Year\SEM 2\SIA 2\QR CODE INVENTORY MANAGEMENT SYSTEM\inventoryQR"
+powershell -ExecutionPolicy Bypass -File .\scripts\build_web_prod.ps1
+
+git add build/web lib/dashboard_screen.dart
+git commit -m "fix: dashboard stats count-based web build"
+git push origin main
+```
+
+### 2) On DigitalOcean server
+```bash
+cd ~/inventoryQR
+git pull origin main
+docker compose build --no-cache web nginx
+docker compose up -d --force-recreate
+```
+
+### 3) Browser cache reset (very important)
+- `Ctrl + Shift + R`
+- If still stale: DevTools → Application → Service Workers → **Unregister**
+- Clear site data and reload
+
+---
+
+You are very close — the missing step was: **rebuild Flutter web locally and push updated `build/web`** (since server has no Flutter).

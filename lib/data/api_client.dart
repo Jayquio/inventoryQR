@@ -304,12 +304,24 @@ class ApiClient {
     final res = await http
         .post(uri, headers: _jsonHeaders, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 15));
-    if (res.statusCode != 200) {
-      final body = _safeDecode(res.body);
-      final msg = body is Map
-          ? (body['error'] ?? 'update_failed')
-          : 'update_failed';
-      throw Exception(msg.toString());
+    final body = _safeDecode(res.body);
+    if (res.statusCode == 200 && body is Map && body['ok'] == true) {
+      return;
+    }
+    final msg = body is Map
+        ? (body['error'] ?? 'update_failed')
+        : 'update_failed';
+    final details = body is Map ? body['details'] : null;
+    throw Exception(details != null ? '$msg: $details' : msg.toString());
+  }
+
+  Future<void> updateBatchStatus({
+    required List<String> ids,
+    required String status,
+    required String user,
+  }) async {
+    for (final id in ids) {
+      await updateRequestStatus(id: id, status: status, user: user);
     }
   }
 
@@ -346,10 +358,14 @@ class ApiClient {
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       final body = _safeDecode(res.body);
-      final msg = body is Map
-          ? (body['error'] ?? 'request_failed')
-          : 'request_failed';
-      throw Exception(msg.toString());
+      String msg = 'request_failed';
+      if (body is Map) {
+        msg = body['error'] ?? 'request_failed';
+        if (msg == 'server_error' && body['details'] != null) {
+          msg = 'server_error: ${body['details']}';
+        }
+      }
+      throw Exception(msg);
     }
   }
 

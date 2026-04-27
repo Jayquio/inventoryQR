@@ -34,6 +34,12 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
     'BS Radiologic Technology',
     'BS Medical Technology/Medical Laboratory Science',
     'BS Nursing',
+    'BSMLS',
+    'BSMT',
+    'BS RadTech',
+    'BS Pharma',
+    'BS Bio',
+    'BSN',
   ];
 
   @override
