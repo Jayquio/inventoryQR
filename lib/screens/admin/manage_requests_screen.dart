@@ -501,13 +501,29 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        items.length > 1 ? 'Batch: $studentName' : studentName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade700,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              items.length > 1
+                                  ? 'Batch: $studentName'
+                                  : studentName,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ),
+                          if (first['neededAt'] != null)
+                            Text(
+                              'Needed by: ${first['neededAt']}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                        ],
                       ),
                       if (isRealBatch)
                         Text(
@@ -517,58 +533,38 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                             color: Colors.grey.shade500,
                           ),
                         ),
+                      // Batch Actions (Only show if there are multiple pending items)
+                      if (items.length > 1 &&
+                          items.any(
+                            (r) =>
+                                r['status'].toString().toLowerCase() ==
+                                'pending',
+                          ))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              _buildBatchActionButton(
+                                items.map((r) => r['id'].toString()).toList(),
+                                'approved',
+                                'Approve All',
+                                Icons.done_all,
+                                Colors.green.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              _buildBatchActionButton(
+                                items.map((r) => r['id'].toString()).toList(),
+                                'rejected',
+                                'Reject All',
+                                Icons.remove_done,
+                                Colors.red.shade600,
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                // Batch Actions (Only show if there are multiple pending items)
-                if (items.length > 1 &&
-                    items.any(
-                      (r) => r['status'].toString().toLowerCase() == 'pending',
-                    ))
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton.icon(
-                        onPressed: _actioning != null
-                            ? null
-                            : () => _actionBatch(
-                                items.map((r) => r['id'].toString()).toList(),
-                                'approved',
-                              ),
-                        icon: const Icon(
-                          Icons.done_all,
-                          size: 16,
-                          color: Colors.green,
-                        ),
-                        label: const Text(
-                          'Approve All',
-                          style: TextStyle(fontSize: 11, color: Colors.green),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _actioning != null
-                            ? null
-                            : () => _actionBatch(
-                                items.map((r) => r['id'].toString()).toList(),
-                                'rejected',
-                              ),
-                        icon: const Icon(
-                          Icons.remove_done,
-                          size: 16,
-                          color: Colors.red,
-                        ),
-                        label: const Text(
-                          'Reject All',
-                          style: TextStyle(fontSize: 11, color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                if (first['neededAt'] != null)
-                  Text(
-                    'Needed by: ${first['neededAt']}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  ),
               ],
             ),
           ),
@@ -616,6 +612,42 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBatchActionButton(
+    List<String> ids,
+    String status,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
+    return InkWell(
+      onTap: _actioning != null ? null : () => _actionBatch(ids, status),
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
