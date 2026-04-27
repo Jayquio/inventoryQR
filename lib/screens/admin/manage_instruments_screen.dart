@@ -887,7 +887,7 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
             items: const [
               DropdownMenuItem(
                 value: 'All',
-                child: Text('Instruments and Reagent'),
+                child: Text('All'),
               ),
               DropdownMenuItem(value: 'instrument', child: Text('Instrument')),
               DropdownMenuItem(value: 'reagent', child: Text('Reagent')),
