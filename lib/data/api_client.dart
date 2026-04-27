@@ -172,6 +172,48 @@ class ApiClient {
     throw Exception(msg.toString());
   }
 
+  Future<void> createAuditLog({
+    required String username,
+    required String userRole,
+    required String action,
+    required String type,
+    required String details,
+  }) async {
+    final uri = Uri.parse('${_baseUrl()}/audit_log_create.php');
+    final res = await http
+        .post(
+          uri,
+          headers: _jsonHeaders,
+          body: jsonEncode({
+            'username': username,
+            'user_role': userRole,
+            'action': action,
+            'type': type,
+            'details': details,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
+    if (res.statusCode != 200) {
+      final body = _safeDecode(res.body);
+      final msg = body is Map ? (body['error'] ?? 'audit_failed') : 'audit_failed';
+      throw Exception(msg.toString());
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAuditLogs() async {
+    final uri = Uri.parse('${_baseUrl()}/audit_log_list.php');
+    final res = await http
+        .get(uri, headers: _authHeaders)
+        .timeout(const Duration(seconds: 15));
+    final body = _safeDecode(res.body);
+    if (res.statusCode == 200 && body is Map && body['ok'] == true) {
+      final data = (body['data'] as List? ?? []);
+      return data.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+    }
+    final msg = body is Map ? (body['error'] ?? 'load_failed') : 'load_failed';
+    throw Exception(msg.toString());
+  }
+
   Future<bool> ping() async {
     final uri = Uri.parse('${_baseUrl()}/ping.php');
     final res = await http

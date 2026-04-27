@@ -26,13 +26,18 @@ class QrCodeService {
     switch (type) {
       case QrType.borrow:
         if (!AuthService.instance.isAllowedBorrow()) {
-          throw QrPermissionException('Only Students/Teachers can generate BORROW QR codes');
+          throw QrPermissionException(
+            'Only Students/Teachers can generate BORROW QR codes',
+          );
         }
         break;
       case QrType.receive:
       case QrType.returnItem:
-        if (AuthService.instance.currentRole != UserRole.admin && AuthService.instance.currentRole != UserRole.superadmin) {
-          throw QrPermissionException('Only Admin/Superadmin can generate RECEIVE/RETURN QR codes');
+        if (AuthService.instance.currentRole != UserRole.admin &&
+            AuthService.instance.currentRole != UserRole.superadmin) {
+          throw QrPermissionException(
+            'Only Admin/Superadmin can generate RECEIVE/RETURN QR codes',
+          );
         }
         break;
     }
@@ -41,7 +46,7 @@ class QrCodeService {
       QrType.receive => 'receive',
       QrType.returnItem => 'return',
     };
-    
+
     var payload = 'QR|type=$typeStr;name=$instrumentName';
     if (course != null && course.isNotEmpty) {
       payload += ';course=$course';
@@ -53,6 +58,7 @@ class QrCodeService {
     AuditLogService.instance.addEntry(
       AuditLogEntry(
         timestamp: DateTime.now(),
+        username: AuthService.instance.currentUsername,
         userRole: role.name,
         action: 'GENERATE_QR',
         type: typeStr,
@@ -62,7 +68,10 @@ class QrCodeService {
     return payload;
   }
 
-  String buildPayloadForPrint({required QrType type, required String instrumentName}) {
+  String buildPayloadForPrint({
+    required QrType type,
+    required String instrumentName,
+  }) {
     final typeStr = switch (type) {
       QrType.borrow => 'borrow',
       QrType.receive => 'receive',
@@ -73,6 +82,7 @@ class QrCodeService {
     AuditLogService.instance.addEntry(
       AuditLogEntry(
         timestamp: DateTime.now(),
+        username: AuthService.instance.currentUsername,
         userRole: role.name,
         action: 'GENERATE_QR_PRINT',
         type: typeStr,
@@ -88,6 +98,7 @@ class QrCodeService {
     AuditLogService.instance.addEntry(
       AuditLogEntry(
         timestamp: DateTime.now(),
+        username: AuthService.instance.currentUsername,
         userRole: role.name,
         action: 'GENERATE_INSTR_LABEL',
         type: 'label',
@@ -105,6 +116,7 @@ class QrCodeService {
     AuditLogService.instance.addEntry(
       AuditLogEntry(
         timestamp: DateTime.now(),
+        username: AuthService.instance.currentUsername,
         userRole: role.name,
         action: 'GENERATE_USER_QR',
         type: 'user',
@@ -121,6 +133,7 @@ class QrCodeService {
     AuditLogService.instance.addEntry(
       AuditLogEntry(
         timestamp: DateTime.now(),
+        username: AuthService.instance.currentUsername,
         userRole: currentRole.name,
         action: 'GENERATE_USER_QR_FOR',
         type: 'user',

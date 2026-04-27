@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'data/api_client.dart';
 import 'data/auth_service.dart';
 import 'data/notification_service.dart';
+import 'data/audit_log_service.dart';
 import 'models/instrument.dart';
 import 'core/theme.dart';
 import 'core/constants.dart';
@@ -30,14 +31,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _load() async {
     try {
+      // Load audit logs for admin/superadmin
+      if (_isAdmin) {
+        AuditLogService.instance.fetchFromServer();
+      }
+
       final instruments = await ApiClient.instance.fetchInstruments();
       List<Map<String, dynamic>> requests = [];
       try {
         final role = AuthService.instance.currentRole;
-        final studentName = (role == UserRole.admin || role == UserRole.superadmin) 
-            ? null 
+        final studentName =
+            (role == UserRole.admin || role == UserRole.superadmin)
+            ? null
             : AuthService.instance.currentUsername;
-        requests = await ApiClient.instance.fetchRequests(studentName: studentName);
+        requests = await ApiClient.instance.fetchRequests(
+          studentName: studentName,
+        );
       } catch (e) {
         debugPrint('Error fetching requests: $e');
       }
@@ -77,7 +86,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .length;
     // Calculate total physical items and available physical units
     final totalItems = _instruments.fold<int>(0, (sum, i) => sum + i.quantity);
-    final availableItems = _instruments.fold<int>(0, (sum, i) => sum + i.available);
+    final availableItems = _instruments.fold<int>(
+      0,
+      (sum, i) => sum + i.available,
+    );
 
     final stats = [
       _StatItem(
@@ -192,7 +204,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: Text(
                         '${_roleName[0].toUpperCase()}${_roleName.substring(1)}',
-                        style: const TextStyle(color: Colors.white, fontSize: 11),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ),

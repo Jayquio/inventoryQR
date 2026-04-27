@@ -41,26 +41,38 @@ try {
   } catch (Throwable $e) {}
   
   // Proactively ensure notifications table exists (Bypass errors if permission restricted)
-  try {
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `notifications` (
-      `id` int(11) NOT NULL AUTO_INCREMENT,
-      `title` varchar(255) NOT NULL,
-      `message` text NOT NULL,
-      `type` varchar(50) NOT NULL DEFAULT 'info',
-      `recipient` varchar(128) NOT NULL DEFAULT 'All',
-      `course` varchar(128) DEFAULT NULL,
-      `is_read` tinyint(1) NOT NULL DEFAULT 0,
-      `priority` varchar(20) NOT NULL DEFAULT 'medium',
-      `is_override` tinyint(1) NOT NULL DEFAULT 0,
-      `original_quantity` int(11) DEFAULT NULL,
-      `override_quantity` int(11) DEFAULT NULL,
-      `override_reason` text DEFAULT NULL,
-      `request_id` int(11) DEFAULT NULL,
-      `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-      PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
-    
-    // Ensure table structure updates (recipient as VARCHAR and request_id column)
+    try {
+      $pdo->exec("CREATE TABLE IF NOT EXISTS `notifications` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `title` varchar(255) NOT NULL,
+        `message` text NOT NULL,
+        `type` varchar(50) NOT NULL DEFAULT 'info',
+        `recipient` varchar(128) NOT NULL DEFAULT 'All',
+        `course` varchar(128) DEFAULT NULL,
+        `is_read` tinyint(1) NOT NULL DEFAULT 0,
+        `priority` varchar(20) NOT NULL DEFAULT 'medium',
+        `is_override` tinyint(1) NOT NULL DEFAULT 0,
+        `original_quantity` int(11) DEFAULT NULL,
+        `override_quantity` int(11) DEFAULT NULL,
+        `override_reason` text DEFAULT NULL,
+        `request_id` int(11) DEFAULT NULL,
+        `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+        PRIMARY KEY (`id`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+
+      // Proactively ensure audit_logs table exists
+      $pdo->exec("CREATE TABLE IF NOT EXISTS `audit_logs` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `username` varchar(128) NOT NULL,
+        `user_role` varchar(50) NOT NULL,
+        `action` varchar(255) NOT NULL,
+        `type` varchar(50) NOT NULL,
+        `details` text NOT NULL,
+        `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+        PRIMARY KEY (`id`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+      
+      // Ensure table structure updates (recipient as VARCHAR and request_id column)
     try {
       $pdo->exec("ALTER TABLE `notifications` MODIFY `recipient` VARCHAR(128) NOT NULL DEFAULT 'All'");
       $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `request_id` int(11) DEFAULT NULL AFTER `override_reason` ");
