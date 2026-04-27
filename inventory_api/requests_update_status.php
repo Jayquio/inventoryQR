@@ -52,28 +52,28 @@ if ($status === 'returned') {
       json_out(['error' => 'invalid_transition'], 409);
     }
 
-    if ($instrumentType === 'reagent') {
-      $pdo->rollBack();
-      json_out(['error' => 'reagent_is_consumed_not_returnable'], 409);
+    $isConsumableType = in_array($instrumentType, ['reagent', 'consumable'], true);
+
+    if (!$isConsumableType) {
+      // Lock instrument row and increment availability up to quantity
+      $selInst = $pdo->prepare('SELECT quantity, available FROM instruments WHERE name = ? FOR UPDATE');
+      $selInst->execute([$instrument]);
+      $instRow = $selInst->fetch();
+      if (!$instRow) {
+        $pdo->rollBack();
+        json_out(['error' => 'instrument_not_found'], 404);
+      }
+
+      $qty = (int)$instRow['quantity'];
+      $avail = (int)$instRow['available'];
+      if ($avail < $qty) {
+        $avail += $reqQty;
+        if ($avail > $qty) $avail = $qty;
+        $updInst = $pdo->prepare('UPDATE instruments SET available = ? WHERE name = ?');
+        $updInst->execute([$avail, $instrument]);
+      }
     }
 
-    // Lock instrument row and increment availability up to quantity
-    $selInst = $pdo->prepare('SELECT quantity, available FROM instruments WHERE name = ? FOR UPDATE');
-    $selInst->execute([$instrument]);
-    $instRow = $selInst->fetch();
-    if (!$instRow) {
-      $pdo->rollBack();
-      json_out(['error' => 'instrument_not_found'], 404);
-    }
-
-    $qty = (int)$instRow['quantity'];
-    $avail = (int)$instRow['available'];
-    if ($avail < $qty) {
-      $avail += $reqQty;
-      if ($avail > $qty) $avail = $qty;
-      $updInst = $pdo->prepare('UPDATE instruments SET available = ? WHERE name = ?');
-      $updInst->execute([$avail, $instrument]);
-    }
     $insTx = $pdo->prepare('INSERT INTO transactions (instrument_name, type, processed_by) VALUES (?, ?, ?)');
     $insTx->execute([$instrument, 'return', $user]);
 

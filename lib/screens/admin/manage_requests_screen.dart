@@ -536,32 +536,52 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                             color: Colors.grey.shade500,
                           ),
                         ),
-                      // Batch Actions (Only show if there are multiple pending items)
+                      // Batch Actions (Only show if there are multiple pending items, excluding reagents/consumables)
                       if (items.length > 1 &&
-                          items.any(
-                            (r) =>
-                                r['status'].toString().toLowerCase() ==
-                                'pending',
-                          ))
+                          items.any((r) {
+                            final s = r['status'].toString().toLowerCase();
+                            final t = (r['instrumentType'] ?? '').toString().toLowerCase();
+                            return s == 'pending' && t != 'reagent' && t != 'consumable';
+                          }))
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Row(
                             children: [
-                              _buildBatchActionButton(
-                                items.map((r) => r['id'].toString()).toList(),
-                                'approved',
-                                'Approve All',
-                                Icons.done_all,
-                                Colors.green.shade600,
-                              ),
+                              Builder(builder: (context) {
+                                final bulkIds = items
+                                    .where((r) {
+                                      final s = r['status'].toString().toLowerCase();
+                                      final t = (r['instrumentType'] ?? '').toString().toLowerCase();
+                                      return s == 'pending' && t != 'reagent' && t != 'consumable';
+                                    })
+                                    .map((r) => r['id'].toString())
+                                    .toList();
+                                return _buildBatchActionButton(
+                                  bulkIds,
+                                  'approved',
+                                  'Approve All',
+                                  Icons.done_all,
+                                  Colors.green.shade600,
+                                );
+                              }),
                               const SizedBox(width: 8),
-                              _buildBatchActionButton(
-                                items.map((r) => r['id'].toString()).toList(),
-                                'rejected',
-                                'Reject All',
-                                Icons.remove_done,
-                                Colors.red.shade600,
-                              ),
+                              Builder(builder: (context) {
+                                final bulkIds = items
+                                    .where((r) {
+                                      final s = r['status'].toString().toLowerCase();
+                                      final t = (r['instrumentType'] ?? '').toString().toLowerCase();
+                                      return s == 'pending' && t != 'reagent' && t != 'consumable';
+                                    })
+                                    .map((r) => r['id'].toString())
+                                    .toList();
+                                return _buildBatchActionButton(
+                                  bulkIds,
+                                  'rejected',
+                                  'Reject All',
+                                  Icons.remove_done,
+                                  Colors.red.shade600,
+                                );
+                              }),
                             ],
                           ),
                         ),
@@ -683,7 +703,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   ),
                 ),
               ),
-              _buildStatusBadge(status),
+              _buildStatusBadge(status, req['instrumentType']?.toString()),
             ],
           ),
           if (isOverride) ...[
@@ -728,16 +748,26 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   tooltip: 'Override Quantity',
                 ),
               ],
-              if (status == 'approved')
-                _buildActionButton(
-                  id,
-                  'returned',
-                  'Mark Returned',
-                  Icons.replay,
-                  Colors.blue.shade600,
-                  Colors.blue.shade600,
-                  borderColor: Colors.blue.shade300,
+              if (status == 'approved') ...[
+                Builder(
+                  builder: (context) {
+                    final type = (req['instrumentType'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final isConsumable =
+                        type == 'reagent' || type == 'consumable';
+                    return _buildActionButton(
+                      id,
+                      'returned',
+                      isConsumable ? 'Mark Consumed' : 'Mark Returned',
+                      isConsumable ? Icons.check_box_outlined : Icons.replay,
+                      Colors.blue.shade600,
+                      Colors.blue.shade600,
+                      borderColor: Colors.blue.shade300,
+                    );
+                  },
                 ),
+              ],
               const Spacer(),
               IconButton(
                 onPressed: () => _confirmDeleteRequest(id),
@@ -943,7 +973,13 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusBadge(String status, String? type) {
+    final t = (type ?? '').toLowerCase();
+    final isConsumable = t == 'reagent' || t == 'consumable';
+    final displayStatus = (status == 'returned' && isConsumable)
+        ? 'Consumed'
+        : status;
+
     final map = {
       'pending': (Colors.amber.shade100, Colors.amber.shade700),
       'approved': (Colors.green.shade100, Colors.green.shade700),
@@ -960,8 +996,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        status.isNotEmpty
-            ? '${status[0].toUpperCase()}${status.substring(1)}'
+        displayStatus.isNotEmpty
+            ? '${displayStatus[0].toUpperCase()}${displayStatus.substring(1)}'
             : '',
         style: TextStyle(
           fontSize: 12,

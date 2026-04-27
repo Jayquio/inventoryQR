@@ -368,7 +368,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                                 ],
                               ),
                             ),
-                            _buildStatusBadge(req.status),
+                            _buildStatusBadge(req.status, req.instrumentType),
                           ],
                         ),
                       ),
@@ -382,7 +382,13 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
     );
   }
 
-  Widget _buildStatusBadge(RequestStatus status) {
+  Widget _buildStatusBadge(RequestStatus status, String type) {
+    final t = type.toLowerCase();
+    final isConsumable = t == 'reagent' || t == 'consumable';
+    final label = (status == RequestStatus.returned && isConsumable)
+        ? 'Consumed'
+        : status.name[0].toUpperCase() + status.name.substring(1);
+
     final map = {
       RequestStatus.pending: (Colors.amber.shade100, Colors.amber.shade700),
       RequestStatus.approved: (Colors.green.shade100, Colors.green.shade700),
@@ -401,7 +407,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        status.name[0].toUpperCase() + status.name.substring(1),
+        label,
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,

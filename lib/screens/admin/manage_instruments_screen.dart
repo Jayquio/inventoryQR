@@ -521,11 +521,6 @@ class _ManageInstrumentsScreenState extends State<ManageInstrumentsScreen> {
       runSpacing: 6,
       children: [
         OutlinedButton.icon(
-          onPressed: () => _editInstrument(originalIndex),
-          icon: const Icon(Icons.edit, size: 16),
-          label: const Text('Edit'),
-        ),
-        OutlinedButton.icon(
           onPressed: () =>
               _showInstrumentDetails(context, instrument, originalIndex),
           icon: const Icon(Icons.update, size: 16),
