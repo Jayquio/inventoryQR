@@ -540,48 +540,68 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                       if (items.length > 1 &&
                           items.any((r) {
                             final s = r['status'].toString().toLowerCase();
-                            final t = (r['instrumentType'] ?? '').toString().toLowerCase();
-                            return s == 'pending' && t != 'reagent' && t != 'consumable';
+                            final t = (r['instrumentType'] ?? '')
+                                .toString()
+                                .toLowerCase();
+                            return s == 'pending' &&
+                                t != 'reagent' &&
+                                t != 'consumable';
                           }))
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Row(
                             children: [
-                              Builder(builder: (context) {
-                                final bulkIds = items
-                                    .where((r) {
-                                      final s = r['status'].toString().toLowerCase();
-                                      final t = (r['instrumentType'] ?? '').toString().toLowerCase();
-                                      return s == 'pending' && t != 'reagent' && t != 'consumable';
-                                    })
-                                    .map((r) => r['id'].toString())
-                                    .toList();
-                                return _buildBatchActionButton(
-                                  bulkIds,
-                                  'approved',
-                                  'Approve All',
-                                  Icons.done_all,
-                                  Colors.green.shade600,
-                                );
-                              }),
+                              Builder(
+                                builder: (context) {
+                                  final bulkIds = items
+                                      .where((r) {
+                                        final s = r['status']
+                                            .toString()
+                                            .toLowerCase();
+                                        final t = (r['instrumentType'] ?? '')
+                                            .toString()
+                                            .toLowerCase();
+                                        return s == 'pending' &&
+                                            t != 'reagent' &&
+                                            t != 'consumable';
+                                      })
+                                      .map((r) => r['id'].toString())
+                                      .toList();
+                                  return _buildBatchActionButton(
+                                    bulkIds,
+                                    'approved',
+                                    'Approve All',
+                                    Icons.done_all,
+                                    Colors.green.shade600,
+                                  );
+                                },
+                              ),
                               const SizedBox(width: 8),
-                              Builder(builder: (context) {
-                                final bulkIds = items
-                                    .where((r) {
-                                      final s = r['status'].toString().toLowerCase();
-                                      final t = (r['instrumentType'] ?? '').toString().toLowerCase();
-                                      return s == 'pending' && t != 'reagent' && t != 'consumable';
-                                    })
-                                    .map((r) => r['id'].toString())
-                                    .toList();
-                                return _buildBatchActionButton(
-                                  bulkIds,
-                                  'rejected',
-                                  'Reject All',
-                                  Icons.remove_done,
-                                  Colors.red.shade600,
-                                );
-                              }),
+                              Builder(
+                                builder: (context) {
+                                  final bulkIds = items
+                                      .where((r) {
+                                        final s = r['status']
+                                            .toString()
+                                            .toLowerCase();
+                                        final t = (r['instrumentType'] ?? '')
+                                            .toString()
+                                            .toLowerCase();
+                                        return s == 'pending' &&
+                                            t != 'reagent' &&
+                                            t != 'consumable';
+                                      })
+                                      .map((r) => r['id'].toString())
+                                      .toList();
+                                  return _buildBatchActionButton(
+                                    bulkIds,
+                                    'rejected',
+                                    'Reject All',
+                                    Icons.remove_done,
+                                    Colors.red.shade600,
+                                  );
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -783,9 +803,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   }
 
   Widget _buildGlobalBulkActions() {
-    final pendingRequests = _filtered
-        .where((r) => r['status'].toString().toLowerCase() == 'pending')
-        .toList();
+    final pendingRequests = _filtered.where((r) {
+      final s = r['status'].toString().toLowerCase();
+      final t = (r['instrumentType'] ?? '').toString().toLowerCase();
+      return s == 'pending' && t != 'reagent' && t != 'consumable';
+    }).toList();
 
     if (pendingRequests.length < 2) return const SizedBox.shrink();
 
